@@ -97,6 +97,7 @@ public class SecurityConfig {
             )
             // 인가 정책
             .authorizeHttpRequests(auth -> auth
+            	.requestMatchers("/api/ai/**").permitAll()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                 // 정적/SPA 루트

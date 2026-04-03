@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunk_2team_prodect=self.webpackChunk_2team_prodect||[]).push([[634],{634:(e,t,c)=>{c.r(t),c.d(t,{default:()=>a});var r=c(579);const a=()=>(0,r.jsx)("div",{children:"ServiceCenterPage"})}}]);
+//# sourceMappingURL=634.a4acf286.chunk.js.map

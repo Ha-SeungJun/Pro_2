@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -57,18 +58,16 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
 
         // New Members by Month
         Map<String, Long> newMembersByMonthMap = memberRepository.findNewMembersByMonth().stream()
+                .filter(obj -> obj[0] != null)
                 .collect(Collectors.toMap(obj -> (String)obj[0], obj -> (long)obj[1]));
 
         Map<String, Long> newCargoOwnersByMonthMap = cargoOwnerRepository.findNewCargoOwnersByMonth().stream()
+                .filter(obj -> obj[0] != null)
                 .collect(Collectors.toMap(obj -> (String)obj[0], obj -> (long)obj[1]));
 
         // Combine the two maps
-        Map<String, Long> combinedNewMembersMap = newMembersByMonthMap.entrySet().stream()
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        entry -> entry.getValue() + newCargoOwnersByMonthMap.getOrDefault(entry.getKey(), 0L)
-                ));
-        newCargoOwnersByMonthMap.forEach((key, value) -> combinedNewMembersMap.merge(key, value, Long::sum));
+        Map<String, Long> combinedNewMembersMap = Stream.concat(newMembersByMonthMap.entrySet().stream(), newCargoOwnersByMonthMap.entrySet().stream())
+                .collect(Collectors.groupingBy(Map.Entry::getKey, Collectors.summingLong(Map.Entry::getValue)));
 
 
         List<MonthlyDataDTO> newMembersByMonth = last6Months.stream()

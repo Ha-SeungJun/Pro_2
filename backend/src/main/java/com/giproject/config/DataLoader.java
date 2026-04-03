@@ -10,39 +10,19 @@ import com.giproject.entity.noboard.Notice;
 import com.giproject.entity.qaboard.AuthorType;
 import com.giproject.entity.qaboard.QACategory;
 import com.giproject.entity.qaboard.QAPost;
-import com.giproject.repository.account.UserIndexRepository;
-import com.giproject.repository.cargo.CargoOwnerRepository;
 import com.giproject.repository.noboard.NoticeRepository;
 import com.giproject.repository.qaboard.QAPostRepository;
 
 import lombok.RequiredArgsConstructor;
 
-import com.giproject.entity.account.UserIndex;
-import com.giproject.entity.cargo.CargoOwner;
-import com.giproject.entity.member.Member;
-import com.giproject.repository.member.MemberRepository;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import com.giproject.entity.fees.FeesBasic;
-import com.giproject.entity.fees.FeesExtra;
-import com.giproject.repository.fees.FeesBasicRepository;
-import com.giproject.repository.fees.FeesExtraRepository;
-import java.math.BigDecimal;
 @Component
 @RequiredArgsConstructor
 public class DataLoader implements CommandLineRunner {
 
-    private final UserIndexRepository userIndexRepository;
-
     private final QAPostRepository qaPostRepository;
     private final NoticeRepository noticeRepository;
     private final Random random = new Random();
-    private final MemberRepository memberRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final CargoOwnerRepository cargoOwnerRepository;
-    private final FeesBasicRepository feesBasicRepository;
-    private final FeesExtraRepository feesExtraRepository;
-    
-    
+
     @Override
     public void run(String... args) throws Exception {
         // MySQL 운영 DB에서도 테스트 데이터가 필요한 경우 활성화
@@ -55,103 +35,6 @@ public class DataLoader implements CommandLineRunner {
         if (noticeRepository.count() == 0) {
             createNoticeDummyData();
         }
-        
-
-        if (!memberRepository.existsByMemEmail("admin@admin.com")) {
-
-            // ===== 관리자 =====
-            UserIndex adminIndex = UserIndex.builder()
-                .loginId("admin")
-                .email("admin@admin.com")
-                .role(UserIndex.Role.ADMIN)
-                .build();
-            userIndexRepository.save(adminIndex);
-
-            Member admin = Member.builder()
-                .memId("admin")
-                .memEmail("admin@admin.com")
-                .memPw(passwordEncoder.encode("qwer1234@"))
-                .memName("관리자")
-                .memPhone("010-0000-0000")
-                .build();
-            admin.addRole("ADMIN");
-            memberRepository.save(admin);
-            System.out.println("관리자 계정 생성 완료 - ID: admin / PW: qwer1234@");
-        }
-
-        if (!memberRepository.existsByMemEmail("test1@test.com")) {
-
-            // ===== 화물주 (SHIPPER) =====
-            UserIndex shipperIndex = UserIndex.builder()
-                .loginId("test1")
-                .email("test1@test.com")
-                .role(UserIndex.Role.SHIPPER)
-                .build();
-            userIndexRepository.save(shipperIndex);
-
-            Member shipper = Member.builder()
-                .memId("test1")
-                .memEmail("test1@test.com")
-                .memPw(passwordEncoder.encode("qwer1234@"))
-                .memName("테스트화물주")
-                .memPhone("010-1111-1111")
-                .build();
-            shipper.addRole("USER");
-            memberRepository.save(shipper);
-            System.out.println("화물주 계정 생성 완료 - ID: test1 / PW: qwer1234@");
-        }
-
-        if (!cargoOwnerRepository.existsById("test2")) {
-
-            // UserIndex가 없으면 생성
-            if (!userIndexRepository.existsById("test2")) {
-                UserIndex driverIndex = UserIndex.builder()
-                    .loginId("test2")
-                    .email("test2@test.com")
-                    .role(UserIndex.Role.DRIVER)
-                    .build();
-                userIndexRepository.save(driverIndex);
-            }
-
-            CargoOwner driver = CargoOwner.builder()
-                .cargoId("test2")
-                .cargoEmail("test2@test.com")
-                .cargoPw(passwordEncoder.encode("qwer1234@"))
-                .cargoName("테스트차주")
-                .cargoPhone("010-2222-2222")
-                .cargoAddress("서울시 테스트구")
-                .social(false)
-                .build();
-            cargoOwnerRepository.save(driver);
-            System.out.println("차주 계정 생성 완료 - ID: test2 / PW: qwer1234@");
-        }
-        if (feesBasicRepository.count() == 0) {
-            String[] weights = {"1톤", "2톤", "3톤", "4톤"};
-            for (int i = 0; i < weights.length; i++) {
-                FeesBasic fee = FeesBasic.builder()
-                    .weight(weights[i])
-                    .ratePerKm(BigDecimal.valueOf((i + 1) * 10L)) // 1톤=10원, 2톤=20원 ...
-                    .initialCharge(BigDecimal.ZERO)
-                    .updatedAt(java.time.LocalDateTime.now())
-                    .build();
-                feesBasicRepository.save(fee);
-            }
-            System.out.println("기본 요금 데이터 생성 완료");
-        }
-
-        if (feesExtraRepository.count() == 0) {
-            String[] extras = {"야간 할증", "휴일 할증", "긴급 배송", "상하차료", "대기료"};
-            for (String title : extras) {
-                FeesExtra extra = FeesExtra.builder()
-                    .extraChargeTitle(title)
-                    .extraCharge(BigDecimal.ZERO)
-                    .updatedAt(java.time.LocalDateTime.now())
-                    .build();
-                feesExtraRepository.save(extra);
-            }
-            System.out.println("추가 요금 데이터 생성 완료");
-        }
-       
     }
 
     /**

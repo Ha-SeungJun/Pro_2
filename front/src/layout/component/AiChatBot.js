@@ -20,7 +20,7 @@ const AiChatBot = () => {
         setLoading(true);
 
         try {
-            const res = await axios.post("http://localhost:80/api/ai/ask", { question: input });
+            const res = await axios.post("http://localhost:8080/api/ai/ask", { question: input });
             setMessages(prev => [...prev, { role: 'ai', text: res.data.answer }]);
         } catch (err) {
             setMessages(prev => [...prev, { role: 'ai', text: "서버 연결 오류가 발생했습니다." }]);

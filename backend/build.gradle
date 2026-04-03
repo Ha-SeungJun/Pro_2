@@ -1,0 +1,68 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.5.3'
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+
+    implementation 'org.springframework.security:spring-security-crypto'
+    implementation 'org.springframework.security:spring-security-oauth2-client:6.5.1'
+    implementation 'org.springframework.security:spring-security-oauth2-core:6.5.1'
+    implementation 'org.springframework.security:spring-security-oauth2-jose:6.5.1'
+
+    implementation 'org.modelmapper:modelmapper:3.1.1'
+    implementation 'com.google.code.gson:gson:2.10.1'
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
+    implementation 'net.coobird:thumbnailator:0.4.1'
+
+    // ✅ JJWT 0.12.x (앞서 준 JwtService 코드와 호환)
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.5'
+    runtimeOnly  'io.jsonwebtoken:jjwt-impl:0.12.5'
+    runtimeOnly  'io.jsonwebtoken:jjwt-jackson:0.12.5' // Jackson 사용 시
+
+    runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
+   runtimeOnly 'com.h2database:h2'
+
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+}
+
+// 컴파일 시 파라미터 이름 정보 보존 (바인딩 400 방지)
+tasks.withType(JavaCompile) {
+    options.compilerArgs += ['-parameters']
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}

@@ -12,4 +12,3 @@ public class CargoDTO {
     private String weight;  // 적재 무게 
     private String image; // 이미지 경로
 }
-

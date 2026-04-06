@@ -35,13 +35,13 @@ public class OAuth2ClientsConfig {
                 .build();
 
             ClientRegistration kakao = ClientRegistration.withRegistrationId("kakao")
-                .clientId("498202a9ce854810564a953136cf57b2")
+                .clientId("565114d3ec7b2515badd76cddff1136a")
                 // client secret을 쓰지 않으면 아래 두 줄은 제거
-                .clientSecret("h9h1fBNuzWDjXLAbuhtBIEpXxUC8mhae")
+                .clientSecret("zfp2TkCWYXcJ3obFr691DyQVd8b2pQtE")
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .redirectUri("{baseUrl}/login/oauth2/code/kakao")
-                .scope("profile_nickname")
+                .scope("account_email","profile_nickname")
                 .authorizationUri("https://kauth.kakao.com/oauth/authorize")
                 .tokenUri("https://kauth.kakao.com/oauth/token")
                 .userInfoUri("https://kapi.kakao.com/v2/user/me")

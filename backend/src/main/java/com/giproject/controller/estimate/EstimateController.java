@@ -54,17 +54,10 @@ public class EstimateController {
 	}
 
 	@GetMapping("/list")
-	public PageResponseDTO<MatchingDTO> getEstimateList(PageRequestDTO dto, @RequestHeader("Authorization") String authHeader) {
-	    String token = authHeader.replace("Bearer ", "");
-	    String userId = jwtService.getUsername(token);
-
-	    // 차주면 본인 목록, 아니면 전체 목록
-	    CargoOwner cargoOwner = cargoOwnerRepository.findById(userId).orElse(null);
-	    if (cargoOwner != null) {
-	        return matchingService.getList(dto, userId);
-	    } else {
-	        return matchingService.getAllList(dto);
-	    }
+	public PageResponseDTO<MatchingDTO> getEstimateList(PageRequestDTO dto,@RequestHeader("Authorization") String authHeader) {
+		String token = authHeader.replace("Bearer ","");
+		String cargoId = jwtService.getUsername(token);
+		return matchingService.getList(dto,cargoId);
 	}
 
 	@PostMapping("/subpath/rejected")

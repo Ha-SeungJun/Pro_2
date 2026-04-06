@@ -44,15 +44,4 @@ public interface MatchingRepository extends JpaRepository<Matching, Long> {
 	
 	@Query("SELECT m.matchingNo FROM Matching m WHERE m.estimate.eno = :estimateNo")
 	Optional<Long> findMatchingNoByEstimateNo(@Param("estimateNo") Long estimateNo);
-	
-	@Query("""
-		    SELECT m FROM Matching m
-		    WHERE m.cargoOwner IS NULL
-		      AND m.isAccepted = false
-		      AND m.estimate.isTemp = false
-		      AND m.estimate.matched = false
-		      AND m.estimate.isOrdered = false
-		      AND m.estimate.startTime >= :now
-		    """)
-		Page<Matching> findAllValidMatchingList(@Param("now") LocalDateTime now, Pageable pageable);
 }

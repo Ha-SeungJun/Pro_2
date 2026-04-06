@@ -97,7 +97,6 @@ public class SecurityConfig {
             )
             // 인가 정책
             .authorizeHttpRequests(auth -> auth
-            	.requestMatchers("/api/ai/**").permitAll()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                 // 정적/SPA 루트
@@ -121,7 +120,7 @@ public class SecurityConfig {
                                  "/g2i4/uploads/**","/g2i4/mypage/**","/g2i4/user/**","/g2i4/cargo/**","/g2i4/member/**","/g2i4/qna/**","/api/**").permitAll()
 
                 // 예시: 특정 권한 필요
-                .requestMatchers("/g2i4/estimate/list").hasAnyAuthority("ROLE_DRIVER", "ROLE_USER", "ROLE_ADMIN")
+                .requestMatchers("/g2i4/estimate/list").hasAuthority("ROLE_DRIVER")
 
                 // 나머지는 인증 필요
                 .anyRequest().authenticated()

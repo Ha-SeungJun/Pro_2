@@ -166,7 +166,7 @@ public class FeesAdminController {
 		if (weight.isEmpty())
 			return ResponseEntity.badRequest().build();
 		feesBasicRepository.findByWeight(weight).orElseGet(() -> {
-			FeesBasic fb = FeesBasic.builder().weight(weight).ratePerKm(BigDecimal.ZERO).initialCharge(BigDecimal.ZERO)
+			FeesBasic fb = FeesBasic.builder().weight(weight).cargoName(req.getCargoName()).ratePerKm(BigDecimal.ZERO).initialCharge(BigDecimal.ZERO)
 					.updatedAt(LocalDateTime.now()).build();
 			return feesBasicRepository.save(fb);
 		});
@@ -220,6 +220,7 @@ public class FeesAdminController {
 	@Setter
 	public static class RowRequest {
 		private String name;
+		private String cargoName;
 	}
 	
 	@PutMapping("/imageupload/{tno}")

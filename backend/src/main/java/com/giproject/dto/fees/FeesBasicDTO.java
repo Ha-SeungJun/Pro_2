@@ -27,4 +27,6 @@ public class FeesBasicDTO {
 	private LocalDateTime updatedAt;
 	
 	private String cargoImage;
+	
+	private String cargoName;
 }

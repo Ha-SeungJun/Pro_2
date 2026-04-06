@@ -35,7 +35,7 @@ const OrderPaymentSelect = ({ serverData, orderSheet }) => {
     const navigate = useNavigate();
     const [paymentType, setPaymentType] = useState(null);
     const [orderType, setOrderType] = useState(iniState);
-    
+
     const handleCheck = () => {
         if (String(orderSheet.addressee ?? "").trim() === "") {
             alert("받는분 이름을 입력해주세요");
@@ -56,7 +56,24 @@ const OrderPaymentSelect = ({ serverData, orderSheet }) => {
         try {
             // 1) 선택 검증
             if (!orderType.channelKey || !orderType.payMethod) return alert("결제 수단을 선택해주세요.");
-            if (!serverData?.totalCost) return alert("결제 금액이 유효하지 않습니다.");
+            if (serverData?.totalCost == null) return alert("결제 금액이 유효하지 않습니다.");
+            if (Number(serverData.totalCost) === 0) {
+                const payload = { ...orderSheet, matchingNo: Number(serverData.matchingNo) };
+                const orderNo = await postOrderCreate(payload);
+                if (!orderNo) { alert("주문서 번호를 받지 못했습니다."); return; }
+                const paymentDTO = {
+                    orderSheetNo: orderNo,
+                    paymentId: crypto.randomUUID(),
+                    paymentMethod: "FREE",
+                    easyPayProvider: null,
+                    currency: "KRW",
+                };
+                const paymentNo = await acceptedPayment(paymentDTO);
+                createDelivery(paymentNo);
+                alert("주문이 완료되었습니다.");
+                navigate(`/order/payment`, { state: { paymentNo } });
+                return;
+            }
 
             const paymentId = crypto.randomUUID()
             // 3) 결제 요청
@@ -92,7 +109,7 @@ const OrderPaymentSelect = ({ serverData, orderSheet }) => {
                 currency: "KRW",
             }
             const paymentNo = await acceptedPayment(paymentDTO);
-            
+
             createDelivery(paymentNo);
             alert("주문이 완료되었습니다.");
             navigate(`/order/payment`, { state: { paymentNo } })
@@ -126,7 +143,7 @@ const OrderPaymentSelect = ({ serverData, orderSheet }) => {
         <Grid
             container
             spacing={3}
-            sx={{ maxWidth: 850, mx: "auto", mt: 4 }} 
+            sx={{ maxWidth: 850, mx: "auto", mt: 4 }}
             alignItems="stretch"
             justifyContent={"space-between"}
             wrap="nowrap"

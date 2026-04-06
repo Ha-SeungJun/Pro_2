@@ -125,13 +125,21 @@ public class DataLoader implements CommandLineRunner {
             cargoOwnerRepository.save(driver);
             System.out.println("차주 계정 생성 완료 - ID: test2 / PW: qwer1234@");
         }
+        
         if (feesBasicRepository.count() == 0) {
-            String[] weights = {"1톤", "2톤", "3톤", "4톤"};
-            for (int i = 0; i < weights.length; i++) {
+            Object[][] data = {
+                {"다마스",  "0.5톤", 5L,  "/uploads/cargo/damas.jpg"},
+                {"라보",    "1톤",   10L, "/uploads/cargo/labo.jpg"},
+                {"1톤카고", "2톤",   20L, "/uploads/cargo/1ton_cargo.jpg"},
+            };
+
+            for (Object[] row : data) {
                 FeesBasic fee = FeesBasic.builder()
-                    .weight(weights[i])
-                    .ratePerKm(BigDecimal.valueOf((i + 1) * 10L)) // 1톤=10원, 2톤=20원 ...
+                    .cargoName((String) row[0])   // ← 차량명
+                    .weight((String) row[1])       // ← 무게
+                    .ratePerKm(BigDecimal.valueOf((Long) row[2]))
                     .initialCharge(BigDecimal.ZERO)
+                    .cargoImage((String) row[3])
                     .updatedAt(java.time.LocalDateTime.now())
                     .build();
                 feesBasicRepository.save(fee);

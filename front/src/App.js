@@ -5,6 +5,7 @@ import ResponsiveAppBar from './common/ResponsiveAppBar';
 import { RouterProvider } from 'react-router-dom';
 import root from './router/root';
 import AiChatBot from './layout/component/AiChatBot';
+import CounselorChat from './layout/component/CounselorChat';
 
 function App() {
   // useEffect(() => {
@@ -35,6 +36,7 @@ function App() {
     <>
      <RouterProvider router={root}></RouterProvider>
      <AiChatBot />
+     <CounselorChat/>
      </>
   
    

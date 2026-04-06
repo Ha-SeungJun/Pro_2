@@ -1,7 +1,7 @@
 // src/lib/apiFetch.js
 import { tokenStore } from './tokenStore';
 
-const API_BASE = import.meta?.env?.VITE_API_BASE || process.env.REACT_APP_API_BASE || 'http://localhost:8080';
+const API_BASE = "http://localhost:8080" || process.env.REACT_APP_API_BASE || 'http://localhost:8080';
 
 export async function apiFetch(input, init = {}) {
     const url = input.startsWith('http') ? input : `${API_BASE}${input}`;

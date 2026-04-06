@@ -2,10 +2,11 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 
 // 백엔드 베이스 URL
-const API_BASE =
-    import.meta?.env?.VITE_API_BASE ||
-    process.env.REACT_APP_API_BASE ||
-    "http://localhost:8080";
+// const API_BASE =
+//     "http://localhost:8080" ||
+//     process.env.REACT_APP_API_BASE ||
+//     "http://localhost:8080";
+const API_BASE = "http://localhost:8080";
 
 // 토큰 픽업 유틸
 const pickToken = () =>

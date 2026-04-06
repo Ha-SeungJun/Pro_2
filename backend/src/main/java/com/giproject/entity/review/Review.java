@@ -39,5 +39,13 @@ public class Review {
 
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
-	
+    
+    public void changeRating(BigDecimal rating) {
+        this.rating = rating;
+    }
+
+    public void changeComment(String comment) {
+        this.comment = comment;
+    }
+    
 }

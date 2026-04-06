@@ -47,7 +47,7 @@ dependencies {
     runtimeOnly  'io.jsonwebtoken:jjwt-jackson:0.12.5' // Jackson 사용 시
 
     runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
-   runtimeOnly 'com.h2database:h2'
+	runtimeOnly 'com.h2database:h2'
 
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'

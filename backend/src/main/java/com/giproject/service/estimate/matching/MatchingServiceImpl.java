@@ -44,20 +44,7 @@ public class MatchingServiceImpl implements MatchingService{
 	private final RejectedMatchingRepository rejectedMatchingRepository;
 	private final JwtService jwtService;
 
-	@Override
-	public PageResponseDTO<MatchingDTO> getAllList(PageRequestDTO requestDTO) {
-	    Pageable pageable = PageRequest.of(requestDTO.getPage()-1, requestDTO.getSize(), Sort.by("matchingNo").descending());
-	    LocalDateTime now = LocalDateTime.now();
-	    Page<Matching> result = matchingRepository.findAllValidMatchingList(now, pageable);
-	    List<MatchingDTO> dtoList = result.getContent().stream()
-	        .map(this::entityToDTO)
-	        .collect(Collectors.toList());
-	    return PageResponseDTO.<MatchingDTO>withAll()
-	        .dtoList(dtoList)
-	        .pageRequestDTO(requestDTO)
-	        .totalCount(result.getTotalElements())
-	        .build();
-	}
+
    
 
 	@Override

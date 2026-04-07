@@ -54,7 +54,8 @@ const EstimateComponentCombined = () => {
     const navigate = useNavigate();
     const { roles, email } = useSelector((state) => state.login);
     const authChecked = useRef(false);
-    const isAdmin = isCurrentUserAdmin;
+    const isAdmin = isCurrentUserAdmin();
+    const mapRef = useRef(null);
 
     useEffect(() => {
         if (authChecked.current) return;
@@ -69,6 +70,7 @@ const EstimateComponentCombined = () => {
         postSearchFeesBasic().then(setFees).catch(() => { });
         postSearchFeesExtra().then(setExtra).catch(() => { });
     }, [roles, email, navigate]);
+
 
     useEffect(() => {
         const fee = fees.find((f) => f.weight === estimate.cargoWeight) || null;
@@ -256,8 +258,23 @@ const EstimateComponentCombined = () => {
 
                         {/* 지도 */}
                         <Box sx={{ border: "1px solid #ccc", borderRadius: 2, p: 2, bgcolor: "#ffffff" }}>
-                            <Typography variant="subtitle1" fontWeight="bold" mb={1}>경로 지도</Typography>
+                            <Typography variant="subtitle1" fontWeight="bold" mb={1} >경로 지도
+                                <Button
+                                    size="small"
+                                    variant="outlined"
+                                    color="error"
+                                    sx={{ whiteSpace: "nowrap", minWidth: 100, ml: 1.5 }}
+                                    onClick={() => {
+                                        setEstimate(prev => ({ ...prev, startAddress: "", endAddress: "", distanceKm: "" }));
+                                        mapRef.current?.reset();
+                                    }}
+                                >
+                                    주소 초기화
+                                </Button></Typography>
+                            {/* ← 초기화 버튼 추가 */}
+
                             <KakaoMapViewer
+                                ref={mapRef}
                                 startAddress={estimate.startAddress}
                                 endAddress={estimate.endAddress}
                                 onAddressSelect={(type, addr) => {

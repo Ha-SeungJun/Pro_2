@@ -104,21 +104,21 @@ const BulletinBoard = () => {
       </Box>
 
       {/* Category Tabs and New Post Button */}
-      <Box 
-        sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center', 
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
           mb: 3,
           flexWrap: { xs: 'wrap', sm: 'nowrap' },
           gap: 2
         }}
       >
         {/* Category Tabs */}
-        <Box 
-          sx={{ 
-            display: 'flex', 
-            flexWrap: 'wrap', 
+        <Box
+          sx={{
+            display: 'flex',
+            flexWrap: 'wrap',
             gap: 1,
             flex: '1 1 auto'
           }}
@@ -131,8 +131,8 @@ const BulletinBoard = () => {
                 setActiveCategory(category.id);
                 setCurrentPage(0); // 카테고리 변경 시 페이지 리셋
               }}
-              sx={{ 
-                minWidth: 100, 
+              sx={{
+                minWidth: 100,
                 borderRadius: 2
               }}
             >
@@ -144,11 +144,11 @@ const BulletinBoard = () => {
         {/* New Post Button - 관리자만 표시 */}
         {isAdmin && (
           <Box sx={{ flex: '0 0 auto' }}>
-            <Button 
-              variant="contained" 
+            <Button
+              variant="contained"
               onClick={handleNewPost}
               startIcon={<AddIcon />}
-              sx={{ 
+              sx={{
                 minWidth: 140,
                 height: 48,
                 borderRadius: 2
@@ -197,56 +197,64 @@ const BulletinBoard = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                notices.map((notice) => (
-                  <TableRow
-                    key={notice.noticeId}
-                    hover
-                    onClick={() => handleRowClick(notice.noticeId)}
-                    sx={{ 
-                      cursor: 'pointer',
-                      '&:hover': {
-                        bgcolor: 'action.hover'
-                      }
-                    }}
-                  >
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {notice.displayNumber || notice.noticeId}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Chip 
-                          label={getCategoryDisplayName(notice.category)} 
-                          size="small" 
-                          color="primary" 
-                          variant="outlined"
-                        />
-                        <Typography 
-                          variant="body2" 
-                          sx={{ 
-                            color: 'text.primary',
-                            '&:hover': {
-                              color: 'primary.main'
-                            }
-                          }}
-                        >
-                          {notice.title}
+                // 💡 index를 추가하여 가상 번호를 계산합니다.
+                notices.map((notice, index) => {
+                  // 🔥 가상 번호 계산 공식 적용
+                  const pageSize = 10;
+                  const virtualNumber = totalElements - (currentPage * pageSize) - index;
+
+                  return (
+                    <TableRow
+                      key={notice.noticeId}
+                      hover
+                      onClick={() => handleRowClick(notice.noticeId)}
+                      sx={{
+                        cursor: 'pointer',
+                        '&:hover': {
+                          bgcolor: 'action.hover'
+                        }
+                      }}
+                    >
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary">
+                          {/* 💡 noticeId 대신 계산된 가상 번호를 보여줍니다. */}
+                          {virtualNumber}
                         </Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {notice.authorName}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {new Date(notice.createdAt).toLocaleDateString('ko-KR')}
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                ))
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Chip
+                            label={getCategoryDisplayName(notice.category)}
+                            size="small"
+                            color="primary"
+                            variant="outlined"
+                          />
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              color: 'text.primary',
+                              '&:hover': {
+                                color: 'primary.main'
+                              }
+                            }}
+                          >
+                            {notice.title}
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary">
+                          {notice.authorName}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary">
+                          {new Date(notice.createdAt).toLocaleDateString('ko-KR')}
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>

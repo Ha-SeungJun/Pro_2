@@ -9,7 +9,6 @@ import {
   DialogContent,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
-import TmapViewer from "./KakaoMapViewer";
 import { DateTimePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import dayjs from "dayjs";
@@ -407,8 +406,21 @@ const EstimateComponent = () => {
               }}
             >
               {showMap ? (
-                <KakaoMapViewer startAddress={estimate.startAddress} endAddress={estimate.endAddress} />
-              ) : (
+                <KakaoMapViewer
+                  startAddress={estimate.startAddress}
+                  endAddress={estimate.endAddress}
+
+                  onAddressSelect={(_, addr) => {
+                    setEstimate(prev => {
+                      if (!prev.startAddress) {
+                        return { ...prev, startAddress: addr };
+                      }
+                      else {
+                        return { ...prev, endAddress: addr };
+                      }
+                    });
+                  }}
+                />) : (
                 <Stack spacing={2}>
                   <Typography>기본 요금: {baseCost.toLocaleString()}원</Typography>
                   <Typography>거리 요금: {distanceCost.toLocaleString()}원</Typography>

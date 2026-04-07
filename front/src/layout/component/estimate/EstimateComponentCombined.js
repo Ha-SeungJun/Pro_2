@@ -252,7 +252,14 @@ const EstimateComponentCombined = () => {
                             <KakaoMapViewer
                                 startAddress={estimate.startAddress}
                                 endAddress={estimate.endAddress}
+                                onAddressSelect={(type, addr) => {
+                                    setEstimate(prev => ({
+                                        ...prev,
+                                        [`${type}Address`]: addr
+                                    }));
+                                }}
                             />
+
                         </Box>
                     </Stack>
                 </Box>

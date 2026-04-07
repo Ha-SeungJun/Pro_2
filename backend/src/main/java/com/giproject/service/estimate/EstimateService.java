@@ -30,6 +30,10 @@ public interface EstimateService {
 				.matched(estimate.isMatched())
 				.isOrdered(estimate.isOrdered())
 				.memberId(estimate.getMember() != null ? estimate.getMember().getMemId() : null)
+				.startLat(estimate.getStartLat()) 
+	            .startLng(estimate.getStartLng()) 
+	            .endLat(estimate.getEndLat())
+	            .endLng(estimate.getEndLng())
 				.build();
 		return dto;
 	}
@@ -50,6 +54,10 @@ public interface EstimateService {
 				.matched(dto.isMatched())
 				.isOrdered(dto.isOrdered())
 				.member(member)
+				.startLat(dto.getStartLat()) 
+	            .startLng(dto.getStartLng()) 
+	            .endLat(dto.getEndLat())     
+	            .endLng(dto.getEndLng())
 				.build();
 		return estimate;
 	}

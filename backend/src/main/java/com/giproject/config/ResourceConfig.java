@@ -1,6 +1,7 @@
 // src/main/java/com/giproject/config/ResourceConfig.java
 package com.giproject.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -12,20 +13,17 @@ import java.nio.file.Paths;
 @Configuration
 public class ResourceConfig implements WebMvcConfigurer {
 
-    private Path resolveUploadRoot() {
-        Path rootA = Paths.get("../uploads").toAbsolutePath().normalize();
-        Path rootB = Paths.get("uploads").toAbsolutePath().normalize();
-        if (Files.isDirectory(rootA)) return rootA;
-        if (Files.isDirectory(rootB)) return rootB;
-        // 없으면 rootB를 우선 생성 시도
-        try {
-            Files.createDirectories(rootB);
-            return rootB;
-        } catch (IOException e) {
-            return rootA; // 최후의 fallback
-        }
-    }
+	@Value("${upload.path:../uploads}")
+	private String uploadPath;
 
+	private Path resolveUploadRoot() {
+	    Path root = Paths.get(uploadPath).toAbsolutePath().normalize();
+	    if (!Files.isDirectory(root)) {
+	        try { Files.createDirectories(root); } catch (IOException e) {}
+	    }
+	    return root;
+	}
+	
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         Path chosen = resolveUploadRoot();

@@ -15,7 +15,8 @@ export const saveFeeBasicCell = ({ category, distance, price }) =>
 
 // 행 목록 추가/삭제
 export const getBasicRows = () => axios.get(`${FEES_PREFIX}/basic/rows`);
-export const addBasicRow = (name) => axios.post(`${FEES_PREFIX}/basic/rows`, { name });
+export const addBasicRow = (name, cargoName) =>
+  axios.post(`${FEES_PREFIX}/basic/rows`, { name, cargoName });
 
 export const deleteBasicRow = (name) =>
   axios.delete(`${FEES_PREFIX}/basic/rows`, { params: { weight: name } });

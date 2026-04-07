@@ -14,20 +14,23 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class FeesBasic {
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long tno;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long tno;
 
-	@Column(nullable = false, length = 50, unique = true)
-	private String weight; // 예: 1톤, 2톤
+    @Column(nullable = false, length = 50, unique = true)
+    private String weight;
 
-	@Column(precision = 12, scale = 2)
-	private BigDecimal ratePerKm; // 거리별 요금
+    @Column(precision = 12, scale = 2)
+    private BigDecimal ratePerKm;
 
-	@Column(precision = 12, scale = 2)
-	private BigDecimal initialCharge; // 기본요금
+    @Column(precision = 12, scale = 2)
+    private BigDecimal initialCharge;
 
-	private LocalDateTime updatedAt;// 수정일
-	
-	private String cargoImage;//
+    private LocalDateTime updatedAt;
+
+    private String cargoImage;
+
+    @Column(name = "cargo_name", length = 50) 
+    private String cargoName;
 }

@@ -22,7 +22,7 @@ import { login as loginAction, logout as logoutAction, getUserInfoAsync } from '
 
 // ✅ 백엔드 베이스 URL (단일 정의)
 const API_BASE =
-  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE) ||
+  process.env.REACT_APP_API_BASE ||
   process.env.REACT_APP_API_BASE ||
   'http://localhost:8080';
 

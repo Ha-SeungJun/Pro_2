@@ -9,9 +9,9 @@ const FEES_PREFIX = `${API_SERVER_HOST}/g2i4/admin/fees`;
 // 통합 조회
 export const fetchFeesBasicFull = () => axios.get(`${FEES_PREFIX}/basic/full`);
 
-// 셀 저장
-export const saveFeeBasicCell = ({ category, distance, price }) =>
-  axios.post(`${FEES_PREFIX}/basic`, { category, distance, price });
+// [수정 완료] 셀 저장/행 저장 통합 (객체를 통째로 서버에 전달)
+
+export const saveFeeBasicCell = (data) => axios.post(`${FEES_PREFIX}/basic`, data);
 
 // 행 목록 추가/삭제
 export const getBasicRows = () => axios.get(`${FEES_PREFIX}/basic/rows`);
@@ -24,8 +24,8 @@ export const deleteBasicRow = (name) =>
 /** ───── Extra ───── **/
 export const fetchFeesExtraFull = () => axios.get(`${FEES_PREFIX}/extra/full`);
 
-export const saveFeeExtraCell = ({ category, distance, price }) =>
-  axios.post(`${FEES_PREFIX}/extra`, { category, distance, price });
+export const saveFeeExtraCell = (data) =>
+  axios.post(`${FEES_PREFIX}/extra`, data);
 
 export const getExtraRows = () => axios.get(`${FEES_PREFIX}/extra/rows`);
 

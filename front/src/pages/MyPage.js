@@ -4,7 +4,7 @@ import {
   Box, Grid, Paper, Typography,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow
 } from '@mui/material';
-
+import ReviewModal from '../components/review/ReviewModal';
 import Sidebar from '../common/Sidebar'; // 사이드바 추가
 import ResponsiveAppBar from '../common/ResponsiveAppBar'; // 상단 앱바 추가
 
@@ -49,8 +49,8 @@ const MyPage = () => {
   const ownerId = 1; // 예시: 차량 관리 노출 조건
 
   return (
+    
     <Box sx={{ display: 'flex' }}>
-        
       <Sidebar ownerId={ownerId} /> {/* 좌측 사이드바 */}
       <Box sx={{ flexGrow: 1 }}>
 
@@ -147,7 +147,8 @@ const MyPage = () => {
         </Box>
       </Box>
     </Box>
-  );
+  
+);
 };
 
 

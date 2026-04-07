@@ -58,7 +58,7 @@ public class MailServiceImpl implements MailService {
 			helper.setTo(toEmail);
 			helper.setSubject(subject);
 			helper.setText(content, true); // true → HTML 모드
-			helper.setFrom("wjdgus2103@naver.com");
+			helper.setFrom("rladnrms0907@naver.com");
 
 			javaMailSender.send(message);
 
@@ -121,7 +121,7 @@ public class MailServiceImpl implements MailService {
 			helper.setTo(toEmail);
 			helper.setSubject(subject);
 			helper.setText(content, true); // HTML 모드
-			helper.setFrom("wjdgus2103@naver.com");
+			helper.setFrom("rladnrms0907@naver.com");
 
 			javaMailSender.send(message);
 
@@ -190,7 +190,7 @@ public class MailServiceImpl implements MailService {
 			helper.setTo(toEmail);
 			helper.setSubject(subject);
 			helper.setText(content, true); // HTML 모드
-			helper.setFrom("wjdgus2103@naver.com");
+			helper.setFrom("rladnrms0907@naver.com");
 
 			javaMailSender.send(message);
 

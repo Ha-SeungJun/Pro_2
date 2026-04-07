@@ -45,13 +45,13 @@ const EstimateListComponent = () => {
         return;
       }
 
-      // // 차주가 아니면(화물주면) 목록만 조회
-      // if (!isDriver) {
-      //   // 화물주는 API 호출 없이 빈 상태 유지 또는 별도 API 호출
-      //   // 현재 getEstimateList는 차주용이라 화물주는 빈 목록 표시
-      //   if (!ignore) setServerData(initState);
-      //   return;
-      // }
+      // 차주가 아니면(화물주면) 목록만 조회
+      if (!isDriver) {
+        // 화물주는 API 호출 없이 빈 상태 유지 또는 별도 API 호출
+        // 현재 getEstimateList는 차주용이라 화물주는 빈 목록 표시
+        if (!ignore) setServerData(initState);
+        return;
+      }
 
       try {
         const data = await getEstimateList({ page, size });

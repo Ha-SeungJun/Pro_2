@@ -95,22 +95,66 @@ export default function ResponsiveAppBar() {
   // 로그인 여부
   const isLogin = hasReduxLogin || hasToken;
 
+  // 수정: 현재 사용자 payload 공용 추출
+  const getCurrentPayload = () => {
+    const t = pickToken();
+    if (!t) return {};
+    return decodeJwt(t) || {};
+  };
+
   // 관리자 여부 계산 (Redux.roles 또는 토큰 payload에서)
   const calcIsAdmin = () => {
     const rolesFromRedux = loginState?.roles || loginState?.rolenames || [];
     const rolesArr = Array.isArray(rolesFromRedux) ? rolesFromRedux : [rolesFromRedux].filter(Boolean);
 
-    if (rolesArr.some((r) => String(r).toUpperCase().endsWith('ADMIN'))) return true;
+    if (rolesArr.some((r) => String(r).toUpperCase().endsWith('ADMIN') || String(r).toUpperCase() === 'ROLE_ADMIN')) {
+      return true;
+    }
 
-    const t = pickToken();
-    if (!t) return false;
-
-    const payload = decodeJwt(t) || {};
+    const payload = getCurrentPayload();
     const tokenRoles = payload.roles || payload.rolenames || payload.authorities || [];
     const trArr = Array.isArray(tokenRoles) ? tokenRoles : [tokenRoles].filter(Boolean);
-    return trArr.some((r) => String(r).toUpperCase() === 'ADMIN');
+
+    return trArr.some((r) => {
+      const role = String(r).toUpperCase();
+      return role.endsWith('ADMIN') || role === 'ROLE_ADMIN';
+    });
   };
   const isAdmin = calcIsAdmin();
+
+  // 수정: 차주 여부 계산
+  const calcIsDriver = () => {
+    const rolesFromRedux = loginState?.roles || loginState?.rolenames || [];
+    const rolesArr = Array.isArray(rolesFromRedux) ? rolesFromRedux : [rolesFromRedux].filter(Boolean);
+
+    if (
+      rolesArr.some((r) => {
+        const role = String(r).toUpperCase();
+        return role.endsWith('DRIVER') || role === 'ROLE_DRIVER';
+      })
+    ) {
+      return true;
+    }
+
+    const payload = getCurrentPayload();
+    if (payload?.cargoId) return true;
+
+    const tokenRoles = payload.roles || payload.rolenames || payload.authorities || [];
+    const trArr = Array.isArray(tokenRoles) ? tokenRoles : [tokenRoles].filter(Boolean);
+
+    return trArr.some((r) => {
+      const role = String(r).toUpperCase();
+      return role.endsWith('DRIVER') || role === 'ROLE_DRIVER';
+    });
+  };
+
+  const isDriver = calcIsDriver();
+
+  // 수정: 인증 헤더 공용 함수
+  const getAuthHeaders = () => {
+    const token = pickToken();
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
 
   // ✅ 1) 앱 로드 시: accessToken 없고 refreshToken(로컬 저장)만 있을 때 JSON POST 리프레시
   React.useEffect(() => {
@@ -184,7 +228,6 @@ export default function ResponsiveAppBar() {
   const [anchorElNav, setAnchorElNav] = React.useState(null);
   const [anchorElUser, setAnchorElUser] = React.useState(null);
 
-
   const handleOpenNavMenu = (e) => setAnchorElNav(e.currentTarget);
   const handleOpenUserMenu = (e) => setAnchorElUser(e.currentTarget);
   const handleCloseNavMenu = () => setAnchorElNav(null);
@@ -213,6 +256,96 @@ export default function ResponsiveAppBar() {
 
   const currentSettings = isAdmin ? settingsAdmin : settings;
 
+  // 수정: 주문내역 존재 여부 확인 후 이동
+  const handleOrderSummaryMove = async () => {
+    handleCloseUserMenu();
+
+    try {
+      if (isDriver) {
+        // 수정: 차주는 결제된 배송 목록 확인
+        const res = await axios.get(`${API_BASE}/g2i4/owner/deliveries/paid`, {
+          params: { page: 1, size: 1 },
+          headers: getAuthHeaders(),
+        });
+
+        const data = res.data;
+        const hasData =
+          Array.isArray(data) ? data.length > 0 :
+            Array.isArray(data?.dtoList) ? data.dtoList.length > 0 :
+              Array.isArray(data?.content) ? data.content.length > 0 :
+                false;
+
+        if (hasData) {
+          navigate('/mypage/order-summary');
+        } else {
+          // 수정: 차주 문구 디테일 변경
+          alert('주문받은 내역이 없습니다.');
+          navigate('/mypage');
+        }
+        return;
+      }
+
+      // 수정: 화주는 결제된 주문/견적 목록 확인
+      const res = await axios.get(`${API_BASE}/g2i4/estimate/subpath/paidlist`, {
+        params: { page: 1, size: 1 },
+        headers: getAuthHeaders(),
+      });
+
+      const data = res.data;
+      const hasData =
+        Array.isArray(data) ? data.length > 0 :
+          Array.isArray(data?.dtoList) ? data.dtoList.length > 0 :
+            Array.isArray(data?.content) ? data.content.length > 0 :
+              false;
+
+      if (hasData) {
+        navigate('/mypage/order-summary');
+      } else {
+        alert('주문한 내역이 없습니다.');
+        navigate('/mypage');
+      }
+    } catch (e) {
+      console.error('주문내역 확인 중 오류:', e);
+      alert('주문내역 확인 중 오류가 발생했습니다.');
+      navigate('/mypage');
+    }
+  };
+
+  // 수정: 배송상태 클릭 시 화주/차주 각각 원하는 배송 관리 화면으로 이동
+  const handleDeliveryStatusMove = () => {
+    handleCloseUserMenu();
+
+    if (isDriver) {
+      // 수정: 차주는 "차주 배송 관리" 화면으로 이동
+      navigate('/mypage/delivery');
+    } else {
+      // 수정: 화주는 기존 그대로 유지
+      navigate('/mypage/deliverycargo');
+    }
+  };
+
+  // 수정: 일반 사용자 메뉴 클릭 분기
+  const handleUserMenuClick = async (label, path) => {
+    if (label === '마이페이지') {
+      handleCloseUserMenu();
+      navigate('/mypage');
+      return;
+    }
+
+    if (label === '주문내역 확인') {
+      await handleOrderSummaryMove();
+      return;
+    }
+
+    if (label === '배송상태') {
+      await handleDeliveryStatusMove();
+      return;
+    }
+
+    handleCloseUserMenu();
+    navigate(path);
+  };
+
   return (
     <AppBar position="static" sx={{ zIndex: (t) => t.zIndex.drawer + 1, bgcolor: '#299AF0' }}>
       <Container maxWidth="xl">
@@ -233,7 +366,7 @@ export default function ResponsiveAppBar() {
               textDecoration: 'none',
             }}
           >
-            <img src="/image/logo/2b24f6f6-4fd6-4a5d-a19c-74b8feb9a7ab.png" alt="Logo" style={{ height: 100,width:130 ,transform: 'scaleX(-1)' }} />
+            <img src="/image/logo/2b24f6f6-4fd6-4a5d-a19c-74b8feb9a7ab.png" alt="Logo" style={{ height: 100, width: 130, transform: 'scaleX(-1)' }} />
           </Typography>
 
           {/* 모바일 메뉴 버튼 */}
@@ -283,7 +416,7 @@ export default function ResponsiveAppBar() {
               textDecoration: 'none',
             }}
           >
-            <img src="/image/logo/2b24f6f6-4fd6-4a5d-a19c-74b8feb9a7ab.png" alt="Logo" style={{ height: 60, width:90 ,transform: 'scaleX(-1)' }} />
+            <img src="/image/logo/2b24f6f6-4fd6-4a5d-a19c-74b8feb9a7ab.png" alt="Logo" style={{ height: 60, width: 90, transform: 'scaleX(-1)' }} />
           </Typography>
 
           {/* 데스크톱 메뉴 */}
@@ -299,7 +432,7 @@ export default function ResponsiveAppBar() {
                 {page.label}
               </Button>
             ))}
-  
+
           </Box>
           {/* 우측 사용자 영역 */}
           {isLogin ? (
@@ -337,8 +470,18 @@ export default function ResponsiveAppBar() {
                       </MenuItem>
                     );
                   }
+
+                  // 수정: 관리자 메뉴는 기존 그대로, 일반 사용자는 클릭 시 분기 처리
+                  if (isAdmin) {
+                    return (
+                      <MenuItem key={s.label} onClick={handleCloseUserMenu} component={Link} to={s.path}>
+                        <Typography sx={{ textAlign: 'center' }}>{s.label}</Typography>
+                      </MenuItem>
+                    );
+                  }
+
                   return (
-                    <MenuItem key={s.label} onClick={handleCloseUserMenu} component={Link} to={s.path}>
+                    <MenuItem key={s.label} onClick={() => handleUserMenuClick(s.label, s.path)}>
                       <Typography sx={{ textAlign: 'center' }}>{s.label}</Typography>
                     </MenuItem>
                   );
@@ -357,9 +500,6 @@ export default function ResponsiveAppBar() {
           )}
         </Toolbar>
       </Container>
-
-    
-
     </AppBar>
   );
 }

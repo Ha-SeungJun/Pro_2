@@ -41,8 +41,24 @@ const OrderPaymentSelect = ({ serverData, orderSheet }) => {
             alert("받는분 이름을 입력해주세요");
             return;
         }
-        if (String(orderSheet.phone ?? "").trim() === "") {
-            alert("받는분 전화번호을 입력해주세요");
+
+        // 전화번호 검증 ( 문자 포함 여부 및 길이 체크 ) 
+        const phoneValue = String(orderSheet.phone ?? "").trim();
+
+        // 문자가 포함되러있는지 검사 
+        const hasNonNumeric = /[^0-9]/.test(phoneValue);
+
+        if(phoneValue ===""){
+            alert("받는분 전화번호를 입력해주세요");
+            return;
+        }
+        if(hasNonNumeric) {
+            alert("전화번호는 숫자만 입력 가능합니다.");
+            return;
+        }
+
+        if(phoneValue.length < 10){
+            alert("전화번호 형식이 올바르지 않습니다. (최소 10자 이상)");
             return;
         }
         if (String(orderSheet.addresseeEmail ?? "").trim() === "") {

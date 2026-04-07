@@ -1,22 +1,16 @@
+// src/pages/admin/FeesExtra.jsx
 import React, { useEffect, useState, useCallback } from "react";
-import {
-  Box, Typography, CircularProgress, Button, TextField,
-  IconButton, Stack, Alert
-} from "@mui/material";
+import { Box, Typography, CircularProgress, Button, TextField, IconButton, Stack, Alert } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
-import {
-  fetchFeesExtraFull,
-  saveFeeExtraCell,
-  addExtraRow,
-  deleteExtraRow,
-} from "../../../api/adminApi/adminApi";
+import { fetchFeesExtraFull, saveFeeExtraCell, addExtraRow, deleteExtraRow } from "../../../api/adminApi/adminApi";
 
 const thStyle = { border: "1px solid #ccc", padding: "8px", textAlign: "center", backgroundColor: "#f5f5f5" };
 const tdStyle = { border: "1px solid #ccc", padding: "4px", textAlign: "center" };
-const inputStyle = { width: "100px", textAlign: "center", padding: "4px", border: "1px solid #ddd", borderRadius: "4px" };
+const inputStyle = { width: "150px", textAlign: "center", padding: "4px", border: "1px solid #ddd", borderRadius: "4px" };
 
 const FeesExtra = () => {
   const [loading, setLoading] = useState(false);
+
   return (
     <Box flexGrow={1} p={4}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
@@ -27,13 +21,14 @@ const FeesExtra = () => {
           <CircularProgress />
         </Box>
       ) : (
-        <FeesExtraTable />
+        /* 부모의 setLoading을 자식에게 전달 */
+        <FeesExtraTable setLoading={setLoading} />
       )}
     </Box>
   );
 };
 
-const FeesExtraTable = () => {
+const FeesExtraTable = ({ setLoading }) => {
   const [columns, setColumns] = useState(["추가요금"]);
   const [rows, setRows] = useState([]);
   const [grid, setGrid] = useState([]);
@@ -49,9 +44,8 @@ const FeesExtraTable = () => {
       setColumns(Array.isArray(data.columns) ? data.columns : ["추가요금"]);
       setGrid(Array.isArray(data.grid) ? data.grid : []);
     } catch (e) {
-      console.error("[extra/full] failed:", e?.response?.status, e?.response?.data || e.message);
+      console.error("[extra/full] failed:", e);
       setError("추가요금 데이터를 불러오지 못했습니다.");
-      setRows([]); setGrid([]);
     }
   }, []);
 
@@ -66,18 +60,31 @@ const FeesExtraTable = () => {
     });
   };
 
-  const handleSave = async (rowIdx, colIdx) => {
+  const handleSaveAll = async () => {
+    if (!rows || rows.length === 0) return;
+    if (!window.confirm("모든 추가요금 변경사항을 일괄 저장하시겠습니까?")) return;
+    
+    setLoading(true);
+
     try {
-      await saveFeeExtraCell({
-        category: rows[rowIdx],
-        distance: columns[colIdx],
-        price: Number(grid[rowIdx]?.[colIdx] || 0),
-      });
+      for (let i = 0; i < rows.length; i++) {
+        // [7급 전산직 실무 정석] DTO 필드명과 100% 동기화
+        const payload = {
+          extraChargeTitle: String(rows[i] || "").trim(), // FeesExtraDTO의 extraChargeTitle
+          extraCharge: Number(grid[i]?.[0]) || 0,        // FeesExtraDTO의 extraCharge
+        };
+
+        console.log(`[전송 데이터 확인]:`, payload);
+        await saveFeeExtraCell(payload); 
+      }
+
       await fetchFull();
-      alert("저장 성공");
+      alert("추가요금표가 완벽하게 저장되었습니다!");
     } catch (e) {
-      console.error("[save extra] failed:", e?.response?.status, e?.response?.data || e.message);
-      alert("저장 실패");
+      console.error("400 에러 상세:", e.response?.data);
+      alert("저장 실패 (400): 필드명이 extraChargeTitle과 extraCharge인지 확인하세요.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -88,10 +95,7 @@ const FeesExtraTable = () => {
       await addExtraRow(name);
       setNewRow("");
       await fetchFull();
-    } catch (e) {
-      console.error("[add extra row] failed:", e?.response?.status, e?.response?.data || e.message);
-      alert("행 추가 실패");
-    }
+    } catch (e) { alert("행 추가 실패"); }
   };
 
   const onDeleteRow = async (name) => {
@@ -99,12 +103,9 @@ const FeesExtraTable = () => {
     if (!key) return;
     if (!window.confirm(`'${key}' 행을 삭제하시겠습니까?`)) return;
     try {
-      await deleteExtraRow(key); // 쿼리스트링 방식 (title 파라미터)
+      await deleteExtraRow(key);
       await fetchFull();
-    } catch (e) {
-      console.error("[delete extra row] failed:", e?.response?.status, e?.response?.data || e.message);
-      alert("행 삭제 실패");
-    }
+    } catch (e) { alert("행 삭제 실패"); }
   };
 
   return (
@@ -112,13 +113,8 @@ const FeesExtraTable = () => {
       {error && <Alert severity="error" sx={{ mb:2 }}>{error}</Alert>}
 
       <Stack direction="row" spacing={1} alignItems="center" mb={2}>
-        <TextField
-          size="small"
-          placeholder="새 항목 (예: 파손주의)"
-          value={newRow}
-          onChange={(e)=>setNewRow(e.target.value)}
-          sx={{ width: 240 }}
-        />
+        <TextField size="small" placeholder="새 항목 (예: 파손주의)" value={newRow}
+                   onChange={(e)=>setNewRow(e.target.value)} sx={{ width: 240 }} />
         <Button variant="contained" onClick={onAddRow}>행 추가</Button>
       </Stack>
 
@@ -126,17 +122,15 @@ const FeesExtraTable = () => {
         <thead>
           <tr>
             <th style={thStyle}>항목</th>
-            {(Array.isArray(columns) ? columns : []).map((col, idx) => (
-              <th key={idx} style={thStyle}>{col}</th>
-            ))}
+            {columns.map((col, idx) => <th key={idx} style={thStyle}>{col}</th>)}
             <th style={thStyle}>삭제</th>
           </tr>
         </thead>
         <tbody>
-          {(Array.isArray(rows) ? rows : []).map((rowLabel, rowIdx) => (
+          {rows.map((rowLabel, rowIdx) => (
             <tr key={rowLabel}>
               <th style={thStyle}>{rowLabel}</th>
-              {(Array.isArray(columns) ? columns : []).map((_, colIdx) => (
+              {columns.map((_, colIdx) => (
                 <td key={`${rowLabel}-${colIdx}`} style={tdStyle}>
                   <input
                     type="text"
@@ -144,14 +138,6 @@ const FeesExtraTable = () => {
                     onChange={(e)=>handleChange(rowIdx, colIdx, e.target.value)}
                     style={inputStyle}
                   />
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={()=>handleSave(rowIdx, colIdx)}
-                    style={{ marginLeft: 8 }}
-                  >
-                    저장
-                  </Button>
                 </td>
               ))}
               <td style={tdStyle}>
@@ -161,11 +147,21 @@ const FeesExtraTable = () => {
               </td>
             </tr>
           ))}
-          {(Array.isArray(rows) ? rows : []).length === 0 && (
-            <tr><td colSpan={(columns?.length ?? 1) + 2} style={tdStyle}>행이 없습니다.</td></tr>
-          )}
         </tbody>
       </table>
+
+      {/* 표 하단 통합 저장 버튼 */}
+      <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+        <Button 
+          variant="contained" 
+          color="success" 
+          size="large"
+          onClick={handleSaveAll}
+          sx={{ width: 300, fontWeight: 700, fontSize: "1.1rem" }}
+        >
+          전체 요금 변경사항 저장하기
+        </Button>
+      </Box>
     </div>
   );
 };

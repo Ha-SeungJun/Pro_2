@@ -1,6 +1,7 @@
 package com.giproject.controller.fees;
 
 import com.giproject.dto.fees.FeesBasicDTO;
+import com.giproject.dto.fees.FeesExtraDTO;
 import com.giproject.entity.fees.FeesBasic;
 import com.giproject.entity.fees.FeesExtra;
 import com.giproject.repository.fees.FeesBasicRepository;
@@ -122,40 +123,54 @@ public class FeesAdminController {
 
 	// ===== 셀 저장 =====
 	@PostMapping("/basic")
-	@Transactional
-	public ResponseEntity<Void> upsertBasic(@RequestBody SaveRequest req) {
-		String weight = trim(req.getCategory());
-		String col = trim(req.getDistance());
-		long price = req.getPrice();
-		if (weight.isEmpty() || !BASIC_COLS.contains(col) || price < 0)
-			return ResponseEntity.badRequest().build();
+    @Transactional
+    public ResponseEntity<Void> upsertBasic(@RequestBody FeesBasicDTO dto) {
+        // 1. 값 검증 (DTO의 필드들을 직접 확인)
+        String weight = trim(dto.getWeight());
+        if (weight.isEmpty() || dto.getRatePerKm() == null || dto.getInitialCharge() == null) {
+            return ResponseEntity.badRequest().build();
+        }
 
-		FeesBasic row = feesBasicRepository.findByWeight(weight).orElseGet(() -> FeesBasic.builder().weight(weight)
-				.ratePerKm(BigDecimal.ZERO).initialCharge(BigDecimal.ZERO).build());
-		if ("거리별 요금".equals(col))
-			row.setRatePerKm(BigDecimal.valueOf(price));
-		else
-			row.setInitialCharge(BigDecimal.valueOf(price));
-		row.setUpdatedAt(LocalDateTime.now());
-		feesBasicRepository.save(row);
-		return ResponseEntity.ok().build();
-	}
+        // 2. 엔티티 조회 또는 생성 (기존 로직 기반)
+        FeesBasic row = feesBasicRepository.findByWeight(weight)
+                .orElseGet(() -> FeesBasic.builder()
+                        .weight(weight)
+                        .cargoName(dto.getCargoName() != null ? dto.getCargoName() : "미지정")
+                        .build());
+
+        // 3. 한 번에 모든 필드 업데이트 (원자성 보장)
+        row.setRatePerKm(dto.getRatePerKm());
+        row.setInitialCharge(dto.getInitialCharge());
+        row.setUpdatedAt(LocalDateTime.now());
+
+        feesBasicRepository.save(row);
+        return ResponseEntity.ok().build();
+    }
 
 	@PostMapping("/extra")
 	@Transactional
-	public ResponseEntity<Void> upsertExtra(@RequestBody SaveRequest req) {
-		String title = trim(req.getCategory());
-		String col = trim(req.getDistance());
-		long price = req.getPrice();
-		if (title.isEmpty() || !EXTRA_COLS.contains(col) || price < 0)
-			return ResponseEntity.badRequest().build();
+	public ResponseEntity<Void> upsertExtra(@RequestBody FeesExtraDTO dto) {
+	    // 1. 데이터 검증 (7급 전산직 실무: Validation)
+	    String title = (dto.getExtraChargeTitle() != null) ? dto.getExtraChargeTitle().trim() : "";
+	    BigDecimal price = dto.getExtraCharge();
 
-		FeesExtra row = feesExtraRepository.findByExtraChargeTitle(title)
-				.orElseGet(() -> FeesExtra.builder().extraChargeTitle(title).extraCharge(BigDecimal.ZERO).build());
-		row.setExtraCharge(BigDecimal.valueOf(price));
-		row.setUpdatedAt(LocalDateTime.now());
-		feesExtraRepository.save(row);
-		return ResponseEntity.ok().build();
+	    if (title.isEmpty() || price == null) {
+	        return ResponseEntity.badRequest().build(); // 여기서 400 뜰 수 있음
+	    }
+
+	    // 2. 유니크 키(Title)로 기존 데이터 조회 (Upsert 로직)
+	    FeesExtra row = feesExtraRepository.findByExtraChargeTitle(title)
+	            .orElse(new FeesExtra()); // 없으면 새로 생성
+
+	    // 3. 값 세팅
+	    row.setExtraChargeTitle(title);
+	    row.setExtraCharge(price);
+	    row.setUpdatedAt(LocalDateTime.now());
+
+	    // 4. 저장 (JPA가 ID 유무에 따라 Insert/Update 자동 결정)
+	    feesExtraRepository.save(row);
+
+	    return ResponseEntity.ok().build();
 	}
 
 	// ===== 행 추가 =====
@@ -208,13 +223,7 @@ public class FeesAdminController {
 		return ResponseEntity.noContent().build();
 	}
 
-	@Getter
-	@Setter
-	public static class SaveRequest {
-		private String category;
-		private String distance;
-		private long price;
-	}
+	
 
 	@Getter
 	@Setter

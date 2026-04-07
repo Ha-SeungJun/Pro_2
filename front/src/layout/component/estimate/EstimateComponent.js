@@ -9,7 +9,6 @@ import {
   DialogContent,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
-import TmapViewer from "./KakaoMapViewer";
 import { DateTimePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import dayjs from "dayjs";
@@ -20,7 +19,7 @@ import { calculateDistanceBetweenAddresses } from "../common/calculateDistanceBe
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { useRef } from "react";
-
+import { isCurrentUserAdmin } from "../../../utils/jwtUtils";
 
 
 const tomorrowStart = dayjs().add(1, "day").hour(9).minute(0).second(0).millisecond(0);
@@ -62,6 +61,8 @@ const EstimateComponent = () => {
   const navigate = useNavigate();
   const { roles, email } = useSelector(state => state.login);
   const authChecked = useRef(false);
+  const isAdmin = isCurrentUserAdmin();
+
 
   useEffect(() => {
     if (authChecked.current) {
@@ -69,7 +70,7 @@ const EstimateComponent = () => {
     }
 
     const isShipper = roles.includes("ROLE_SHIPPER");
-    const isAdmin = roles.includes("ROLE_ADMIN");
+
 
     if (!email || (!isShipper && !isAdmin)) {
       authChecked.current = true;
@@ -144,6 +145,7 @@ const EstimateComponent = () => {
       setEstimate(prev => ({ ...prev, distanceKm: km }));
     } catch (err) {
       alert("거리 계산 중 문제가 발생했습니다. 주소를 다시 확인해주세요.");
+      
     }
   };
 
@@ -213,6 +215,7 @@ const EstimateComponent = () => {
   const isBeforeMinDateTime = (date) => {
     return date.isBefore(tomorrow.startOf('day'));
   };
+
   return (
     <Box sx={{ px: 2, py: 4 }}>
       <Typography variant="h5" fontWeight="bold" align="center" mb={5}>
@@ -238,7 +241,9 @@ const EstimateComponent = () => {
             mx: 'auto'
           }}
         >
+          
           <TextField
+          
             placeholder="출발지 주소"
             name="startAddress"
             value={estimate.startAddress}
@@ -258,6 +263,7 @@ const EstimateComponent = () => {
           />
 
           <TextField
+          
             placeholder="도착지 주소"
             name="endAddress"
             value={estimate.endAddress}
@@ -332,6 +338,7 @@ const EstimateComponent = () => {
                   setEstimate(prev => ({ ...prev, startTime: newTime }))
                 }}
                 format="YYYY년 MM월 DD일 A hh:mm"
+                closeOnSelect={false}
                 renderInput={(params) => <TextField {...params} fullWidth />}
               />
 
@@ -407,8 +414,21 @@ const EstimateComponent = () => {
               }}
             >
               {showMap ? (
-                <KakaoMapViewer startAddress={estimate.startAddress} endAddress={estimate.endAddress} />
-              ) : (
+                <KakaoMapViewer
+                  startAddress={estimate.startAddress}
+                  endAddress={estimate.endAddress}
+
+                  onAddressSelect={(_, addr) => {
+                    setEstimate(prev => {
+                      if (!prev.startAddress) {
+                        return { ...prev, startAddress: addr };
+                      }
+                      else {
+                        return { ...prev, endAddress: addr };
+                      }
+                    });
+                  }}
+                />) : (
                 <Stack spacing={2}>
                   <Typography>기본 요금: {baseCost.toLocaleString()}원</Typography>
                   <Typography>거리 요금: {distanceCost.toLocaleString()}원</Typography>
@@ -434,7 +454,12 @@ const EstimateComponent = () => {
         {/* <Button variant="contained" sx={{ minWidth: 100 }} onClick={handleClickSave}>
           임시 저장
         </Button> */}
-        <Button variant="contained" sx={{ minWidth: 100 }} onClick={handleClickEstimateSend}>
+        <Button
+          variant="contained"
+          sx={{ minWidth: 100 }}
+          onClick={handleClickEstimateSend}
+          disabled={isAdmin}
+        >
           견적서 제출
         </Button>
         <Button variant="contained" sx={{ minWidth: 100 }} onClick={handleClickCancel}>
@@ -494,9 +519,11 @@ const EstimateComponent = () => {
             아니요
           </Button>
 
+
         </DialogActions>
       </Dialog>
     </Box>
+
   );
 }
 export default EstimateComponent;

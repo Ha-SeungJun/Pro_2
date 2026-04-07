@@ -15,8 +15,14 @@ import useCustomMove from "../../../hooks/useCustomMove";
 import { calculateDistanceBetweenAddresses } from "../common/calculateDistanceBetweenAddresses";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
+import { isCurrentUserAdmin } from "../../../utils/jwtUtils";
+
+import { getCurrentUserInfo } from "../../../utils/jwtUtils";
+
 
 const tomorrowStart = dayjs().add(1, "day").hour(9).minute(0).second(0).millisecond(0);
+
+
 
 const initState = {
     startAddress: "",
@@ -48,11 +54,12 @@ const EstimateComponentCombined = () => {
     const navigate = useNavigate();
     const { roles, email } = useSelector((state) => state.login);
     const authChecked = useRef(false);
+    const isAdmin = isCurrentUserAdmin;
 
     useEffect(() => {
         if (authChecked.current) return;
         const isShipper = roles.includes("ROLE_SHIPPER");
-        const isAdmin = roles.includes("ROLE_ADMIN");
+
         if (!email || (!isShipper && !isAdmin)) {
             authChecked.current = true;
             alert("일반회원만 주문이 가능합니다.");
@@ -192,6 +199,7 @@ const EstimateComponentCombined = () => {
                                 shouldDisableTime={(value, clockType) => clockType === "hours" && isInvalidHour(value)}
                                 onChange={(newTime) => setEstimate((prev) => ({ ...prev, startTime: newTime }))}
                                 format="YYYY년 MM월 DD일 A hh:mm"
+                                closeOnSelect={false}
                                 renderInput={(params) => <TextField {...params} fullWidth />}
                             />
                         </LocalizationProvider>
@@ -252,7 +260,14 @@ const EstimateComponentCombined = () => {
                             <KakaoMapViewer
                                 startAddress={estimate.startAddress}
                                 endAddress={estimate.endAddress}
+                                onAddressSelect={(type, addr) => {
+                                    setEstimate(prev => ({
+                                        ...prev,
+                                        [`${type}Address`]: addr
+                                    }));
+                                }}
                             />
+
                         </Box>
                     </Stack>
                 </Box>
@@ -261,7 +276,9 @@ const EstimateComponentCombined = () => {
 
             {/* 버튼 */}
             <Stack direction="row" spacing={2} mt={5} justifyContent="center">
-                <Button variant="contained" sx={{ minWidth: 100 }} onClick={() => setOpenEstimateSend(true)}>
+                <Button variant="contained" sx={{ minWidth: 100 }} onClick={() => setOpenEstimateSend(true)}
+                    disabled={isAdmin === true}
+                >
                     견적서 제출
                 </Button>
                 <Button variant="contained" sx={{ minWidth: 100 }} onClick={() => setOpenCancelDialog(true)}>
@@ -296,5 +313,6 @@ const EstimateComponentCombined = () => {
         </Box>
     );
 };
+
 
 export default EstimateComponentCombined;

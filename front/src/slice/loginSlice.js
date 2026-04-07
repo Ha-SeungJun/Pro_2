@@ -21,21 +21,15 @@ const normalizeProfileUrl = (v) => {
     return `${API_BASE}/g2i4/uploads/user_profile/${encodeURIComponent(v)}`;
 };
 
-// 초기 상태 (기존 필드 유지 + 상태/토큰 필드 + ✅socialPrefill 추가)
 const initState = {
     email: "",
-    roles: ["USER"],
+    roles: [], 
     profileImage: "",
     memberId: null,
-
-    status: "idle",      // 'idle' | 'loading' | 'succeeded' | 'failed'
-    error: null,         // 에러 메시지
-    tokens: null,        // { tokenType, accessToken, refreshToken, expiresIn }
-
-    // ✅ 소셜 프리필 (임시 데이터: 소셜→회원가입 페이지에서만 사용)
-    //   - localStorage에 저장하지 말 것!
-    //   - 필요 시 TTL(기본 5분) 만료 검사해서 자동 삭제
-    socialPrefill: null, // { email: string, name: string, expiresAt: number } | null
+    status: "idle",
+    error: null,
+    tokens: null,
+    socialPrefill: null,
 };
 
 // ✅ 로그인 API 호출 (정규화해서 loginId/password 추출)

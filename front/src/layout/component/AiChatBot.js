@@ -1,9 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import Draggable from 'react-draggable';
 
 const AiChatBot = () => {
     const nodeRef = useRef(null);
+    const scrollRef = useRef(null);
     const [messages, setMessages] = useState([
         { role: 'ai', text: 'G2I4 화물운송 AI 상담원입니다. 무엇을 도와드릴까요?' }
     ]);
@@ -11,6 +12,15 @@ const AiChatBot = () => {
     const [loading, setLoading] = useState(false);
     // 💡 초기값을 false로 두어 처음엔 버튼만 보이게 합니다.
     const [isOpen, setIsOpen] = useState(false);
+
+    useEffect(() => {
+        if (scrollRef.current) {
+            scrollRef.current.scrollTo({
+                top: scrollRef.current.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+    }, [messages]);
 
     const handleSend = async () => {
         if (!input.trim()) return;
@@ -29,11 +39,13 @@ const AiChatBot = () => {
         }
     };
 
+
+
     return (
         <>
             {/* 1. 플로팅 버튼 (창이 닫혀있을 때만 보임) */}
             {!isOpen && (
-                <div 
+                <div
                     onClick={() => setIsOpen(true)}
                     style={{
                         position: 'fixed', bottom: '20px', right: '20px',
@@ -79,7 +91,9 @@ const AiChatBot = () => {
                         </div>
 
                         {/* 메시지 영역 */}
-                        <div style={{ height: '350px', overflowY: 'auto', padding: '15px', backgroundColor: '#f9f9f9', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <div
+                            ref={scrollRef}
+                            style={{ height: '350px', overflowY: 'auto', padding: '15px', backgroundColor: '#f9f9f9', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                             {messages.map((m, i) => (
                                 <div key={i} style={{ alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '80%' }}>
                                     <div style={{ padding: '10px', borderRadius: '10px', backgroundColor: m.role === 'user' ? '#0056b3' : '#e9ecef', color: m.role === 'user' ? 'white' : '#333', fontSize: '14px', lineHeight: '1.4', wordBreak: 'break-word' }}>

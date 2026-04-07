@@ -28,6 +28,7 @@ import lombok.ToString;
 @Entity
 @Table(name = "Estimate")
 @Getter
+@Setter
 @ToString
 @Builder
 @AllArgsConstructor
@@ -40,6 +41,10 @@ public class Estimate {
 	
 	private String startAddress;
 	private String endAddress;
+	private Double startLat;
+	private Double startLng;
+	private Double endLat;
+	private Double endLng;
 	private double distanceKm;
 	private String cargoWeight;
 	private String cargoType;

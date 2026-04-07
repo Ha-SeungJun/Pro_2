@@ -24,6 +24,7 @@ public interface FeesBasicService {
                 .initialCharge(entity.getInitialCharge())
                 .updatedAt(entity.getUpdatedAt())
                 .cargoImage(entity.getCargoImage())
+                .cargoName(entity.getCargoName())
                 .build();
     }
 
@@ -36,6 +37,7 @@ public interface FeesBasicService {
                 .initialCharge(dto.getInitialCharge())
                 .updatedAt(dto.getUpdatedAt() == null ? LocalDateTime.now() : dto.getUpdatedAt())
                 .cargoImage(dto.getCargoImage())
+                .cargoName(dto.getCargoName())
                 .build();
     }
     

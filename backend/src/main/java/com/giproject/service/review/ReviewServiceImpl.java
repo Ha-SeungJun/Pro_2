@@ -3,9 +3,13 @@ package com.giproject.service.review;
 import java.math.BigDecimal;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.giproject.dto.review.ReviewDTO;
+import com.giproject.dto.review.ReviewSummaryDTO;
 import com.giproject.entity.delivery.Delivery;
 import com.giproject.entity.delivery.DeliveryStatus;
 import com.giproject.entity.review.Review;
@@ -15,6 +19,7 @@ import com.giproject.repository.review.ReviewRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
+@Transactional
 @Service
 @RequiredArgsConstructor
 @Log4j2
@@ -98,4 +103,84 @@ public class ReviewServiceImpl implements ReviewService {
                 .createdAt(review.getCreatedAt())
                 .build();
     }
+
+  //작성자, 관리자만 삭제 가능
+	@Override
+	public void remove(Long reviewNo, String loginId, boolean isAdmin) {
+
+	    Review review = reviewRepository.findById(reviewNo)
+	            .orElseThrow(() -> new IllegalStateException("삭제할 리뷰가 존재하지 않습니다."));
+
+	    if (isAdmin) {
+	        reviewRepository.delete(review);
+	        return;
+	    }
+
+	    String writerMemId = reviewRepository.findWriterMemIdByReviewNo(reviewNo)
+	            .orElseThrow(() -> new IllegalStateException("리뷰 작성자 정보를 찾을 수 없습니다."));
+
+	    if (!writerMemId.equals(loginId)) {
+	        throw new IllegalStateException("본인이 작성한 리뷰만 삭제할 수 있습니다.");
+	    }
+
+	    reviewRepository.delete(review);
+	}
+
+    @Override
+    public void modify(Long reviewNo, ReviewDTO reviewDTO, String loginId) {
+
+        Review review = reviewRepository.findById(reviewNo)
+                .orElseThrow(() -> new IllegalStateException("수정할 리뷰가 존재하지 않습니다."));
+
+        String writerMemId = reviewRepository.findWriterMemIdByReviewNo(reviewNo)
+                .orElseThrow(() -> new IllegalStateException("리뷰 작성자 정보를 찾을 수 없습니다."));
+
+        if (!writerMemId.equals(loginId)) {
+            throw new IllegalStateException("본인이 작성한 리뷰만 수정할 수 있습니다.");
+        }
+
+        if (reviewDTO.getRating() == null) {
+            throw new IllegalArgumentException("별점은 필수입니다.");
+        }
+
+        validateRating(reviewDTO.getRating());
+
+        review.changeRating(reviewDTO.getRating());
+        review.changeComment(reviewDTO.getComment());
+        
+        reviewRepository.save(review);
+    }
+
+    private void validateRating(BigDecimal rating) {
+        if (rating.compareTo(BigDecimal.ZERO) < 0 ||
+            rating.compareTo(new BigDecimal("5.0")) > 0) {
+            throw new IllegalArgumentException("별점은 0.0 이상 5.0 이하만 가능합니다.");
+        }
+
+        if (rating.remainder(new BigDecimal("0.5")).compareTo(BigDecimal.ZERO) != 0) {
+            throw new IllegalArgumentException("별점은 0.5 단위만 가능합니다.");
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ReviewSummaryDTO getSummaryByCargoId(String cargoId) {
+
+        return reviewRepository.findReviewSummaryByCargoId(cargoId)
+                .orElse(
+                    ReviewSummaryDTO.builder()
+                        .cargoId(cargoId)
+                        .avgRating(0.0)
+                        .reviewCount(0L)
+                        .build()
+                );
+    }
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ReviewDTO> getReviewsByCargoId(String cargoId, Pageable pageable) {
+        return reviewRepository.findReviewsByCargoId(cargoId, pageable)
+                .map(this::entityToDTO);
+    }
+
+
 }

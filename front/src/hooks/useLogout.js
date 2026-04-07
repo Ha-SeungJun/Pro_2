@@ -7,7 +7,7 @@ export default function useLogout() {
 
     const logout = useCallback(async (redirectTo = '/login') => {
         const API_BASE =
-            import.meta?.env?.VITE_API_BASE ||
+            process.env.REACT_APP_API_BASE ||
             process.env.REACT_APP_API_BASE ||
             'http://localhost:8080';
 

@@ -10,6 +10,7 @@ const inputStyle = { width: "100px", textAlign: "center", padding: "4px", border
 
 const FeesBasic = () => {
   const [loading, setLoading] = useState(false);
+
   return (
     <Box flexGrow={1} p={4}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
@@ -20,30 +21,20 @@ const FeesBasic = () => {
           <CircularProgress />
         </Box>
       ) : (
-        <FeesBasicTable />
+        /* 1. [수정] 자식에게 setLoading 함수를 props로 전달합니다 */
+        <FeesBasicTable setLoading={setLoading} />
       )}
     </Box>
   );
 };
 
-const FeesBasicTable = () => {
-  const [columns, setColumns] = useState(["거리별 요금","기본 요금"]); // fallback
+/* 2. [수정] 자식 컴포넌트 매개변수에서 { setLoading }을 구조 분해 할당으로 받습니다 */
+const FeesBasicTable = ({ setLoading }) => {
+  const [columns, setColumns] = useState(["거리별 요금", "기본 요금"]);
   const [rows, setRows] = useState([]);
   const [grid, setGrid] = useState([]);
   const [newRow, setNewRow] = useState("");
   const [error, setError] = useState("");
-
-    const [vehicles, setVehicles] = useState([]);
-    const [open, setOpen] = useState(false);
-    const [editingIndex, setEditingIndex] = useState(null);
-    const [formData, setFormData] = useState({
-      tno: "",
-      image: null,
-      preview: null
-    });
-  
-
-    
 
   const fetchFull = useCallback(async () => {
     setError("");
@@ -51,18 +42,17 @@ const FeesBasicTable = () => {
       const res = await fetchFeesBasicFull();
       const data = res?.data || {};
       setRows(Array.isArray(data.rows) ? data.rows : []);
-      setColumns(Array.isArray(data.columns) ? data.columns : ["거리별 요금","기본 요금"]);
+      setColumns(Array.isArray(data.columns) ? data.columns : ["거리별 요금", "기본 요금"]);
       setGrid(Array.isArray(data.grid) ? data.grid : []);
     } catch (e) {
-      console.error("[basic/full] failed:", e?.response?.status, e?.response?.data || e.message);
+      console.error("[basic/full] failed:", e);
       setError("요금 데이터를 불러오지 못했습니다.");
-      setRows([]); setGrid([]);
     }
   }, []);
 
   useEffect(() => { fetchFull(); }, [fetchFull]);
 
-  const handleChange = (r,c,v) => {
+  const handleChange = (r, c, v) => {
     setGrid(prev => {
       const next = prev.map(row => [...row]);
       if (!next[r]) next[r] = [];
@@ -71,18 +61,34 @@ const FeesBasicTable = () => {
     });
   };
 
-  const handleSave = async (rowIdx, colIdx) => {
+  const handleSaveAll = async () => {
+    if (!rows || rows.length === 0) return;
+    if (!window.confirm("입력한 모든 요금을 일괄 저장하시겠습니까?")) return;
+
+    setLoading(true);
+
     try {
-      await saveFeeBasicCell({
-        category: rows[rowIdx],
-        distance: columns[colIdx],
-        price: Number(grid[rowIdx]?.[colIdx] || 0),
-      });
+      for (let i = 0; i < rows.length; i++) {
+        // 7급 전산직 실무: 백엔드 FeesBasicDTO 구조와 완벽 일치시킴
+        const payload = {
+          weight: String(rows[i] || "").trim(),    // DTO: String weight
+          ratePerKm: Number(grid[i]?.[0]) || 0,    // DTO: BigDecimal ratePerKm (K 대문자!)
+          initialCharge: Number(grid[i]?.[1]) || 0, // DTO: BigDecimal initialCharge (C 대문자!)
+          cargoName: "미지정"                       // DTO: String cargoName
+        };
+
+        console.log(`[전송 데이터 확인]:`, payload);
+
+        await saveFeeBasicCell(payload);
+      }
+
       await fetchFull();
-      alert("저장 성공");
+      alert("전체 요금표 저장 성공!");
     } catch (e) {
-      console.error("[save basic] failed:", e?.response?.status, e?.response?.data || e.message);
-      alert("저장 실패");
+      console.error(" 400 에러 상세 내용:", e.response?.data);
+      alert(`저장 실패 (400): 서버가 데이터를 거절했습니다.\n콘솔(F12)의 'Network' 탭 응답을 확인해주세요.`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -93,10 +99,7 @@ const FeesBasicTable = () => {
       await addBasicRow(name);
       setNewRow("");
       await fetchFull();
-    } catch (e) {
-      console.error("[add row] failed:", e?.response?.status, e?.response?.data || e.message);
-      alert("행 추가 실패");
-    }
+    } catch (e) { alert("행 추가 실패"); }
   };
 
   const onDeleteRow = async (name) => {
@@ -106,61 +109,61 @@ const FeesBasicTable = () => {
     try {
       await deleteBasicRow(key);
       await fetchFull();
-    } catch (e) {
-      console.error("[delete row] failed:", e?.response?.status, e?.response?.data || e.message);
-      alert("행 삭제 실패");
-    }
+    } catch (e) { alert("행 삭제 실패"); }
   };
 
   return (
-    <div style={{ overflowX:"auto" }}>
-      {error && <Alert severity="error" sx={{ mb:2 }}>{error}</Alert>}
-
+    <div style={{ overflowX: "auto" }}>
+      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
       <Stack direction="row" spacing={1} alignItems="center" mb={2}>
         <TextField size="small" placeholder="새 중량 (예: 7톤)" value={newRow}
-                   onChange={(e)=>setNewRow(e.target.value)} sx={{ width: 200 }} />
+          onChange={(e) => setNewRow(e.target.value)} sx={{ width: 200 }} />
         <Button variant="contained" onClick={onAddRow}>행 추가</Button>
       </Stack>
 
-      <table style={{ borderCollapse:"collapse", width:"100%" }}>
+      <table style={{ borderCollapse: "collapse", width: "100%" }}>
         <thead>
           <tr>
             <th style={thStyle}>중량(톤수)</th>
-            {(Array.isArray(columns) ? columns : []).map((col, idx) => (
-              <th key={idx} style={thStyle}>{col}</th>
-            ))}
+            {columns.map((col, idx) => <th key={idx} style={thStyle}>{col}</th>)}
             <th style={thStyle}>삭제</th>
           </tr>
         </thead>
         <tbody>
-          {(Array.isArray(rows) ? rows : []).map((rowLabel, rowIdx) => (
+          {rows.map((rowLabel, rowIdx) => (
             <tr key={rowLabel}>
               <th style={thStyle}>{rowLabel}</th>
-              {(Array.isArray(columns) ? columns : []).map((_, colIdx) => (
+              {columns.map((_, colIdx) => (
                 <td key={`${rowLabel}-${colIdx}`} style={tdStyle}>
                   <input
                     type="text"
                     value={grid[rowIdx]?.[colIdx] ?? ""}
-                    onChange={(e)=>handleChange(rowIdx, colIdx, e.target.value)}
+                    onChange={(e) => handleChange(rowIdx, colIdx, e.target.value)}
                     style={inputStyle}
                   />
-                  <Button variant="contained" color="primary" onClick={()=>handleSave(rowIdx,colIdx)} style={{ marginLeft: 8 }}>
-                    저장
-                  </Button>
                 </td>
               ))}
               <td style={tdStyle}>
-                <IconButton color="error" onClick={()=>onDeleteRow(rowLabel)}>
+                <IconButton color="error" onClick={() => onDeleteRow(rowLabel)}>
                   <DeleteIcon />
                 </IconButton>
               </td>
             </tr>
           ))}
-          {(Array.isArray(rows) ? rows : []).length === 0 && (
-            <tr><td colSpan={(columns?.length ?? 2) + 2} style={tdStyle}>행이 없습니다.</td></tr>
-          )}
         </tbody>
       </table>
+
+      <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+        <Button
+          variant="contained"
+          color="success"
+          size="large"
+          onClick={handleSaveAll}
+          sx={{ width: 300, fontWeight: 700, fontSize: "1.1rem" }}
+        >
+          전체 요금 변경사항 저장하기
+        </Button>
+      </Box>
     </div>
   );
 };

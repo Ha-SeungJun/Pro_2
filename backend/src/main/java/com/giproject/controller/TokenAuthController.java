@@ -78,27 +78,43 @@ public class TokenAuthController {
                 "accessToken", access,
                 "refreshToken", refresh
             ));
+
         } catch (BadCredentialsException | UsernameNotFoundException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new ApiError("BAD_CREDENTIALS", "아이디 또는 비밀번호가 올바르지 않습니다."));
+
         } catch (LockedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new ApiError("ACCOUNT_LOCKED", e.getMessage()));
+
+        } catch (InternalAuthenticationServiceException e) {
+            Throwable cause = e.getCause();
+
+            if (cause instanceof LockedException locked) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(new ApiError("ACCOUNT_LOCKED", locked.getMessage()));
+            }
+
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(new ApiError("LOCKED", "잠긴 계정입니다. 관리자에게 문의하세요."));
+                    .body(new ApiError("AUTH_FAILED", "로그인에 실패했습니다."));
+
         } catch (DisabledException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new ApiError("DISABLED", "비활성화된 계정입니다. 관리자에게 문의하세요."));
+
         } catch (AccountExpiredException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new ApiError("ACCOUNT_EXPIRED", "계정 사용기간이 만료되었습니다."));
+
         } catch (CredentialsExpiredException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new ApiError("CREDENTIALS_EXPIRED", "비밀번호 사용기간이 만료되었습니다."));
+
         } catch (AuthenticationException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new ApiError("AUTH_FAILED", "로그인에 실패했습니다."));
         }
     }
-
     @Data
     static class LoginReq {
         private String loginId;

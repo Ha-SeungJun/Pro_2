@@ -1,4 +1,3 @@
-// src/main/java/com/giproject/entity/account/UserIndex.java
 package com.giproject.entity.account;
 
 import jakarta.persistence.*;
@@ -13,9 +12,7 @@ import java.time.LocalDateTime;
 @Table(
     name = "user_index",
     uniqueConstraints = {
-        // 이메일 전역 유니크 (MySQL 기본 collation이 CI면 생략 가능)
         @UniqueConstraint(name = "uk_user_index_email", columnNames = "email"),
-        // 같은 소셜 공급자 내에서는 providerId 유니크
         @UniqueConstraint(name = "uk_user_index_provider", columnNames = {"provider", "provider_id"})
     }
 )
@@ -29,17 +26,14 @@ public class UserIndex {
 
     public enum Role { SHIPPER, DRIVER, ADMIN }
 
-    /** 내부 로그인 키(회원가입 시 결정) — PK */
     @Id
     @Column(name = "login_id", length = 50, nullable = false)
     private String loginId;
 
-    /** 최상위 역할 (SHIPPER/DRIVER/ADMIN) */
     @Enumerated(EnumType.STRING)
     @Column(name = "role", length = 20, nullable = false)
     private Role role;
 
-    /** 전역 유니크 이메일 */
     @Column(
         name = "email",
         length = 255,
@@ -48,11 +42,9 @@ public class UserIndex {
     )
     private String email;
 
-    /** 소셜 공급자 (예: GOOGLE/KAKAO/NAVER), 로컬 회원은 null */
     @Column(name = "provider", length = 20)
     private String provider;
 
-    /** 소셜 공급자 내 사용자 식별자 (OIDC sub, Kakao id 등) */
     @Column(name = "provider_id", length = 128)
     private String providerId;
 
@@ -64,12 +56,60 @@ public class UserIndex {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Builder.Default
+    @Column(name = "suspended", nullable = false)
+    private Boolean suspended = Boolean.FALSE;
+
+    @Column(name = "suspend_start_at")
+    private LocalDateTime suspendStartAt;
+
+    @Column(name = "suspend_end_at")
+    private LocalDateTime suspendEndAt;
+
+    @Column(name = "suspend_reason", length = 500)
+    private String suspendReason;
+
     @PrePersist
     @PreUpdate
     void normalize() {
-        if (loginId != null)   loginId   = loginId.trim();
-        if (email != null)     email     = email.trim().toLowerCase();
-        if (provider != null)  provider  = provider.trim().toUpperCase();
+        if (loginId != null) loginId = loginId.trim();
+        if (email != null) email = email.trim().toLowerCase();
+        if (provider != null) provider = provider.trim().toUpperCase();
         if (providerId != null) providerId = providerId.trim();
+        if (suspended == null) suspended = Boolean.FALSE;
+    }
+
+    public void suspend(LocalDateTime startAt, LocalDateTime endAt, String reason) {
+        this.suspended = Boolean.TRUE;
+        this.suspendStartAt = startAt;
+        this.suspendEndAt = endAt;
+        this.suspendReason = reason;
+    }
+
+    public void clearSuspend() {
+        this.suspended = Boolean.FALSE;
+        this.suspendStartAt = null;
+        this.suspendEndAt = null;
+        this.suspendReason = null;
+    }
+
+    public boolean isPermanentSuspension() {
+        return Boolean.TRUE.equals(this.suspended) && this.suspendEndAt == null;
+    }
+
+    public boolean isSuspensionExpired() {
+        return Boolean.TRUE.equals(this.suspended)
+                && this.suspendEndAt != null
+                && LocalDateTime.now().isAfter(this.suspendEndAt);
+    }
+
+    public boolean isCurrentlySuspended() {
+        if (!Boolean.TRUE.equals(this.suspended)) {
+            return false;
+        }
+        if (this.suspendEndAt == null) {
+            return true; // 영구정지
+        }
+        return LocalDateTime.now().isBefore(this.suspendEndAt);
     }
 }

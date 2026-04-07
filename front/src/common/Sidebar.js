@@ -30,7 +30,7 @@ const pickCargoId = (obj) => {
 };
 // ✅ API 베이스 (앱 전반과 동일 규칙)
 const API_BASE =
-  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE) ||
+  process.env.REACT_APP_API_BASE ||
   (typeof process !== 'undefined' && process.env?.REACT_APP_API_BASE) ||
   'http://localhost:8080';
 

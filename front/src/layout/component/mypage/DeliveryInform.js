@@ -5,7 +5,7 @@ import {
   Box, Typography, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, Paper, Divider, Container, Button,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
-  Modal
+  Modal, Rating
 } from '@mui/material';
 import PageComponent from '../common/PageComponent';
 import { useNavigate } from "react-router-dom";
@@ -13,10 +13,12 @@ import { getMyUnpaidEstimateList, getMyPaidEstimateList } from '../../../api/est
 import { simplifyBatch } from "../../../api/addressApi/addressApi";
 import axios from 'axios';
 import ReportComponent from './ReportComponent';
+import { createReview } from '../../../api/reviewApi/reviewApi';
+
 
 // ===== 공통 API 베이스/인스턴스 =====
 const API_BASE =
-  import.meta?.env?.VITE_API_BASE ||
+  process.env.REACT_APP_API_BASE ||
   process.env.REACT_APP_API_BASE ||
   'http://localhost:8080';
 
@@ -190,6 +192,27 @@ const DeliveryInfoPage = () => {
   // 배송 시작 모달
   const [openStartModal, setOpenStartModal] = useState(false);
   const [selectedStartMatchingNo, setSelectedStartMatchingNo] = useState(null);
+
+  //Review Modal State
+  const [openReviewModal, setOpenReviewModal] = useState(false);
+  const [selectedMatchingNoForReview, setSelectedMatchingNoForReview] = useState(null);
+  const [reviewContent, setReviewContent] = useState('');
+  const [reviewScore, setReviewScore] = useState(0);
+
+  //모달 열기 함수 추가
+  const handleReviewClick = (matchingNo) => {
+    console.log("리뷰 대상 matchingNo:", matchingNo);
+    setSelectedMatchingNoForReview(matchingNo);
+    setOpenReviewModal(true);
+  };
+  //모달 닫기 함수 추가
+  const handleCloseReviewModal = () => {
+    setOpenReviewModal(false);
+    setSelectedMatchingNoForReview(null);
+    setReviewContent('');
+    setReviewScore(0);
+  };
+
 
   // Report Modal State
   const [showReportModal, setShowReportModal] = useState(false);
@@ -542,18 +565,28 @@ const DeliveryInfoPage = () => {
 
           {isMember && (
             <TableCell align="center">
-              {matchingNo ? (
-                <Button
-                  size="small"
-                  color="error"
-                  variant="outlined"
-                  onClick={() => handleOpenReportModal(matchingNo)}
-                >
-                  신고
-                </Button>
-              ) : (
-                <Typography variant="body2" color="text.secondary">-</Typography>
-              )}
+              <Box display="flex" gap={1} justifyContent="center">
+                {matchingNo && (
+                  <Button
+                    size="small"
+                    variant="contained"
+                    onClick={() => handleReviewClick(item.matchingNo)}
+                  >
+                    리뷰
+                  </Button>//리뷰 버튼 추가
+                )}
+
+                {matchingNo && (
+                  <Button
+                    size="small"
+                    color="error"
+                    variant="outlined"
+                    onClick={() => handleOpenReportModal(matchingNo)}
+                  >
+                    신고
+                  </Button>
+                )}
+              </Box>
             </TableCell>
           )}
 
@@ -733,6 +766,63 @@ const DeliveryInfoPage = () => {
           />
         </Box>
       </Modal>
+      {/* Review Modal */}
+      <Dialog
+        open={openReviewModal}
+        onClose={handleCloseReviewModal}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>리뷰 작성</DialogTitle>
+        <DialogContent>
+          <Typography gutterBottom sx={{ mt: 2 }}>
+            별점
+          </Typography>
+
+          <Rating
+            value={reviewScore}
+            precision={0.5}
+            onChange={(event, newValue) => setReviewScore(newValue || 0)}
+          />
+          <Typography gutterBottom>
+            선택된 matchingNo: {selectedMatchingNoForReview}
+          </Typography>
+
+          <TextField
+            fullWidth
+            multiline
+            rows={4}
+            label="리뷰 내용"
+            value={reviewContent}
+            onChange={(e) => setReviewContent(e.target.value)}
+            sx={{ mt: 2 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseReviewModal}>닫기</Button>
+
+          <Button
+            onClick={() => {
+              if (reviewScore === 0) {
+                alert("별점을 선택해야 합니다.");
+                return;
+              }
+
+              if (!reviewContent.trim()) {
+                alert("리뷰 내용을 입력해야 합니다.");
+                return;
+              }
+
+              console.log("matchingNo:", selectedMatchingNoForReview);
+              console.log("리뷰 내용:", reviewContent.trim());
+              console.log("별점:", reviewScore);
+            }}
+            variant="contained"
+          >
+            등록
+          </Button>
+        </DialogActions>
+      </Dialog>
 
     </Box>
   );

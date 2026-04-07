@@ -12,7 +12,7 @@ import VisibilityOff from '@mui/icons-material/VisibilityOff';
 
 // =================== 공통 상수/유틸 ===================
 const API_BASE =
-  import.meta?.env?.VITE_API_BASE ||
+  process.env.REACT_APP_API_BASE ||
   process.env.REACT_APP_API_BASE ||
   'http://localhost:8080';
 

@@ -19,7 +19,7 @@ import OrderPaymentSelect from "./OrderPaymentSelect";
 
 // ===== 시안 맞춤 고정 폭 =====
 const LABEL_WIDTH = 120; // 라벨 박스 고정폭 (콜론 맞춤, 우측정렬)
-const NAME_WIDTH = 110; // 주문자/받는분 입력 상자 폭
+const NAME_WIDTH = 150; // 주문자/받는분 입력 상자 폭
 const LONG_INPUT_WIDTH = 620; // 긴 주소/상세주소 폭 (시안 기준 넓은 입력)
 
 const iniState = {
@@ -56,6 +56,26 @@ const OrderComponent = () => {
   const { state } = useLocation();
   const matchingNo = state?.matchingNo;
 
+  // ===== [테스트 자동화 함수] ===== 나중에 주석하기
+  const fillTestData = () => {
+    // 받는분 상세 정보 채우기
+    setOrderSheet(prev => ({
+      ...prev,
+      addressee: "홍길동(테스트)",
+      startRestAddress: "공학관 101호",
+      endRestAddress: "비전관 202호"
+    }));
+    // 휴대전화 번호 분할 상태 채우기 (이제 '1'만 쳐도 됩니다)
+    SetstartPNum("010");
+    SetMddlePNum("1234");
+    SetEndPNum("5678");
+    // 이메일 상태 채우기
+    setEmailLocal("testuser");
+    setEmailDomain("naver.com");
+
+    console.log(" 테스트 데이터가 입력되었습니다!");
+  };
+
   const splitPhone = (raw) => {
     const d = (raw ?? "").replace(/\D/g, "");
     if (!d) return ["", "", ""] //우선 3개의 배열 리턴
@@ -82,9 +102,9 @@ const OrderComponent = () => {
   }, [emailLocal, domainToUse]);
 
   const isValidEmail = useMemo(
-  () => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fullEmail),
-  [fullEmail]
-);
+    () => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fullEmail),
+    [fullEmail]
+  );
 
   const fullPhone = `${startPNum}${middlePNum}${endPNum}`
 
@@ -94,16 +114,16 @@ const OrderComponent = () => {
   }
   useEffect(() => {
     if (matchingNo) {
-      setOrderSheet(prev =>({
+      setOrderSheet(prev => ({
         ...prev,
-        addresseeEmail:fullEmail,
-        phone:fullPhone
+        addresseeEmail: fullEmail,
+        phone: fullPhone
       }));
       postOrderPome(matchingNo)
         .then((data) => setServerdata(data))
         .catch(console.error)
     }
-  }, [matchingNo,setOrderSheet,fullEmail,fullPhone]);
+  }, [matchingNo, setOrderSheet, fullEmail, fullPhone]);
 
   // 금액 상태 (실제 로직 연결 예정)
 
@@ -119,9 +139,30 @@ const OrderComponent = () => {
 
   return (
     <Box sx={{ p: 4, bgcolor: "#fafafa", minHeight: "100vh", pb: 10 }}>
-      <Typography variant="h5" align="center" sx={{ fontWeight: 800, mb: 3 }}>
-        주문서 작성
-      </Typography>
+      {/* 1. 메인 제목과 테스트 버튼을 한 줄에 배치 */}
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 2, mb: 3 }}>
+        <Typography variant="h5" sx={{ fontWeight: 800 }}>
+          주문서 작성
+        </Typography>
+
+        {/* 테스트 데이터 자동 입력 버튼 */}
+        <Button
+          variant="contained"
+          color="secondary"
+          size="small"
+          onClick={fillTestData}
+          sx={{
+            fontWeight: 700,
+            borderRadius: 2,
+            boxShadow: 2,
+            "&:hover": { bgcolor: "#ab47bc" } // 보라색 계열로 강조
+          }}
+        >
+          데이터 자동 채우기 (TEST)
+        </Button>
+      </Box>
+
+      {/* 2. 출발지 정보 섹션 시작 */}
       <Box display="flex" justifyContent="flex-start" sx={{ borderRadius: 3, maxWidth: 800, mx: "auto" }}>
         <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
           출발지 정보 입력
@@ -157,7 +198,13 @@ const OrderComponent = () => {
             <LabelBox text="상세 주소 입력" />
           </Grid>
           <Grid item sx={{ flex: 1, minWidth: 0 }}>
-            <TextField size="small" name="startRestAddress" placeholder="상세 주소" fullWidth onChange={handleChangeOrderSheet} />
+            <TextField size="small" name="startRestAddress" placeholder="상세 주소" fullWidth
+            value={orderSheet.startRestAddress}
+              onChange={(e) => {
+                const val = e.target.value.replace(/[<>{}]/g, "");
+                setOrderSheet(prev => ({ ...prev, startRestAddress: val }));
+              }}
+            />
           </Grid>
         </Grid>
 
@@ -181,12 +228,12 @@ const OrderComponent = () => {
             <LabelBox text="이메일" />
           </Grid>
           <Grid item sx={{ flex: 1, minWidth: 0, display: "flex", gap: 1 }}>
-            <TextField size="small" sx={{ flex: 1, maxWidth:150}} inputProps={{ readOnly: true }}
-              value={(serverData?.ordererEmail??'').split('@')[0]??''}/>
+            <TextField size="small" sx={{ flex: 1, maxWidth: 150 }} inputProps={{ readOnly: true }}
+              value={(serverData?.ordererEmail ?? '').split('@')[0] ?? ''} />
             <Typography variant="h6">@</Typography>
-            <TextField size="small" sx={{ flex: 1 , maxWidth:300}} placeholder="도메인"  value={(serverData?.ordererEmail??'').split('@')[1]??''}
-           inputProps={{ readOnly: true }} />
-        
+            <TextField size="small" sx={{ flex: 1, maxWidth: 300 }} placeholder="도메인" value={(serverData?.ordererEmail ?? '').split('@')[1] ?? ''}
+              inputProps={{ readOnly: true }} />
+
 
           </Grid>
         </Grid>
@@ -206,7 +253,16 @@ const OrderComponent = () => {
             <LabelBox text="받는분" />
           </Grid>
           <Grid item sx={{ flex: "0 0 auto" }}>
-            <TextField size="small" name="addressee" sx={{ width: NAME_WIDTH }} onChange={handleChangeOrderSheet} />
+
+            <TextField size="small" name="addressee" sx={{ width: NAME_WIDTH }}
+              onChange={(e) => {
+                const val = e.target.value.replace(/[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/g, "").slice(0, 20);
+                setOrderSheet(prev => ({ ...prev, addressee: val }));
+              }}
+              value={orderSheet.addressee}
+
+            />
+
           </Grid>
         </Grid>
 
@@ -226,7 +282,13 @@ const OrderComponent = () => {
             <LabelBox text="상세 주소 입력" />
           </Grid>
           <Grid item sx={{ flex: 1, minWidth: 0 }}>
-            <TextField size="small" name="endRestAddress" placeholder="상세 주소" fullWidth onChange={handleChangeOrderSheet} />
+            <TextField size="small" name="endRestAddress" placeholder="상세 주소" fullWidth
+            value={orderSheet.endRestAddress}
+              onChange={(e) => {
+                const val = e.target.value.replace(/[<>{}]/g, "");
+                setOrderSheet(prev => ({ ...prev, endRestAddress: val }));
+              }}
+            />
           </Grid>
         </Grid>
 
@@ -236,17 +298,19 @@ const OrderComponent = () => {
             <LabelBox text="휴대전화" />
           </Grid>
           <Grid item sx={{ flex: 1, minWidth: 0, display: "flex", gap: 1 }}>
-            <TextField size="small" sx={{ width: "15%" }} onChange={(e)=>{
-              SetstartPNum(e.target.value);
-            }} />
-            <Typography variant="h6">-</Typography>
-            <TextField size="small" sx={{ width: "20%" }} onChange={(e)=>{
-              SetMddlePNum(e.target.value)
-            }}/>
-            <Typography variant="h6">-</Typography>
-            <TextField size="small" sx={{ width: "20%" }} onChange={(e)=>{
-              SetEndPNum(e.target.value)
-            }}/>
+            <TextField size="small" sx={{ width: "15%" }}
+
+              onChange={(e) => SetstartPNum(e.target.value.replace(/\D/g, "").slice(0, 3))}
+              value={startPNum}
+            />
+            <TextField size="small" sx={{ width: "20%" }}
+              onChange={(e) => SetMddlePNum(e.target.value.replace(/\D/g, "").slice(0, 4))}
+              value={middlePNum}
+            />
+            <TextField size="small" sx={{ width: "20%" }}
+              onChange={(e) => SetEndPNum(e.target.value.replace(/\D/g, "").slice(0, 4))}
+              value={endPNum}
+            />
           </Grid>
         </Grid>
 
@@ -257,13 +321,16 @@ const OrderComponent = () => {
           </Grid>
           <Grid item sx={{ flex: 1, minWidth: 0, display: "flex", gap: 1 }}>
             <TextField size="small" value={emailLocal} sx={{ flex: 1 }}
-            onChange={(e) => setEmailLocal(e.target.value.replace(/\s/g, ""))} />
+              onChange={(e) => setEmailLocal(e.target.value.replace(/[^a-zA-Z0-9._-]/g, ""))}
+            />
+
             <Typography variant="h6">@</Typography>
-            <TextField size="small" 
+            <TextField size="small"
               sx={{ flex: 1 }} value={emailDomain === "custom" ? customDomain : emailDomain}
-              onChange={(e) => setCustomDomain(e.target.value.replace(/\s/g, ""))}
+              onChange={(e) => setCustomDomain(e.target.value.replace(/[^a-zA-Z0-9.-]/g, ""))}
               placeholder="이메일을 입력해주세요"
-              disabled={emailDomain !== "custom"} />
+              disabled={emailDomain !== "custom"}
+            />
             <Select
               size="small"
               value={emailDomain}

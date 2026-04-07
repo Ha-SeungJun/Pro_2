@@ -60,6 +60,9 @@ public class OrderServiceImpl implements OrderService{
 
 	@Override
 	public Long placeOrderFromPayment(OrderSheetDTO dto,Long matchingNo) {
+		if (dto.getPhone() != null) {
+	        dto.setPhone(dto.getPhone().replaceAll("[^0-9]", ""));
+	    }
 		Matching matching= matchingRepository.findById(dto.getMatchingNo()).orElseThrow();
 		OrderSheet sheet = dtoToEntity(dto, matching);
 		OrderSheet ordersheet= orderRepository.save(sheet);

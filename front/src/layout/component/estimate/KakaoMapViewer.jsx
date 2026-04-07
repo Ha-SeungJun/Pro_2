@@ -1,6 +1,6 @@
-import React, { useEffect, useRef } from "react";
+import React, { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 
-const KakaoMapViewer = ({ startAddress, endAddress, onAddressSelect }) => {
+const KakaoMapViewer = forwardRef(({ startAddress, endAddress, onAddressSelect }, ref) => {
   const mapRef = useRef(null);
   const polylineRef = useRef(null);
   const markersRef = useRef([]);
@@ -10,6 +10,21 @@ const KakaoMapViewer = ({ startAddress, endAddress, onAddressSelect }) => {
   // 리액트의 일반 Props는 클로저 때문에 지도의 이벤트 리스너 안에서 옛날 값으로 박제될 수 있습니다.
   const onSelectRef = useRef(onAddressSelect);
   const startAddrRef = useRef(startAddress);
+
+  //초기화 추가 
+  useImperativeHandle(ref, () => ({
+    reset() {
+      markersRef.current.forEach((m) => m.setMap(null));
+      markersRef.current = [];
+      polylineRef.current?.setMap(null);
+      polylineRef.current = null;
+      if (mapRef.current) {
+        mapRef.current.setCenter(new window.kakao.maps.LatLng(37.5665, 126.9780));
+        mapRef.current.setLevel(7);
+      }
+    }
+  }));
+
 
   // 부모로부터 새로운 데이터가 내려올 때마다 보관함 내용물을 최신화합니다.
   useEffect(() => {
@@ -33,7 +48,6 @@ const KakaoMapViewer = ({ startAddress, endAddress, onAddressSelect }) => {
 
     // ✅ 지도 클릭 이벤트 리스너 등록
     window.kakao.maps.event.addListener(map, "click", (mouseEvent) => {
-      console.log("1. 지도 클릭됨!");
       const latlng = mouseEvent.latLng;
 
       geocoder.coord2Address(latlng.getLng(), latlng.getLat(), (result, status) => {
@@ -43,10 +57,10 @@ const KakaoMapViewer = ({ startAddress, endAddress, onAddressSelect }) => {
 
           // ✅ [수정] 박제된 props 대신, '보관함(Ref)'에서 실시간 값을 꺼내와서 판별합니다.
           if (onSelectRef.current && addressName) {
-            
+
             // 보관함에 담긴 최신 startAddress가 비어있으면 'start', 있으면 'end'
             const type = !startAddrRef.current ? "start" : "end";
-            
+
             console.log(`4. 부모에게 전송: ${type}Address -> ${addressName}`);
             onSelectRef.current(type, addressName);
           } else {
@@ -57,6 +71,7 @@ const KakaoMapViewer = ({ startAddress, endAddress, onAddressSelect }) => {
     });
 
     return () => {
+
       // 컴포넌트가 사라질 때 마커와 선을 지웁니다.
       markersRef.current.forEach((m) => m.setMap(null));
       polylineRef.current?.setMap(null);
@@ -143,6 +158,6 @@ const KakaoMapViewer = ({ startAddress, endAddress, onAddressSelect }) => {
       <div id="kakao-map" style={{ width: "100%", height: "400px", borderRadius: "10px" }} />
     </div>
   );
-};
+});
 
 export default KakaoMapViewer;

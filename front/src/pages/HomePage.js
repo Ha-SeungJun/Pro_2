@@ -17,9 +17,9 @@ import InfoSection from '../components/InfoSection';
 import QASection from '../components/QASection';
 import FloatingButtons from '../components/FloatingButtons';
 
-// 사진 이름 매칭
+// ✅ 사진 이름 매칭 (기현님이 수정한 scooter.png 반영 완료!)
 import damasImg from '../assets/damas.png'; 
-import bikeImg from '../assets/bike.png';
+import bikeImg from '../assets/bike.png'; 
 import ton1Img from '../assets/1truck.png';
 import ton11Img from '../assets/11truck.png';
 import ton18Img from '../assets/18truck.png';
@@ -29,7 +29,6 @@ const initState = {
   startAddress: '', endAddress: '', cargoType: '', cargoWeight: '', totalCost: 0, distanceKm: ''
 }
 
-// 📌 라보 삭제 및 무게 작은 순서대로 리스트 재배치 완료
 const vehicleStaticList = [
   {
     name: '오토바이 퀵',
@@ -156,12 +155,11 @@ const HomePage = () => {
               <div className="mb-12">
                 <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-4 break-keep">용달화물 서비스 소개</h2>
                 <p className="text-gray-600 text-lg break-keep">
-                  퍼스트로드는 <span className="text-red-600 font-bold">빅데이터 기반</span>으로<br /> {/* 파란색 -> 빨간색 통일 */}
-                  <span className="text-red-600 font-bold">최적의 거리별 요금</span>을 제공해드립니다. {/* 파란색 -> 빨간색 통일 */}
+                  퍼스트로드는 <span className="text-red-600 font-bold">빅데이터 기반</span>으로<br />
+                  <span className="text-red-600 font-bold">최적의 거리별 요금</span>을 제공해드립니다.
                 </p>
               </div>
 
-              {/* 📌 테두리 잘림 방지: p-4 -m-4를 주어 스크롤 영역 내부에 여유 공간 확보 */}
               <div className="flex flex-col gap-4 max-h-[500px] overflow-y-auto p-4 -m-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 {vehicleStaticList.map((vehicle, index) => (
                   <button
@@ -169,7 +167,7 @@ const HomePage = () => {
                     onClick={() => setSelectedVehicleIndex(index)}
                     className={`py-5 px-8 rounded-[2rem] flex justify-between items-center transition-all duration-300 bg-white ${
                       selectedVehicleIndex === index 
-                        ? 'shadow-lg border-2 border-transparent ring-2 ring-red-600 transform scale-105' /* 파란 링 -> 빨간 링 통일 */
+                        ? 'shadow-lg border-2 border-transparent ring-2 ring-red-600 transform scale-105'
                         : 'shadow-sm border border-gray-100 hover:shadow-md'
                     }`}
                   >
@@ -185,11 +183,9 @@ const HomePage = () => {
               </div>
             </div>
 
-            {/* 오른쪽: 차량 상세 정보 및 이미지 */}
             <div className="w-full lg:w-2/3 flex flex-col justify-start gap-12 mt-12 lg:mt-0"> 
               
               <div className="flex items-center gap-6 mb-8 lg:mb-12">
-                {/* 📌 파란 글씨 -> 빨간색 통일 */}
                 <span className="font-bold text-3xl text-red-600">
                   {selectedVehicleIndex < 9 ? `0${selectedVehicleIndex + 1}` : selectedVehicleIndex + 1}
                 </span>

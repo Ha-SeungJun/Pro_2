@@ -19,7 +19,7 @@ const MainLayout = lazy(() => import("../layout/MainPageLayout"));
 const Login = lazy(() => import("../pages/LoginPage"));
 const Home = lazy(() => import("../pages/HomePage"));
 const Admin = lazy(() => import("../pages/AdminPage"));
-const Estimate = lazy(() => import("../pages/EstimatePage"));
+const Estimate = lazy(() => import("../pages/QuotationRequestPage"));
 const MyPageLayout = lazy(() => import("../layout/MyPageLayout"));
 const Order = lazy(() => import("../pages/OrderPage"));
 const ServiceCenter = lazy(() => import("../pages/ServiceCenterPage"));

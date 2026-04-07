@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mail.MailException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
@@ -50,5 +51,13 @@ public class AppGlobalExceptionHandler {
     String msg = isDev() ? e.getMessage() : "서버 내부 오류가 발생했습니다.";
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
         .body(Map.of("error","Internal Server Error","message",msg));
+  }
+  @ExceptionHandler(LockedException.class)
+  public ResponseEntity<?> handleLocked(LockedException e) {
+      return ResponseEntity.status(HttpStatus.FORBIDDEN)
+              .body(Map.of(
+                      "error", "Account Locked",
+                      "message", e.getMessage()
+              ));
   }
 }

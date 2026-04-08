@@ -5,12 +5,14 @@ import {
   Button,
   TextField
 } from '@mui/material';
+
 const initState = {
   reporterId: '',
-    targetId: '',
-    content: '',
-}
-const ReportComponent = ({ matchingNo ,onClose}) => {
+  targetId: '',
+  content: '',
+};
+
+const ReportComponent = ({ matchingNo, onClose }) => {
   const [formState, setFormState] = useState(initState);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -28,19 +30,20 @@ const ReportComponent = ({ matchingNo ,onClose}) => {
         const data = await reportUser(matchingNo);
         setFormState(prevState => ({
           ...prevState,
-          reporterId: data.reporterId, // Use the key from server response
-          targetId: data.targetId,   // Use the key from server response
+          reporterId: data.reporterId,
+          targetId: data.targetId,
         }));
         setError(null);
       } catch (err) {
-        setError(err.message || 'Failed to fetch report details.');
+        console.error(err);
+        setError(err?.response?.data?.message || err.message || 'Failed to fetch report details.');
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchDetails();
-  }, [matchingNo]); 
+  }, [matchingNo]);
 
   if (isLoading) {
     return (
@@ -67,21 +70,29 @@ const ReportComponent = ({ matchingNo ,onClose}) => {
       alert('신고 내용을 입력해주세요.');
       return;
     }
+
     try {
       await reportCreate(formState);
-      alert('신고가 성공적으로 접수되었습니다.');
+
+      // 수정: 1회 신고 제한 방식이므로 성공 시 항상 신규 접수
+      alert('신고가 접수되었습니다.');
+
       if (onClose) {
-        onClose(); // Close the modal on success
+        onClose();
       }
     } catch (error) {
       console.error("Failed to submit report:", error);
-      alert('신고 접수 중 오류가 발생했습니다.');
+
+      // 수정: 백엔드 에러 메시지 그대로 표시
+      const msg = error?.response?.data?.message || '신고 접수 중 오류가 발생했습니다.';
+      alert(msg);
     }
   };
 
   return (
     <Box sx={{ p: 2, border: '1px solid #ddd', borderRadius: '4px' }}>
       <Typography variant="h6" gutterBottom>신고 양식</Typography>
+
       <TextField
         label="신고자 ID"
         value={formState.reporterId}
@@ -91,6 +102,7 @@ const ReportComponent = ({ matchingNo ,onClose}) => {
         variant="filled"
         readOnly
       />
+
       <TextField
         label="신고 대상 ID"
         value={formState.targetId}
@@ -100,6 +112,7 @@ const ReportComponent = ({ matchingNo ,onClose}) => {
         variant="filled"
         readOnly
       />
+
       <TextField
         label="신고 내용"
         value={formState.content}
@@ -110,11 +123,12 @@ const ReportComponent = ({ matchingNo ,onClose}) => {
         rows={4}
         placeholder="신고 내용을 입력하세요..."
       />
+
       <Button
         variant="contained"
         color="primary"
         onClick={handleSubmit}
-        disabled={!formState.content || !formState.targetId} // content가 있어야 활성화
+        disabled={!formState.content || !formState.targetId}
         sx={{ mt: 2 }}
       >
         신고 접수

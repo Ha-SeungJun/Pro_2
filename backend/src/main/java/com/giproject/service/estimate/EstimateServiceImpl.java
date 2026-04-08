@@ -219,6 +219,7 @@ public class EstimateServiceImpl implements EstimateService{
 	                        .ifPresent(d -> {
 	                            dto.setDeliveryStatus(d.getStatus());
 	                            dto.setDeliveryCompletedAt(d.getCompletTime());
+	                            dto.setDeliveryNo(d.getDeliveryNo());
 	                        });
 	                    });
 	            }

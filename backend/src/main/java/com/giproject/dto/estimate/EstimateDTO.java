@@ -37,12 +37,13 @@ public class EstimateDTO {
 	@JsonProperty("isAccepted")
 	private boolean accepted;
 	private Long matchingNo;
-
+	
 	private boolean isOrdered;
 	private int baseCost;
 	private int distanceCost;
 	private int specialOption;
 	private Long paymentNo;
+	private Long deliveryNo;
 	private DeliveryStatus deliveryStatus;
 	private String driverName; 
 	private LocalDateTime deliveryCompletedAt;

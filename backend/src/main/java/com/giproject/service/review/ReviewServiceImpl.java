@@ -182,5 +182,10 @@ public class ReviewServiceImpl implements ReviewService {
                 .map(this::entityToDTO);
     }
 
+	@Override
+	public boolean existsByDeliveryNo(Long deliveryNo) {
+		return reviewRepository.existsByDeliveryNo(deliveryNo);
+	}
+
 
 }

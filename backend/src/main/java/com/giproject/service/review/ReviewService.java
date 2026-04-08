@@ -31,4 +31,6 @@ public interface ReviewService {
 	//페이징 처리
 	 Page<ReviewDTO> getReviewsByCargoId(String cargoId, Pageable pageable);
 	
+	 //버튼 숨기기용
+	 boolean existsByDeliveryNo(Long deliveryNo);
 }

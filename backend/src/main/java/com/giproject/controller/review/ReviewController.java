@@ -16,7 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
 @RestController
-@RequestMapping("/api/review")
+@RequestMapping("/g2i4/review")
 @RequiredArgsConstructor
 @Log4j2
 public class ReviewController {
@@ -37,6 +37,12 @@ public class ReviewController {
     @GetMapping("/{deliveryNo}")
     public ResponseEntity<ReviewDTO> getByDeliveryNo(@PathVariable Long deliveryNo) {
         return ResponseEntity.ok(reviewService.getByDeliveryNo(deliveryNo));
+    }
+    
+    @GetMapping("/exists/{deliveryNo}")
+    public ResponseEntity<Boolean> existsByDeliveryNo(
+    		@PathVariable(name = "deliveryNo") Long deliveryNo) {
+        return ResponseEntity.ok(reviewService.existsByDeliveryNo(deliveryNo));
     }
 
     @GetMapping("/list")

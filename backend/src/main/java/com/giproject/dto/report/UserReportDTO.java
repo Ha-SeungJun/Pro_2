@@ -23,4 +23,7 @@ public class UserReportDTO {
 	private String content;// 신고내용
 	private LocalDateTime createdAt;// 신고일
 	private boolean adminRead;//관리자 체크
+	
+	// 수정: 신규 생성(false) / 기존 신고 수정(true) 구분값
+    private boolean updated;
 }

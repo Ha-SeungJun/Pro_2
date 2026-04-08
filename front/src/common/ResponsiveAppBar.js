@@ -319,8 +319,8 @@ export default function ResponsiveAppBar() {
       // 수정: 차주는 "차주 배송 관리" 화면으로 이동
       navigate('/mypage/delivery');
     } else {
-      // 수정: 화주는 기존 그대로 유지
-      navigate('/mypage/deliverycargo');
+      // 화주: 마이페이지의 배송 정보 관리 화면
+      navigate('/mypage/delivery');
     }
   };
 

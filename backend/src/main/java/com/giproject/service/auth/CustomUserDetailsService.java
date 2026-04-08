@@ -72,7 +72,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                 ? "-"
                 : idx.getSuspendEndAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
 
-        return "정지된 계정입니다. 해제 예정 시각: " + endAt
+        return "정지된 계정입니다. \n해제 예정 시각: " + endAt
                 + appendReason(idx.getSuspendReason());
     }
 
@@ -80,6 +80,6 @@ public class CustomUserDetailsService implements UserDetailsService {
         if (reason == null || reason.isBlank()) {
             return "";
         }
-        return " / 사유: " + reason;
+        return " \n사유: " + reason;
     }
 }

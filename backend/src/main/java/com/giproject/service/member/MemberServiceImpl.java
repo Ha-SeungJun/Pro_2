@@ -8,6 +8,7 @@ import com.giproject.entity.member.Member;
 import com.giproject.repository.member.MemberRepository;
 
 import jakarta.servlet.http.HttpSession;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
@@ -232,4 +233,30 @@ public class MemberServiceImpl implements MemberService {
 		 if (memId == null || memId.isBlank()) return false;
 		 return !memberRepository.existsById(memId.trim()); 
 	}
+	// MemberServiceImpl.java 하단에 추가
+	 @Override
+	 @Transactional
+	 public void modifyPassword(String memId, String currentPw, String newPw) {
+	     log.info("비밀번호 변경 프로세스 시작 - ID: {}", memId);
+
+	     // 1. 회원 정보 조회
+	     Member member = memberRepository.findById(memId)
+	             .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+
+	     // 2. 현재 비밀번호 검증 (암호화된 값 비교)
+	     if (!passwordEncoder.matches(currentPw, member.getMemPw())) {
+	         throw new IllegalArgumentException("현재 비밀번호가 일치하지 않습니다.");
+	     }
+
+	     // 3. 새 비밀번호 유효성 검사 (이전 비번과 동일 여부) ✅
+	     if (passwordEncoder.matches(newPw, member.getMemPw())) {
+	         throw new IllegalArgumentException("기존 비밀번호와 동일한 비밀번호로는 변경할 수 없습니다.");
+	     }
+
+	     // 4. 암호화 후 업데이트 (Dirty Checking으로 자동 저장)
+	     member.changeMemPw(passwordEncoder.encode(newPw));
+	     
+	     log.info("비밀번호 변경 완료 - ID: {}", memId);
+	 }
+	 
 }

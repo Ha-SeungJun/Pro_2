@@ -44,14 +44,12 @@ public class SecurityConfig {
     @Value("${frontend.base-url:http://localhost:3000}")
     private String frontendBaseUrl;
 
-    // ✅ JwtAuthenticationFilter Bean
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter(JwtService jwtService,
                                                            UserDetailsService userDetailsService) {
         return new JwtAuthenticationFilter(jwtService, userDetailsService);
     }
 
-    // ✅ AuthenticationProvider Bean
     @Bean
     public AuthenticationProvider authenticationProvider(PasswordEncoder encoder) {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
@@ -66,22 +64,16 @@ public class SecurityConfig {
                                            AuthenticationProvider authenticationProvider) throws Exception {
 
         http
-            // CORS/CSRF/Headers
             .cors(c -> c.configurationSource(corsConfigurationSource()))
             .csrf(AbstractHttpConfigurer::disable)
             .headers(h -> h.frameOptions(f -> f.sameOrigin()))
-            // 세션: OAuth2 핸드셰이크에 한해 필요 → IF_REQUIRED
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
-            // 폼로그인 완전 비활성 (Spring이 /login 리다이렉트 안 하도록)
             .formLogin(AbstractHttpConfigurer::disable)
-            // 캐시 끄기(선택)
             .requestCache(rc -> rc.disable())
-            // 401/403 직접 내려주기
             .exceptionHandling(e -> e
                 .authenticationEntryPoint((req, res, ex) -> res.sendError(401))
                 .accessDeniedHandler((req, res, ex) -> res.sendError(403))
             )
-            // OAuth2 설정
             .oauth2Login(o -> o
                 .authorizationEndpoint(a -> a.baseUri("/oauth2/authorization"))
                 .redirectionEndpoint(r -> r.baseUri("/login/oauth2/code/*"))
@@ -95,48 +87,39 @@ public class SecurityConfig {
                     res.sendRedirect(target);
                 })
             )
-            // 인가 정책
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                // 정적/SPA 루트
                 .requestMatchers("/", "/index.html", "/error", "/favicon.ico",
                                  "/assets/**", "/static/**").permitAll()
                 .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
 
-                // OAuth 흐름
                 .requestMatchers("/oauth2/**", "/login/**").permitAll()
 
-                // 공개 API (로그인/회원가입/이메일인증/리프레시 등)
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/email/**").permitAll()
 
-                // 업로드/콘솔 등
                 .requestMatchers("/uploads/**", "/h2-console/**").permitAll()
 
-                // 프로젝트 개별 공개 경로 (기존 허용 목록 유지)
+                // ✅ [수정] "/g2i4/coupons/**" 경로를 추가하여 401 에러 해결
                 .requestMatchers("/g2i4/subpath/order/**","/g2i4/payment/**","/g2i4/delivery/**","/g2i4/address/**",
                                  "/g2i4/estimate/subpath/**","/g2i4/cargo/**","/g2i4/admin/**","/g2i4/main/**",
-                                 "/g2i4/uploads/**","/g2i4/mypage/**","/g2i4/user/**","/g2i4/cargo/**","/g2i4/member/**","/g2i4/qna/**","/api/**").permitAll()
+                                 "/g2i4/uploads/**","/g2i4/mypage/**","/g2i4/user/**","/g2i4/cargo/**","/g2i4/member/**",
+                                 "/g2i4/qna/**","/g2i4/coupons/**","/api/**").permitAll()
 
-                // 예시: 특정 권한 필요
                 .requestMatchers("/g2i4/estimate/list").hasAuthority("ROLE_DRIVER")
 
-                // 나머지는 인증 필요
                 .anyRequest().authenticated()
             )
-            // 인증 공급자/필터 체인
             .authenticationProvider(authenticationProvider)
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-    // CORS
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        // 필요시 도메인 추가
         config.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:3002"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
@@ -146,13 +129,11 @@ public class SecurityConfig {
         return source;
     }
 
-    // PasswordEncoder
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // AuthenticationManager
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
         return configuration.getAuthenticationManager();

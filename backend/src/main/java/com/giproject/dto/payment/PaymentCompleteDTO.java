@@ -8,20 +8,20 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
-@Builder
+@Getter @Setter @AllArgsConstructor @NoArgsConstructor @Builder
 public class PaymentCompleteDTO {
-	private String orderUuid;//주문번호
-	private String cargoName;//화물 운반자 이름
-	private String cargoPhone;//화물 운반자 전화번호
-	private String addressee;//받는분 이름
-	private String addresseePhone;
-	private String endAddress;//주소
-	private String endRestAdreess;//주소 상세정보
-	private String paymentMethod;//결제 방식
-	private LocalDateTime paidAt;//결제 시간
-	private int totalCost;
+    private String orderUuid;
+    private String cargoName;
+    private String cargoPhone;
+    private String addressee;
+    private String addresseePhone;
+    private String endAddress;
+    private String endRestAdreess;
+    private String paymentMethod;
+    private LocalDateTime paidAt;
+
+    // ✅ 금액 필드 long으로 통일
+    private long totalCost;     // 원금
+    private long discountPrice; // 할인액
+    private long finalCost;     // 최종 결제액 (리액트 출력용)
 }

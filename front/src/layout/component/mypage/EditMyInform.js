@@ -1,4 +1,3 @@
-// EditMyInform.jsx
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { useDispatch } from 'react-redux';
@@ -13,11 +12,9 @@ import VisibilityOff from '@mui/icons-material/VisibilityOff';
 // =================== 공통 상수/유틸 ===================
 const API_BASE =
   process.env.REACT_APP_API_BASE ||
-  process.env.REACT_APP_API_BASE ||
   'http://localhost:8080';
 
 const DEFAULT_AVATAR = '/image/placeholders/avatar.svg';
-
 
 const getFirst = (...candidates) =>
   candidates.find(v => v !== undefined && v !== null && v !== '') ?? '';
@@ -25,8 +22,8 @@ const getFirst = (...candidates) =>
 const normalizeProfileUrl = (v) => {
   if (!v) return null;
   if (v.startsWith('http')) return v;
-  if (v.startsWith('/g2i4/uploads/')) return `${API_BASE}${v}`; // 이미 웹경로인 경우
-  return `${API_BASE}/g2i4/uploads/user_profile/${encodeURIComponent(v)}`; // 파일명만 온 경우
+  if (v.startsWith('/g2i4/uploads/')) return `${API_BASE}${v}`;
+  return `${API_BASE}/g2i4/uploads/user_profile/${encodeURIComponent(v)}`;
 };
 
 // axios 인스턴스 + 단일 인터셉터
@@ -54,10 +51,8 @@ const EditMyInform = () => {
   const togglePasswordVisibility = (field) =>
     setShowPassword(prev => ({ ...prev, [field]: !prev[field] }));
 
-  // 'MEMBER' | 'CARGO_OWNER'
   const [userType, setUserType] = useState(null);
 
-  // 공통 스키마
   const [user, setUser] = useState({
     id: '',
     name: '',
@@ -75,12 +70,43 @@ const EditMyInform = () => {
   const [avatarUrl, setAvatarUrl] = useState(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
+
+  // ✅ [추가] 쿠폰 관련 상태
+  const [coupons, setCoupons] = useState([]);
+  const [couponLoading, setCouponLoading] = useState(false);
+
+  // ✅ [추가] 내 쿠폰 목록 조회 API 호출
+  const fetchMyCoupons = useCallback(async () => {
+    if (!user.id) return;
+    try {
+      const res = await api.get(`/g2i4/coupons/my-list/${user.id}`);
+      setCoupons(res.data);
+    } catch (err) {
+      console.error("쿠폰 목록 로드 실패:", err);
+    }
+  }, [user.id]);
+
+  // ✅ [추가] 테스트 쿠폰 발급 요청
+  const handleIssueCoupons = async () => {
+    if (!user.id) return;
+    setCouponLoading(true);
+    try {
+      await api.post('/g2i4/coupons/issue-test', { memId: user.id });
+      alert("테스트 쿠폰 2종이 발급되었습니다! 🎁");
+      fetchMyCoupons(); // 목록 새로고침
+    } catch (err) {
+      alert("발급 실패: " + (err.response?.data?.result || err.message));
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
   const handleDeleteImageServer = async () => {
     if (!window.confirm('프로필 이미지를 삭제할까요?')) return;
     try {
       setUploading(true);
-      await api.delete('/g2i4/user/profile-image'); // ← 방금 만든 API
-      setAvatarUrl(null); // UI 즉시 반영
+      await api.delete('/g2i4/user/profile-image');
+      setAvatarUrl(null);
       alert('프로필 이미지가 삭제되었습니다.');
     } catch (err) {
       const msg = err?.response?.data ?? err.message ?? '삭제 실패';
@@ -90,6 +116,7 @@ const EditMyInform = () => {
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
+
   // --- Daum postcode ---
   const loadDaumPostcode = useCallback(() => {
     return new Promise((resolve, reject) => {
@@ -162,7 +189,6 @@ const EditMyInform = () => {
               ),
             };
 
-        // 프로필 파일명 후보 읽어서 미리보기 세팅
         const avatarName = getFirst(
           data.webPath,
           data.profileImage,
@@ -189,7 +215,11 @@ const EditMyInform = () => {
     };
   }, []);
 
-  // --- 주소 변경 저장 ---
+  // ✅ [추가] 유저 정보 로드 후 쿠폰 목록 자동 조회
+  useEffect(() => {
+    if (user.id) fetchMyCoupons();
+  }, [user.id, fetchMyCoupons]);
+
   const handleSaveAddress = async () => {
     try {
       if (!userType) return;
@@ -209,7 +239,6 @@ const EditMyInform = () => {
     }
   };
 
-  // --- 비밀번호 변경 저장 ---
   const handleChangePassword = async () => {
     try {
       if (!userType) return;
@@ -219,6 +248,10 @@ const EditMyInform = () => {
       }
       if (pwd.next !== pwd.confirm) {
         alert('새 비밀번호가 일치하지 않습니다.');
+        return;
+      }
+      if (pwd.current === pwd.next) {
+        alert('현재 비밀번호와 다른 새 비밀번호를 입력해주세요.');
         return;
       }
 
@@ -240,7 +273,6 @@ const EditMyInform = () => {
     }
   };
 
-  // --- 프로필 이미지 업로드 ---
   const handleUploadImage = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -249,7 +281,7 @@ const EditMyInform = () => {
       alert('이미지 파일만 업로드할 수 있습니다.');
       return;
     }
-    if (file.size > 5 * 1024 * 1024) { // 5MB
+    if (file.size > 5 * 1024 * 1024) {
       alert('파일 크기는 5MB를 넘을 수 없습니다.');
       return;
     }
@@ -265,8 +297,8 @@ const EditMyInform = () => {
       const url = normalizeProfileUrl(data?.webPath ?? data?.filename);
       if (url) {
         const cacheBustedUrl = `${url}?v=${Date.now()}`;
-        setAvatarUrl(cacheBustedUrl); // 로컬 UI 즉시 업데이트
-        dispatch(updateProfileImage(cacheBustedUrl)); // 전역 상태 업데이트
+        setAvatarUrl(cacheBustedUrl);
+        dispatch(updateProfileImage(cacheBustedUrl));
       }
       alert('프로필 이미지가 업로드되었습니다.');
     } catch (err) {
@@ -279,11 +311,6 @@ const EditMyInform = () => {
   };
 
   const triggerFilePick = () => fileInputRef.current?.click();
-  const handleDeleteImageLocal = () => {
-    setAvatarUrl(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-    // 서버 삭제 API가 있으면 여기서 호출 추가
-  };
 
   if (loading) return <Box sx={{ p: 7 }}>불러오는 중…</Box>;
 
@@ -332,14 +359,12 @@ const EditMyInform = () => {
           </Box>
         </Grid>
 
-        {/* Divider */}
         <Grid item md={0.1} sx={{
           display: { xs: 'none', md: 'block' },
           height: '100%',
           borderLeft: '1px solid #666666'
         }} />
 
-        {/* Info */}
         <Grid item xs={12} md={5.9}>
           <Box sx={{ pl: { md: 4 } }}>
             <Typography fontWeight="bold" mb={2}>회원 정보</Typography>
@@ -383,6 +408,71 @@ const EditMyInform = () => {
           >
             변경하기
           </Button>
+        </Box>
+      </Box>
+
+      <Divider sx={{ my: 4 }} />
+
+      {/* ✅ [추가] 내 쿠폰 관리 섹션 */}
+      <Typography fontWeight="bold" mb={2}>내 쿠폰 관리</Typography>
+      <Box sx={{ p: 3, bgcolor: '#ffffff', borderRadius: 2, border: '1px solid #e0e0e0', mb: 4 }}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+          <Box>
+            <Typography variant="body1">사용 가능한 쿠폰: <b>{coupons.length}</b>장</Typography>
+            <Typography variant="caption" color="text.secondary">테스트 기간 동안 무제한 발급이 가능합니다.</Typography>
+          </Box>
+          <Button 
+            variant="contained" 
+            onClick={handleIssueCoupons}
+            disabled={couponLoading || !user.id}
+            sx={{ height: 45, bgcolor: '#6b46c1', '&:hover': { bgcolor: '#553c9a' } }}
+          >
+            {couponLoading ? '발급 중...' : '쿠폰 2종 받기 🎁'}
+          </Button>
+        </Box>
+
+        <Divider sx={{ mb: 2 }} />
+
+        <Box sx={{ maxHeight: 250, overflowY: 'auto', pr: 1 }}>
+          {coupons.length === 0 ? (
+            <Box textAlign="center" py={4}>
+              <Typography variant="body2" color="gray">보유 중인 쿠폰이 없습니다.</Typography>
+            </Box>
+          ) : (
+            coupons.map((mc) => (
+              <Box 
+                key={mc.mcno} 
+                sx={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  p: 2, 
+                  mb: 1.5, 
+                  bgcolor: '#f9fafb', 
+                  borderRadius: 2,
+                  border: '1px dashed #d1d5db'
+                }}
+              >
+                <Box>
+                  <Typography variant="body2" fontWeight="bold" color="#374151">
+                    {mc.coupon.couponName}
+                  </Typography>
+                  <Typography variant="caption" display="block" color="error">
+                    만료일: {new Date(mc.expiryDate).toLocaleDateString()}
+                  </Typography>
+                </Box>
+                <Box textAlign="right">
+                  <Typography variant="h6" color="#6b46c1" fontWeight="bold">
+                    {mc.coupon.discountType === 'FLAT' 
+                      ? `${mc.coupon.discountValue.toLocaleString()}원` 
+                      : `${mc.coupon.discountValue}%`}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {mc.coupon.minOrderPrice > 0 ? `${mc.coupon.minOrderPrice.toLocaleString()}원 이상 결제 시` : '금액 제한 없음'}
+                  </Typography>
+                </Box>
+              </Box>
+            ))
+          )}
         </Box>
       </Box>
 

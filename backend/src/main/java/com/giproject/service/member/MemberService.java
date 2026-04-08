@@ -40,4 +40,6 @@ public interface MemberService {
 			
 		return dto;
 	}
+
+	void modifyPassword(String memId, String currentPw, String newPw);
 }

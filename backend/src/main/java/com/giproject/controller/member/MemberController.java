@@ -1,4 +1,4 @@
-package com.giproject.controller;
+package com.giproject.controller.member;
 
 import java.util.Map;
 

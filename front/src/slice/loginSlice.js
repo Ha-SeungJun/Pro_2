@@ -164,8 +164,8 @@ const loginSlice = createSlice({
                 const userType = raw.userType || "";
                 if (userType === "MEMBER") {
                     state.roles = ["ROLE_SHIPPER"];
-                } else if (userType === "CARGO") {
-                    state.roles = ["ROLE_DRIVER"]; 
+                } else if (userType === "CARGO_OWNER") {  
+                    state.roles = ["ROLE_DRIVER"];
                 } else if (userType === "ADMIN") {
                     state.roles = ["ROLE_ADMIN"];
                 }

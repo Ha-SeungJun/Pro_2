@@ -5,13 +5,11 @@ const prefix = `${API_SERVER_HOST}/g2i4/review`;
 
 export const createReview = async (reviewDTO) => {
   const token =
-    localStorage.getItem("accessToken") ||
-    sessionStorage.getItem("accessToken") ||
-    localStorage.getItem("ACCESS_TOKEN") ||
-    sessionStorage.getItem("ACCESS_TOKEN");
-
-     console.log("api로 전달된 reviewDTO:", reviewDTO);
-
+  
+    sessionStorage.getItem("accessToken");
+    
+    console.log(reviewDTO);
+    //sessionStorage.getItem("ACCESS_TOKEN");
   const res = await axios.post(`${prefix}/register`, reviewDTO, {
     headers: {
       "Content-Type": "application/json",
@@ -19,14 +17,13 @@ export const createReview = async (reviewDTO) => {
     },
   });
 
+
+  /** */
   return res.data;
 };
 export const getReviewByDeliveryNo = async (deliveryNo) => {
   const token =
-    localStorage.getItem("accessToken") ||
-    sessionStorage.getItem("accessToken") ||
-    localStorage.getItem("ACCESS_TOKEN") ||
-    sessionStorage.getItem("ACCESS_TOKEN");
+sessionStorage.getItem("accessToken");
 
   const res = await axios.get(`${prefix}/${deliveryNo}`, {
     headers: {
@@ -38,10 +35,7 @@ export const getReviewByDeliveryNo = async (deliveryNo) => {
 };
 export const getReviewExistsByDeliveryNo = async (deliveryNo) => {
   const token =
-    localStorage.getItem("accessToken") ||
-    sessionStorage.getItem("accessToken") ||
-    localStorage.getItem("ACCESS_TOKEN") ||
-    sessionStorage.getItem("ACCESS_TOKEN");
+sessionStorage.getItem("accessToken");
 
   const res = await axios.get(`${prefix}/exists/${deliveryNo}`, {
     headers: {

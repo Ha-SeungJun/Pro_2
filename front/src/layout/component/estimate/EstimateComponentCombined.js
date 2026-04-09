@@ -57,20 +57,33 @@ const EstimateComponentCombined = () => {
     const isAdmin = isCurrentUserAdmin();
     const mapRef = useRef(null);
 
-    useEffect(() => {
-        if (authChecked.current) return;
-        const isShipper = roles.includes("ROLE_SHIPPER");
+ useEffect(() => {
+    if (authChecked.current) return;
 
-        if (!email || (!isShipper && !isAdmin)) {
-            authChecked.current = true;
-            alert("일반회원만 주문이 가능합니다.");
-            navigate("/", { replace: true });
-            return;
-        }
-        postSearchFeesBasic().then(setFees).catch(() => { });
-        postSearchFeesExtra().then(setExtra).catch(() => { });
-    }, [roles, email, navigate]);
+    const token = sessionStorage.getItem('accessToken');
 
+    if (!token) {
+        authChecked.current = true;
+        alert("로그인이 필요합니다.");
+        navigate("/", { replace: true });
+        return;
+    }
+
+    // ✅ roles 로드 안 됐으면 무조건 대기 (email 조건 제거)
+    if (roles.length === 0) return;
+
+    authChecked.current = true;
+
+    const isShipper = roles.includes("ROLE_SHIPPER");
+    if (!isShipper && !isAdmin) {
+        alert("일반회원만 주문이 가능합니다.");
+        navigate("/", { replace: true });
+        return;
+    }
+
+    postSearchFeesBasic().then(setFees).catch(() => {});
+    postSearchFeesExtra().then(setExtra).catch(() => {});
+}, [roles, email, navigate]);
 
     useEffect(() => {
         const fee = fees.find((f) => f.weight === estimate.cargoWeight) || null;

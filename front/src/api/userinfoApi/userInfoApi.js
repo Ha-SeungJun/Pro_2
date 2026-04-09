@@ -4,7 +4,7 @@ import { API_SERVER_HOST } from "../serverConfig";
 const prefix = `${API_SERVER_HOST}/g2i4`;
 
 const authHeaders = () => ({
-  Authorization: `Bearer ${localStorage.getItem("accessToken") || ""}`,
+  Authorization: `Bearer ${sessionStorage.getItem("accessToken") || ""}`,
   "Content-Type": "application/json",
 });
 

@@ -16,8 +16,8 @@ export default function AuthCallback() {
 
     useEffect(() => {
         const { access, refresh } = parseHash(window.location.hash);
-        if (access) localStorage.setItem("accessToken", access);
-        if (refresh) localStorage.setItem("refreshToken", refresh);
+        if (access) sessionStorage.setItem("accessToken", access);
+        if (refresh) sessionStorage.setItem("refreshToken", refresh);
         // 해시 지우기(토큰 흔적 제거)
         window.history.replaceState({}, document.title, window.location.pathname);
         navigate("/", { replace: true });

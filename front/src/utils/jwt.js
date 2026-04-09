@@ -14,5 +14,5 @@ export const hasRole=(token, role)=> {
 }
 
 export function getAccessToken() {
-  return localStorage.getItem("accessToken") || "";
+  return sessionStorage.getItem("accessToken") || "";
 }

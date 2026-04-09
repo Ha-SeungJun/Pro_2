@@ -58,6 +58,7 @@ const LoginComponent = ({
       <Box
         sx={{
           display: 'flex',
+          flexDirection: 'column',
           justifyContent: 'center',
           alignItems: 'center',
           minHeight: '90vh',
@@ -65,6 +66,9 @@ const LoginComponent = ({
           px: 2,
         }}
       >
+        <Box sx={{width: '100%', maxWidth: 400, mb: 2 }}>
+          <img src="/image/logo/main_logo.png" alt="로고" style={{ height: 60 }} />
+        </Box>
         <Box
           component="form"
           onSubmit={handleSubmit}
@@ -79,6 +83,7 @@ const LoginComponent = ({
             fontFamily: 'SUIT, sans-serif',
           }}
         >
+
           <Typography variant="h5" align="center" gutterBottom>
             Sign in
           </Typography>

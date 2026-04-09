@@ -355,8 +355,8 @@ const SignUpComponent = () => {
                 }
 
                 // 성공 → 토큰 저장 후 홈
-                if (data?.accessToken) localStorage.setItem('accessToken', data.accessToken);
-                if (data?.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
+                if (data?.accessToken) sessionStorage.setItem('accessToken', data.accessToken);
+                if (data?.refreshToken) sessionStorage.setItem('refreshToken', data.refreshToken);
                 clearSignupTicket();
                 navigate('/', { replace: true });
                 return;
@@ -393,6 +393,9 @@ const SignUpComponent = () => {
 
     return (
         <Container maxWidth="sm" sx={{ mt: 8, mb: 8 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 2 }}>
+                <img src="/image/logo/main_logo.png" alt="로고" style={{ height: 60 }} />
+            </Box>
             <Paper elevation={3} sx={{ p: 4, maxWidth: '80%', minWidth: '50%' }} component="form" onSubmit={onSubmit}>
                 <Typography variant="h5" align="center" gutterBottom sx={{ mb: 2 }}>회원가입</Typography>
 

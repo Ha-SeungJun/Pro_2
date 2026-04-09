@@ -33,6 +33,8 @@ public class OrderSheet {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long orderNo;
 
+	private long totalPrice;
+	
 	@OneToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "matching_no", nullable = false) // 스키마와 일치
 	private Matching matching;

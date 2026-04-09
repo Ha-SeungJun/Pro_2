@@ -13,7 +13,7 @@ import { getMyUnpaidEstimateList, getMyPaidEstimateList } from '../../../api/est
 import { simplifyBatch } from "../../../api/addressApi/addressApi";
 import axios from 'axios';
 import ReportComponent from './ReportComponent';
-import { createReview } from '../../../api/reviewApi/reviewApi';
+import { createReview, getReviewExistsByDeliveryNo } from '../../../api/reviewApi/reviewApi';
 
 
 // ===== 공통 API 베이스/인스턴스 =====
@@ -25,9 +25,9 @@ const API_BASE =
 const api = axios.create({ baseURL: API_BASE });
 api.interceptors.request.use((config) => {
   const token =
-    localStorage.getItem('accessToken') ||
     sessionStorage.getItem('accessToken') ||
-    localStorage.getItem('ACCESS_TOKEN') ||
+    sessionStorage.getItem('accessToken') ||
+    sessionStorage.getItem('ACCESS_TOKEN') ||
     sessionStorage.getItem('ACCESS_TOKEN');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
@@ -195,22 +195,52 @@ const DeliveryInfoPage = () => {
 
   //Review Modal State
   const [openReviewModal, setOpenReviewModal] = useState(false);
-  const [selectedMatchingNoForReview, setSelectedMatchingNoForReview] = useState(null);
+  const [selectedDeliveryNoForReview, setselectedDeliveryNoForReview] = useState(null);
+  const [selectedReviewItem, setSelectedReviewItem] = useState(null);
   const [reviewContent, setReviewContent] = useState('');
   const [reviewScore, setReviewScore] = useState(0);
+  const [reviewedMap, setReviewedMap] = useState({});
+
 
   //모달 열기 함수 추가
-  const handleReviewClick = (matchingNo) => {
-    console.log("리뷰 대상 matchingNo:", matchingNo);
-    setSelectedMatchingNoForReview(matchingNo);
-    setOpenReviewModal(true);
-  };
+  const handleReviewClick = (item) => {
+  setselectedDeliveryNoForReview(item.deliveryNo);
+  setSelectedReviewItem(item);
+  setOpenReviewModal(true);
+};
   //모달 닫기 함수 추가
   const handleCloseReviewModal = () => {
     setOpenReviewModal(false);
-    setSelectedMatchingNoForReview(null);
+    setselectedDeliveryNoForReview(null);
+    setSelectedReviewItem(null);
     setReviewContent('');
     setReviewScore(0);
+  };
+  //deliveryNo가 있으면 리뷰 조회 API 호출 함수
+  const loadReviewedMap = async (completedList) => {
+    const map = {};
+
+    for (const item of completedList) {
+      console.log("review 체크 item:", item);
+      console.log("review 체크 deliveryNo:", item.deliveryNo);
+
+      if (!item.deliveryNo) {
+        map[item.deliveryNo] = false;
+        continue;
+      }
+
+      try {
+        const exists = await getReviewExistsByDeliveryNo(item.deliveryNo);
+        console.log("리뷰 존재 여부:", item.deliveryNo, exists);
+        map[item.deliveryNo] = exists;
+      } catch (error) {
+        console.log("리뷰 존재 여부 조회 실패:", item.deliveryNo, error?.response?.status);
+        map[item.deliveryNo] = false;
+      }
+    }
+
+    console.log("최종 reviewedMap:", map);
+    setReviewedMap(map);
   };
 
 
@@ -341,6 +371,7 @@ const DeliveryInfoPage = () => {
 
           setPaidData(paginate(inProgressOrWaiting, paidPage));
           setCompletedData(paginate(completed, completedPage));
+          await loadReviewedMap(completed);
         } else {
           // CARGO_OWNER
           const paid = asList(await getOwnerPaidList(paidPage));
@@ -566,15 +597,15 @@ const DeliveryInfoPage = () => {
           {isMember && (
             <TableCell align="center">
               <Box display="flex" gap={1} justifyContent="center">
-                {matchingNo && (
-                  <Button
-                    size="small"
-                    variant="contained"
-                    onClick={() => handleReviewClick(item.matchingNo)}
-                  >
-                    리뷰
-                  </Button>//리뷰 버튼 추가
-                )}
+                <Button
+                  variant="contained"
+                  size="small"
+                  disabled={reviewedMap[item.deliveryNo]}
+                  onClick={() => handleReviewClick(item)}
+                  sx={{ minWidth: 90 }}
+                >
+                  {reviewedMap[item.deliveryNo] ? '작성완료' : '리뷰'}
+                </Button>
 
                 {matchingNo && (
                   <Button
@@ -774,8 +805,21 @@ const DeliveryInfoPage = () => {
         fullWidth
       >
         <DialogTitle>리뷰 작성</DialogTitle>
+
         <DialogContent>
-          <Typography gutterBottom sx={{ mt: 2 }}>
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            <strong>화물명:</strong> {selectedReviewItem?.cargoType || '-'}
+          </Typography>
+
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            <strong>배송 완료일:</strong> {formatDateHour(selectedReviewItem?.deliveryCompletedAt)}
+          </Typography>
+
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            <strong>운전 기사:</strong> {selectedReviewItem?.driverName || '-'}
+          </Typography>
+
+          <Typography gutterBottom sx={{ mt: 1 }}>
             별점
           </Typography>
 
@@ -784,9 +828,6 @@ const DeliveryInfoPage = () => {
             precision={0.5}
             onChange={(event, newValue) => setReviewScore(newValue || 0)}
           />
-          <Typography gutterBottom>
-            선택된 matchingNo: {selectedMatchingNoForReview}
-          </Typography>
 
           <TextField
             fullWidth
@@ -798,11 +839,12 @@ const DeliveryInfoPage = () => {
             sx={{ mt: 2 }}
           />
         </DialogContent>
+
         <DialogActions>
           <Button onClick={handleCloseReviewModal}>닫기</Button>
 
           <Button
-            onClick={() => {
+            onClick={async () => {
               if (reviewScore === 0) {
                 alert("별점을 선택해야 합니다.");
                 return;
@@ -813,9 +855,28 @@ const DeliveryInfoPage = () => {
                 return;
               }
 
-              console.log("matchingNo:", selectedMatchingNoForReview);
-              console.log("리뷰 내용:", reviewContent.trim());
-              console.log("별점:", reviewScore);
+              const reviewDTO = {
+                deliveryNo: selectedDeliveryNoForReview,
+                rating: reviewScore,
+                comment: reviewContent.trim(),
+              };
+
+              try {
+                console.log("리뷰 전송 데이터:", reviewDTO);
+
+                const result = await createReview(reviewDTO);
+
+                setReviewedMap(prev => ({
+                  ...prev,
+                  [selectedDeliveryNoForReview]: true
+                }));
+
+                alert("리뷰가 등록되었습니다.");
+                handleCloseReviewModal();
+              } catch (error) {
+                console.error("리뷰 등록 실패:", error);
+                alert("리뷰 등록에 실패했습니다.");
+              }
             }}
             variant="contained"
           >

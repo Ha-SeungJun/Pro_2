@@ -1,190 +1,148 @@
 package com.giproject.service.report;
 
 import com.giproject.dto.report.UserReportDTO;
-import com.giproject.entity.cargo.CargoOwner;
 import com.giproject.entity.delivery.Delivery;
-import com.giproject.entity.estimate.Estimate;
-import com.giproject.entity.matching.Matching;
-import com.giproject.entity.member.Member;
-import com.giproject.entity.order.OrderSheet;
-import com.giproject.entity.payment.Payment;
 import com.giproject.entity.report.UserReport;
 import com.giproject.repository.delivery.DeliveryRepository;
-import com.giproject.repository.matching.MatchingRepository;
 import com.giproject.repository.report.UserReportRepository;
-import com.giproject.repository.member.MemberRepository;
-import com.giproject.repository.cargo.CargoOwnerRepository;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
 @Service
 @RequiredArgsConstructor
-@Log4j2
-@Transactional(readOnly = true)
+@Transactional
 public class UserReportServiceImpl implements UserReportService {
-	
-    private final UserReportRepository repo;
-    private final MatchingRepository matchingRepository;
-    private final MemberRepository memberRepository;
-    private final CargoOwnerRepository cargoOwnerRepository;
+
+    private final UserReportRepository userReportRepository;
+    private final DeliveryRepository deliveryRepository;
 
     @Override
+    @Transactional(readOnly = true)
     public long countUnread() {
-        return repo.countByAdminReadFalse();
+        return userReportRepository.countByAdminReadFalse();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<UserReportDTO> list(Boolean unreadOnly, String keyword, String searchType, Pageable pageable) {
-        
-        if ("name".equalsIgnoreCase(searchType) && keyword != null && !keyword.isBlank()) {
-            List<UserReport> allReports;
-            if (Boolean.TRUE.equals(unreadOnly)) {
-                allReports = repo.findByAdminRead(false);
-            } else {
-                allReports = repo.findAll();
-            }
+        Page<UserReport> result;
 
-            List<UserReportDTO> dtos = allReports.stream()
-                .map(this::entityToDto)
-                .filter(dto -> dto.getTargetName() != null && dto.getTargetName().toLowerCase().contains(keyword.toLowerCase()))
-                .collect(Collectors.toList());
-
-            int start = (int) pageable.getOffset();
-            int end = Math.min((start + pageable.getPageSize()), dtos.size());
-            List<UserReportDTO> pageContent = dtos.subList(start, end);
-            
-            return new PageImpl<>(pageContent, pageable, dtos.size());
-
-        } else {
-            Page<UserReport> page;
-            if (Boolean.TRUE.equals(unreadOnly)) {
-                page = (keyword == null || keyword.isBlank())
-                        ? repo.findByAdminRead(false, pageable)
-                        : repo.findByReporterIdContainingIgnoreCaseOrTargetIdContainingIgnoreCaseOrContentContainingIgnoreCase(
-                            keyword, keyword, keyword, pageable
-                        );
-            } else {
-                if (keyword == null || keyword.isBlank()) {
-                    page = repo.findAll(pageable);
-                } else {
-                    page = repo.findByReporterIdContainingIgnoreCaseOrTargetIdContainingIgnoreCaseOrContentContainingIgnoreCase(
+        if (Boolean.TRUE.equals(unreadOnly)) {
+            result = userReportRepository.findByAdminRead(false, pageable);
+        } else if (keyword != null && !keyword.isBlank()) {
+            result = userReportRepository
+                    .findByReporterIdContainingIgnoreCaseOrTargetIdContainingIgnoreCaseOrContentContainingIgnoreCase(
                             keyword, keyword, keyword, pageable
                     );
-                }
-            }
-            return page.map(this::entityToDto);
+        } else {
+            result = userReportRepository.findAll(pageable);
         }
+
+        return result.map(this::entityToDto);
     }
 
     @Override
-    @Transactional
     public UserReportDTO markRead(Long id, boolean read) {
-        UserReport r = repo.findById(id).orElseThrow(() -> new IllegalArgumentException("Report not found: " + id));
-        r = UserReport.builder()
-                .id(r.getId())
-                .reporterId(r.getReporterId())
-                .targetId(r.getTargetId())
-                .content(r.getContent())
-                .createdAt(r.getCreatedAt())
-                .adminRead(read)
-                .build();
-        r = repo.save(r);
-        return entityToDto(r);
+        UserReport report = userReportRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("신고 내역이 존재하지 않습니다."));
+
+        report.setAdminRead(read);
+        return entityToDto(report);
     }
 
     @Override
-    @Transactional
     public int markAllRead() {
-        int updated = 0;
-        for (UserReport r : repo.findAll()) {
-            if (!r.isAdminRead()) {
-                UserReport saved = UserReport.builder()
-                        .id(r.getId())
-                        .reporterId(r.getReporterId())
-                        .targetId(r.getTargetId())
-                        .content(r.getContent())
-                        .createdAt(r.getCreatedAt())
-                        .adminRead(true)
-                        .build();
-                repo.save(saved);
-                updated++;
-            }
-        }
-        return updated;
+        var unreadList = userReportRepository.findByAdminRead(false);
+        unreadList.forEach(r -> r.setAdminRead(true));
+        return unreadList.size();
     }
 
     @Override
-    @Transactional
     public UserReportDTO create(UserReportDTO dto) {
-        UserReport entity = dtoToEntity(dto);
-        if (entity.getCreatedAt() == null) {
-            entity = UserReport.builder()
-                    .id(entity.getId())
-                    .reporterId(entity.getReporterId())
-                    .targetId(entity.getTargetId())
-                    .content(entity.getContent())
-                    .createdAt(LocalDateTime.now())
-                    .adminRead(false)
-                    .build();
+        if (dto == null) {
+            throw new IllegalArgumentException("신고 데이터가 없습니다.");
         }
-        return entityToDto(repo.save(entity));
+        if (dto.getReporterId() == null || dto.getReporterId().isBlank()) {
+            throw new IllegalArgumentException("신고자 정보가 없습니다.");
+        }
+        if (dto.getTargetId() == null || dto.getTargetId().isBlank()) {
+            throw new IllegalArgumentException("신고 대상 정보가 없습니다.");
+        }
+        if (dto.getContent() == null || dto.getContent().isBlank()) {
+            throw new IllegalArgumentException("신고 내용을 입력해주세요.");
+        }
+
+        // 수정: 같은 신고자-대상자 조합은 1회만 허용
+        if (userReportRepository.existsByReporterIdAndTargetId(dto.getReporterId(), dto.getTargetId())) {
+            throw new IllegalArgumentException("이미 신고한 사용자입니다.");
+        }
+
+        UserReport report = dtoToEntity(
+                UserReportDTO.builder()
+                        .reporterId(dto.getReporterId())
+                        .targetId(dto.getTargetId())
+                        .content(dto.getContent())
+                        .adminRead(false)
+                        .updated(false)
+                        .build()
+        );
+
+        UserReport saved = userReportRepository.save(report);
+
+        UserReportDTO result = entityToDto(saved);
+        result.setUpdated(false); // 신규 생성만 허용하므로 항상 false
+        return result;
     }
 
-	@Override
-	public UserReportDTO reportUser(Long maNo) {
-		Matching matching=matchingRepository.findById(maNo).orElseThrow(() -> new RuntimeException("매칭번호가 존재하지않습니다"));
-		CargoOwner cargoOwner = matching.getCargoOwner();
-		Estimate estimate = matching.getEstimate();
-		Member member = estimate.getMember();
-		String cargoId = cargoOwner.getCargoId();
-		String memberId = member.getMemId();
-		UserReportDTO dto = UserReportDTO.builder()
-							.reporterId(memberId)
-							.targetId(cargoId)
-							.build();
-		return dto;
-	}
-
     @Override
-    public UserReportDTO entityToDto(UserReport e) {
-        if (e == null) return null;
+    @Transactional(readOnly = true)
+    public UserReportDTO reportUser(Long no) {
+        // 수정: no를 deliveryNo로 먼저 시도하고, 없으면 matchingNo로 간주해서 delivery 찾기
+        Delivery delivery = deliveryRepository.findById(no).orElse(null);
 
-        String targetName = findUserName(e.getTargetId());
+        if (delivery == null) {
+            Long deliveryNo = deliveryRepository.findDeliveryNoByMatching(no)
+                    .orElseThrow(() -> new IllegalArgumentException("배송 정보가 존재하지 않습니다."));
+            delivery = deliveryRepository.findById(deliveryNo)
+                    .orElseThrow(() -> new IllegalArgumentException("배송 정보가 존재하지 않습니다."));
+        }
+
+        if (delivery.getPayment() == null
+                || delivery.getPayment().getOrderSheet() == null
+                || delivery.getPayment().getOrderSheet().getMatching() == null
+                || delivery.getPayment().getOrderSheet().getMatching().getEstimate() == null
+                || delivery.getPayment().getOrderSheet().getMatching().getEstimate().getMember() == null
+                || delivery.getPayment().getOrderSheet().getMatching().getCargoOwner() == null) {
+            throw new IllegalArgumentException("신고 대상 정보를 찾을 수 없습니다.");
+        }
+
+        String reporterId = delivery.getPayment()
+                .getOrderSheet()
+                .getMatching()
+                .getEstimate()
+                .getMember()
+                .getMemId();
+
+        String targetId = delivery.getPayment()
+                .getOrderSheet()
+                .getMatching()
+                .getCargoOwner()
+                .getCargoId();
+
+        String targetName = delivery.getPayment()
+                .getOrderSheet()
+                .getMatching()
+                .getCargoOwner()
+                .getCargoName();
 
         return UserReportDTO.builder()
-                .id(e.getId())
-                .reporterId(e.getReporterId())
-                .targetId(e.getTargetId())
+                .reporterId(reporterId)
+                .targetId(targetId)
                 .targetName(targetName)
-                .content(e.getContent())
-                .createdAt(e.getCreatedAt())
-                .adminRead(e.isAdminRead())
+                .updated(false)
                 .build();
-    }
-
-    private String findUserName(String userId) {
-        if (userId == null) return null;
-        Optional<Member> memberOpt = memberRepository.findByMemId(userId);
-        if (memberOpt.isPresent()) {
-            return memberOpt.get().getMemName();
-        }
-        Optional<CargoOwner> cargoOwnerOpt = cargoOwnerRepository.findByCargoId(userId);
-        if (cargoOwnerOpt.isPresent()) {
-            return cargoOwnerOpt.get().getCargoName();
-        }
-        return null;
     }
 }

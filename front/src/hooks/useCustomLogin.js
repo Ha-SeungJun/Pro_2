@@ -13,10 +13,10 @@ const API_BASE =
    "http://localhost:8080";
 
 // 토큰 유틸
-const saveTokens = ({ accessToken, refreshToken }, remember = true) => {
-   const store = remember ? localStorage : sessionStorage;
-   store.setItem("accessToken", accessToken);
-   store.setItem("refreshToken", refreshToken);
+const saveTokens = ({ accessToken, refreshToken }) => {
+   // 항상 sessionStorage에만 저장 → 탭/브라우저 닫으면 자동 삭제
+   sessionStorage.setItem("accessToken", accessToken);
+   sessionStorage.setItem("refreshToken", refreshToken);
 };
 const clearTokens = () => {
    localStorage.removeItem("accessToken");
@@ -25,7 +25,7 @@ const clearTokens = () => {
    sessionStorage.removeItem("refreshToken");
 };
 const hasToken = () =>
-   Boolean(localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken"));
+   Boolean(sessionStorage.getItem("accessToken"));
 
 // ✅ 실제 로그인 API 호출 (경로 고정: /api/auth/login)
 async function loginApi({ loginId, password }) {
@@ -35,13 +35,11 @@ async function loginApi({ loginId, password }) {
          { loginId, password },
          {
             headers: { "Content-Type": "application/json" },
-            withCredentials: false, // 세션/쿠키 기반이면 true
+            withCredentials: false,
          }
       );
-      // { tokenType, accessToken, refreshToken, expiresIn }
       return data;
    } catch (err) {
-      // response가 없을 수도 있으니 안전하게 파싱
       const msg =
          err?.response?.data?.message ??
          err?.response?.data?.error ??
@@ -55,20 +53,17 @@ const useCustomLogin = () => {
    const navigate = useNavigate();
    const dispatch = useDispatch();
 
-   // 리덕스 상태 (이메일/역할 등 기존 로직 유지)
    const loginState = useSelector((state) => state.login);
 
-   // 권한/식별자 (기존 필드 유지)
    const roles = loginState?.roles || [];
    const isAdmin = roles.includes("ROLE_ADMIN");
    const isUser = roles.includes("USER");
    const currentUserId = loginState?.memberId;
 
-   // 로그인 여부: 토큰 존재 OR 기존 email 필드
+   // 로그인 여부: sessionStorage 토큰만 확인
    const isLogin = hasToken() || Boolean(loginState?.email);
 
    // ✅ 로그인 처리
-   // loginParam 키가 달라도 유연하게 매핑 (loginId/password가 정식)
    const doLogin = async (loginParam) => {
       const loginId =
          loginParam?.loginId ??
@@ -80,24 +75,19 @@ const useCustomLogin = () => {
          loginParam?.pw ??
          loginParam?.password1 ??
          "";
-      const remember = loginParam?.remember ?? true;
 
-      // 백엔드 호출
       const tokens = await loginApi({ loginId, password });
 
-      // 토큰 저장 (스토리지 선택)
-      saveTokens(
-         { accessToken: tokens.accessToken, refreshToken: tokens.refreshToken },
-         remember
-      );
-
-      // 필요 시: 리덕스 상태 초기화/동기화(선택)
-      // dispatch(loginSuccess({ ... }))
+      // remember 옵션 무시하고 항상 sessionStorage에 저장
+      saveTokens({
+         accessToken: tokens.accessToken,
+         refreshToken: tokens.refreshToken,
+      });
 
       return tokens;
    };
 
-   // ✅ 로그아웃 처리 (토큰 삭제 + 서버 알림(있으면))
+   // ✅ 로그아웃 처리
    const doLogout = async () => {
       clearTokens();
       try {
@@ -116,7 +106,6 @@ const useCustomLogin = () => {
       }
    };
 
-   // 네비게이션 유틸
    const moveToPath = (path) => navigate(path, { replace: true });
    const moveToLogin = () => navigate("/login", { replace: true });
    const moveToLoginReturn = () => <Navigate replace to={"/member/login"} />;

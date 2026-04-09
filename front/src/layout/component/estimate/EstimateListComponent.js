@@ -29,26 +29,26 @@ const EstimateListComponent = () => {
   const [selectedEno, setSelectedEno] = useState(null)
   const [accepting, setAccepting] = useState(false)
 
-  useEffect(() => {
+useEffect(() => {
     let ignore = false;
 
     const run = async () => {
-      const safeRoles = Array.isArray(roles) ? roles : [];
-      const isDriver = safeRoles.includes("ROLE_DRIVER");
-      const isMember = safeRoles.includes("ROLE_USER");
-      const isAdmin = safeRoles.includes("ROLE_ADMIN");
+      const token = sessionStorage.getItem('accessToken');
 
-
-      if (!email) {
+      // ✅ 토큰 없으면 진짜 미로그인
+      if (!token) {
         alert("로그인이 필요합니다.");
         navigate("/", { replace: true });
         return;
       }
 
-      // 차주가 아니면(화물주면) 목록만 조회
+      // ✅ 토큰 있는데 Redux 아직 복원 안 됐으면 기다림
+      if (!email && roles.length === 0) return;
+
+      const safeRoles = Array.isArray(roles) ? roles : [];
+      const isDriver = safeRoles.includes("ROLE_DRIVER");
+
       if (!isDriver) {
-        // 화물주는 API 호출 없이 빈 상태 유지 또는 별도 API 호출
-        // 현재 getEstimateList는 차주용이라 화물주는 빈 목록 표시
         if (!ignore) setServerData(initState);
         return;
       }

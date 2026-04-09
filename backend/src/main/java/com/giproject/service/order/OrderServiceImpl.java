@@ -1,5 +1,7 @@
 package com.giproject.service.order;
 
+import java.time.LocalDateTime;
+
 import org.springframework.stereotype.Service;
 
 import com.giproject.dto.order.OrderFormDTO;
@@ -11,6 +13,7 @@ import com.giproject.entity.order.OrderSheet;
 import com.giproject.repository.matching.MatchingRepository;
 import com.giproject.repository.order.OrderRepository;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -59,14 +62,36 @@ public class OrderServiceImpl implements OrderService{
 	}
 
 	@Override
-	public Long placeOrderFromPayment(OrderSheetDTO dto,Long matchingNo) {
-		if (dto.getPhone() != null) {
+	@Transactional
+	public Long placeOrderFromPayment(OrderSheetDTO dto, Long matchingNo) {
+	    if (dto.getPhone() != null) {
 	        dto.setPhone(dto.getPhone().replaceAll("[^0-9]", ""));
 	    }
-		Matching matching= matchingRepository.findById(dto.getMatchingNo()).orElseThrow();
-		OrderSheet sheet = dtoToEntity(dto, matching);
-		OrderSheet ordersheet= orderRepository.save(sheet);
-		return ordersheet.getOrderNo();
+
+	    // 1. 매칭 및 견적 정보 조회
+	    Matching matching = matchingRepository.findById(matchingNo)
+	            .orElseThrow(() -> new RuntimeException("매칭 정보가 없습니다."));
+
+	    // 2. UUID 직접 생성 (누락 방지)
+	    String uniqueUuid = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss")) 
+	                      + java.util.UUID.randomUUID().toString().substring(0, 8);
+
+	    // 3. 엔티티 직접 빌드 (totalPrice와 orderUuid를 확실히 주입)
+	    OrderSheet sheet = OrderSheet.builder()
+	            .matching(matching)
+	            .totalPrice(matching.getEstimate().getTotalCost()) // 0원 방지
+	            .orderUuid(uniqueUuid) // 👈 [범인 검거] 여기서 null이 안 들어가게 확정!
+	            .startRestAddress(dto.getStartRestAddress())
+	            .endRestAddress(dto.getEndRestAddress())
+	            .orderTime(java.time.LocalDateTime.now())
+	            .Addressee(dto.getAddressee())
+	            .phone(dto.getPhone())
+	            .AddresseeEmail(dto.getAddresseeEmail())
+	            .build();
+
+	    // 4. 저장
+	    OrderSheet savedSheet = orderRepository.save(sheet);
+	    return savedSheet.getOrderNo();
 	}
 
 }

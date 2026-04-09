@@ -13,8 +13,8 @@ export default function useLogout() {
 
         try {
             // 1) 로컬/세션 저장소 토큰 제거 (프로젝트 키에 맞게 추가/수정)
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
+            sessionStorage.removeItem('accessToken');
+            sessionStorage.removeItem('refreshToken');
             sessionStorage.removeItem('accessToken');
             sessionStorage.removeItem('refreshToken');
 

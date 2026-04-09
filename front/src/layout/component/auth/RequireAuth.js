@@ -8,20 +8,20 @@ const API_BASE =
   'http://localhost:8080';
 
 const pickToken = () =>
-  localStorage.getItem('accessToken') ||
   sessionStorage.getItem('accessToken') ||
-  localStorage.getItem('ACCESS_TOKEN') ||
+  sessionStorage.getItem('accessToken') ||
+  sessionStorage.getItem('ACCESS_TOKEN') ||
   sessionStorage.getItem('ACCESS_TOKEN') ||
   null;
 
 export default function RequireAuth() {
   const location = useLocation();
-  const [ok, setOk] = useState(null);
-  const token = pickToken();
+  const [ok, setOk] = useState(null); 
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      const token = pickToken();
       if (!token) return setOk(false);
       try {
         await axios.get(`${API_BASE}/g2i4/user/info`, {
@@ -33,9 +33,9 @@ export default function RequireAuth() {
       }
     })();
     return () => { cancelled = true; };
-  }, [token]);
+  }, []); 
 
-  if (ok === null) return null;
+  if (ok === null) return null; 
 
   if (!ok) {
     return (

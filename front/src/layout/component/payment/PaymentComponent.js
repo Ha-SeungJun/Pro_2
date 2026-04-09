@@ -1,10 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Box, Paper, Typography, Divider, Button, Stack } from "@mui/material";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { completePayment } from "../../../api/paymentApi/paymentApi";
-
-
-
 
 const Row = ({ label, value, dim }) => (
   <Stack direction="row" alignItems="center" spacing={2} sx={{ py: 1 }}>
@@ -16,20 +13,21 @@ const Row = ({ label, value, dim }) => (
 );
 
 const formatAmount = (v) => {
-  if (v == null) return "";
+  if (v == null || v === "") return "0";
+  // BigInt가 필요한 수준의 초대형 숫자가 아니라면 Number로 로케일 처리
   return Number(v).toLocaleString('ko-KR');
 };
 
 const pad2 = (n) => String(n).padStart(2, "0");
 const formatDateTime = (value) => {
   if (!value) return "";
-  const d = typeof value === "string" || typeof value === "number" ? new Date(value) : value;
+  const d = new Date(value);
   const yyyy = d.getFullYear();
   const mm = pad2(d.getMonth() + 1);
   const dd = pad2(d.getDate());
   const hh = pad2(d.getHours());
   const mi = pad2(d.getMinutes());
-  return `${yyyy}년 ${mm}월${dd}일 ${hh}시 ${mi}분`;
+  return `${yyyy}년 ${mm}월 ${dd}일 ${hh}시 ${mi}분`;
 };
 
 const digitsOnly = (s = "") => String(s).replace(/\D/g, "");
@@ -43,26 +41,26 @@ const formatPhone = (raw) => {
   }
   if (d.length === 11) return `${d.slice(0, 3)}-${d.slice(3, 7)}-${d.slice(7)}`;
   if (d.length === 10) return `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6)}`;
-  return raw; 
+  return raw;
 };
 
 const PaymentComponent = () => {
   const { state } = useLocation();
-  const [viewData, setViewData] = useState();
+  const [viewData, setViewData] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const paymentNo = state?.paymentNo || sessionStorage.getItem("paymentNo")
+  const paymentNo = state?.paymentNo || sessionStorage.getItem("paymentNo");
 
   useEffect(() => {
-
     if (!paymentNo) {
-      alert("잘못된 접근 방식 입니다.")
-      navigate("/")
+      alert("잘못된 접근 방식입니다.");
+      navigate("/");
       return;
     }
     (async () => {
       try {
         const dto = await completePayment(paymentNo);
+        // ✅ [매핑 핵심] 백엔드 DTO의 long 필드들을 안전하게 상태에 저장
         setViewData({
           orderUuid: dto.orderUuid,
           cargoName: dto.cargoName,
@@ -73,26 +71,28 @@ const PaymentComponent = () => {
           endRestAddress: dto.endRestAdreess,
           paymentMethod: dto.paymentMethod,
           paidAt: dto.paidAt,
-          totalCost: dto.totalCost,
-        })
+          totalCost: dto.totalCost,       // 원금
+          discountPrice: dto.discountPrice, // 할인액
+          finalCost: dto.finalCost        // ✅ 실제 결제된 금액
+        });
       } catch (e) {
         console.error(e);
         alert("주문 완료 정보를 불러오지 못했습니다.");
         navigate("/");
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     })();
   }, [paymentNo, navigate]);
 
-  if (loading) return <Box sx={{ p: 4 }}>불러오는 중…</Box>;
+  if (loading) return <Box sx={{ p: 4 }}>정보를 불러오는 중입니다...</Box>;
   if (!viewData) return null;
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "#fafafa", py: 6, px: 2, display: "flex", flexDirection: "column", alignItems: "center" }}>
       <Typography variant="h5" sx={{ fontWeight: 900, mb: 1 }}>주문 완료</Typography>
       <Typography sx={{ color: "primary.main", fontWeight: 700, mb: 4 }}>
-        고객님의 주문이 정상적으로 완료되었습니다
+        고객님의 주문이 정상적으로 완료되었습니다.
       </Typography>
 
       <Paper elevation={0} sx={{ width: "100%", maxWidth: 760, borderRadius: 3, border: "1px solid #c8c8c8", p: { xs: 2.5, sm: 4 } }}>
@@ -104,36 +104,48 @@ const PaymentComponent = () => {
 
         <Row label="받으시는 분 :" value={viewData.addresseeName} />
         <Row label="전화번호 :" value={formatPhone(viewData.addresseePhone)} />
-        <Row label="배송지 정보 :" value={viewData.endAddress} />
+        <Row label="배달지 정보 :" value={viewData.endAddress} />
         <Row label={"\u00A0"} value={viewData.endRestAddress} />
 
         <Divider sx={{ my: 1.5 }} />
 
         <Row label="결제 정보 :" value={viewData.paymentMethod} />
+
+        {/* 원금 표시 (할인이 있을 때만 작게 표시하거나, 생략 가능) */}
+        {viewData.discountPrice > 0 && (
+          <Row label="주문 원금 :" value={`${formatAmount(viewData.totalCost)} 원`} dim={true} />
+        )}
+
+        {/* ✅ 쿠폰 할인이 있을 때만 할인 내역 표시 */}
+        {viewData.discountPrice > 0 && (
+          <Row
+            label="쿠폰 할인 :"
+            value={`- ${formatAmount(viewData.discountPrice)} 원`}
+            dim={true}
+          />
+        )}
+
         <Row label="승인일시 :" value={formatDateTime(viewData.paidAt)} />
+
         <Stack direction="row" alignItems="center" spacing={1} sx={{ py: 1 }}>
-          <Box sx={{ width: 160,fontWeight: 900, fontSize: 18,textAlign: "right", color: "error.main" }}>결제 금액 :</Box>
-          <Typography sx={{ whiteSpace: "pre-wrap", fontSize: 24 ,fontWeight: 900 ,color: "error.main"}}>
-          {formatAmount(viewData.totalCost)}
+          <Box sx={{ width: 160, fontWeight: 900, fontSize: 18, textAlign: "right", color: "error.main" }}>
+            최종 결제 금액 :
+          </Box>
+          <Typography sx={{ whiteSpace: "pre-wrap", fontSize: 24, fontWeight: 900, color: "error.main" }}>
+            {/*  기존 viewData.totalCost를 viewData.finalCost로 변경! */}
+            {formatAmount(viewData.finalCost)}
           </Typography>
           <Typography sx={{ color: "error.main", fontWeight: 900, fontSize: 18 }}>원</Typography>
         </Stack>
 
         <Divider sx={{ my: 1.5 }} />
-        
-{/* 
-        <Stack direction="row" justifyContent="flex-start" alignItems="baseline" spacing={1} sx={{ mt: 0.5 }}>
-          <Typography sx={{ color: "error.main", fontWeight: 900, fontSize: 18 }}>결제 금액 :</Typography>
-          <Typography sx={{ color: "error.main", fontWeight: 900, fontSize: 24 }}>{viewData.totalCost}</Typography>
-          <Typography sx={{ color: "error.main", fontWeight: 900, fontSize: 18 }}>원</Typography>
-        </Stack> */}
       </Paper>
 
       <Button
         variant="contained"
         size="large"
         sx={{ mt: 4, minWidth: 260, borderRadius: 2 }}
-        onClick={()=>(navigate("/"))}
+        onClick={() => navigate("/")}
       >
         홈으로 가기
       </Button>
@@ -141,5 +153,4 @@ const PaymentComponent = () => {
   );
 }
 
-
-export default PaymentComponent
+export default PaymentComponent;

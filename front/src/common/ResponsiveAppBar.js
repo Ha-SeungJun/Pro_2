@@ -50,9 +50,9 @@ const settingsAdmin = [
 const DEFAULT_AVATAR = '/image/placeholders/avatar.svg';
 
 const pickToken = () =>
-  localStorage.getItem('accessToken') ||
   sessionStorage.getItem('accessToken') ||
-  localStorage.getItem('ACCESS_TOKEN') ||
+  sessionStorage.getItem('accessToken') ||
+  sessionStorage.getItem('ACCESS_TOKEN') ||
   sessionStorage.getItem('ACCESS_TOKEN') ||
   null;
 
@@ -165,7 +165,7 @@ export default function ResponsiveAppBar() {
     const silentRefresh = async () => {
       try {
         const storedRefresh =
-          localStorage.getItem('refreshToken') ||
+          sessionStorage.getItem('refreshToken') ||
           sessionStorage.getItem('refreshToken');
 
         if (!storedRefresh) return;
@@ -186,7 +186,7 @@ export default function ResponsiveAppBar() {
 
         if (!newAccess || aborted) return;
 
-        localStorage.setItem('accessToken', newAccess);
+        sessionStorage.setItem('accessToken', newAccess);
         const payload = decodeJwt(newAccess) || {};
         dispatch(loginAction(payload));
         dispatch(getUserInfoAsync()); // Dispatch after silent refresh
@@ -236,8 +236,8 @@ export default function ResponsiveAppBar() {
   // ✅ 4) 로그아웃
   const handleLogout = async () => {
     try {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
+      sessionStorage.removeItem('accessToken');
+      sessionStorage.removeItem('refreshToken');
 
       try {
         await fetch(`${API_BASE}/api/auth/logout`, {
@@ -319,8 +319,8 @@ export default function ResponsiveAppBar() {
       // 수정: 차주는 "차주 배송 관리" 화면으로 이동
       navigate('/mypage/delivery');
     } else {
-      // 수정: 화주는 기존 그대로 유지
-      navigate('/mypage/deliverycargo');
+      // 화주: 마이페이지의 배송 정보 관리 화면
+      navigate('/mypage/delivery');
     }
   };
 

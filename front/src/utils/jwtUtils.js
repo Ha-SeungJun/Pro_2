@@ -29,7 +29,7 @@ export const decodeToken = (token) => {
  * @returns {object|null} - 사용자 정보 또는 null
  */
 export const getCurrentUserInfo = () => {
-  const token = localStorage.getItem('accessToken');
+  const token = sessionStorage.getItem('accessToken');
   if (!token) return null;
   
   const payload = decodeToken(token);
@@ -69,7 +69,7 @@ export const getCurrentUserId = () => {
  * @returns {boolean} - 유효성 여부
  */
 export const isTokenValid = () => {
-  const token = localStorage.getItem('accessToken');
+  const token = sessionStorage.getItem('accessToken');
   if (!token) return false;
   
   const payload = decodeToken(token);

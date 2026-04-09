@@ -18,6 +18,8 @@ public interface UserReportService {
                 .content(e.getContent())
                 .createdAt(e.getCreatedAt())
                 .adminRead(e.isAdminRead())
+                // 수정: 기본값 false, 실제 create()에서 상황에 맞게 다시 세팅
+                .updated(false)
                 .build();
     }
 
@@ -42,7 +44,6 @@ public interface UserReportService {
     int markAllRead();
 
     UserReportDTO create(UserReportDTO dto);
-    
+
     UserReportDTO reportUser(Long deNo);
 }
-

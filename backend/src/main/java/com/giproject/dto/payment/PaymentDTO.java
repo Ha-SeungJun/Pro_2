@@ -23,6 +23,8 @@ public class PaymentDTO {
 	    private String paymentMethod;     // "CARD" | "EASY_PAY"
 	    private String easyPayProvider;   // EASY_PAY일 때 "TOSSPAY" | "KAKAOPAY" ...
 	    private String currency;          // "KRW"
+	    
+	    private Long mcno; // 쿠폰 고유 번호
 	  }
 
 	  @Getter 
@@ -39,5 +41,7 @@ public class PaymentDTO {
 	    private String currency;
 	    private PaymentStatus paymentStatus;
 	    private LocalDateTime paidAt;
+	    
+	    private int discountPrice; // 얼마나 할인 받았는지
 	  };
 }

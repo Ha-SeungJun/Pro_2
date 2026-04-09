@@ -4,6 +4,7 @@ import com.giproject.entity.report.UserReport;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -17,6 +18,8 @@ public interface UserReportRepository extends JpaRepository<UserReport, Long> {
     List<UserReport> findByAdminRead(boolean adminRead);
 
     Page<UserReport> findByReporterIdContainingIgnoreCaseOrTargetIdContainingIgnoreCaseOrContentContainingIgnoreCase(
-            String reporterId, String targetId, String content, Pageable pageable
-    );
+            String reporterId, String targetId, String content, Pageable pageable);
+
+    // 수정: 같은 신고자-신고대상 조합이 이미 존재하는지 체크
+    boolean existsByReporterIdAndTargetId(String reporterId, String targetId);
 }

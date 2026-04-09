@@ -9,9 +9,7 @@ const API_BASE =
 
 // 토큰 픽업 유틸
 const pickToken = () =>
-    localStorage.getItem('accessToken') ||
-    sessionStorage.getItem('accessToken') ||
-    null;
+    sessionStorage.getItem('accessToken') || null;
 
 // 프로필 URL 정규화 유틸
 const normalizeProfileUrl = (v) => {
@@ -23,7 +21,7 @@ const normalizeProfileUrl = (v) => {
 
 const initState = {
     email: "",
-    roles: [], 
+    roles: [],
     profileImage: "",
     memberId: null,
     status: "idle",
@@ -152,17 +150,25 @@ const loginSlice = createSlice({
                 state.status = "failed";
                 state.error = action.payload || action.error?.message || "로그인 실패";
             })
-            // ✅ getUserInfoAsync 리듀서
             .addCase(getUserInfoAsync.fulfilled, (state, action) => {
                 const raw = action.payload || {};
-                const data = raw.data || raw.user || raw.payload || raw.profile || raw.account || raw.result || {};
-                
+                const data = raw.data || {};
+
                 const profilePath = data.webPath || data.profileImage || data.mem_profile_image || data.cargo_profile_image || data.profile || '';
                 state.profileImage = normalizeProfileUrl(profilePath);
 
-                // 필요 시 다른 정보도 업데이트
-                state.email = data.email || data.mem_email || state.email;
+                state.email = data.mem_email || data.email || state.email;
                 state.memberId = data.mem_id || data.cargo_id || state.memberId;
+
+                // ✅ userType으로 roles 매핑
+                const userType = raw.userType || "";
+                if (userType === "MEMBER") {
+                    state.roles = ["ROLE_SHIPPER"];
+                } else if (userType === "CARGO") {
+                    state.roles = ["ROLE_DRIVER"]; 
+                } else if (userType === "ADMIN") {
+                    state.roles = ["ROLE_ADMIN"];
+                }
             });
     },
 });

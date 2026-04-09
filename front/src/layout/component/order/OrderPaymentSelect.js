@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react"; //   useMemo 추가
 import {
     Box,
     Paper,
@@ -31,10 +31,17 @@ const iniState = {
     provider: ""
 }
 
-const OrderPaymentSelect = ({ serverData, orderSheet }) => {
+//   [수정] Props에 selectedMcno와 discountAmount 추가
+const OrderPaymentSelect = ({ serverData, orderSheet, selectedMcno, discountAmount = 0 }) => {
     const navigate = useNavigate();
     const [paymentType, setPaymentType] = useState(null);
     const [orderType, setOrderType] = useState(iniState);
+
+    //   [추가] 실제 결제할 최종 금액 계산 로직
+    const finalPaymentAmount = useMemo(() => {
+        const total = Number(serverData.totalCost ?? 0);
+        return Math.max(0, total - discountAmount); // 0원 미만 방지
+    }, [serverData.totalCost, discountAmount]);
 
     const handleCheck = () => {
         if (String(orderSheet.addressee ?? "").trim() === "") {
@@ -42,10 +49,7 @@ const OrderPaymentSelect = ({ serverData, orderSheet }) => {
             return;
         }
 
-        // 전화번호 검증 ( 문자 포함 여부 및 길이 체크 ) 
         const phoneValue = String(orderSheet.phone ?? "").trim();
-
-        // 문자가 포함되러있는지 검사 
         const hasNonNumeric = /[^0-9]/.test(phoneValue);
 
         if(phoneValue ===""){
@@ -65,15 +69,16 @@ const OrderPaymentSelect = ({ serverData, orderSheet }) => {
             alert("받는분 이메일을 입력해주세요");
             return;
         }
-        handleClick()//체크 다 되었을시 결제함수 호출
+        handleClick()
     }
 
     const handleClick = async () => {
         try {
-            // 1) 선택 검증
             if (!orderType.channelKey || !orderType.payMethod) return alert("결제 수단을 선택해주세요.");
             if (serverData?.totalCost == null) return alert("결제 금액이 유효하지 않습니다.");
-            if (Number(serverData.totalCost) === 0) {
+            
+            //   [수정] 할인으로 인해 0원이 되었거나 원금이 0원인 경우
+            if (finalPaymentAmount === 0) {
                 const payload = { ...orderSheet, matchingNo: Number(serverData.matchingNo) };
                 const orderNo = await postOrderCreate(payload);
                 if (!orderNo) { alert("주문서 번호를 받지 못했습니다."); return; }
@@ -83,6 +88,7 @@ const OrderPaymentSelect = ({ serverData, orderSheet }) => {
                     paymentMethod: "FREE",
                     easyPayProvider: null,
                     currency: "KRW",
+                    mcno: selectedMcno || null //   [추가] 쿠폰 번호 서버 전송
                 };
                 const paymentNo = await acceptedPayment(paymentDTO);
                 createDelivery(paymentNo);
@@ -92,11 +98,10 @@ const OrderPaymentSelect = ({ serverData, orderSheet }) => {
             }
 
             const paymentId = crypto.randomUUID()
-            // 3) 결제 요청
             const orderData = {
                 paymentId,
                 orderName: serverData.ordererName,
-                totalAmount: Number(serverData.totalCost ?? 0),
+                totalAmount: finalPaymentAmount, //   [수정] 할인된 최종 금액으로 결제 요청
                 channelKey: orderType.channelKey,
                 payMethod: orderType.payMethod,
                 provider: orderType.provider,
@@ -123,6 +128,7 @@ const OrderPaymentSelect = ({ serverData, orderSheet }) => {
                 paymentMethod: orderType.payMethod,
                 easyPayProvider: orderType.payMethod === "EASY_PAY" ? orderType.provider : null,
                 currency: "KRW",
+                mcno: selectedMcno || null //   [추가] 백엔드 승인 API로 쿠폰 번호 전송
             }
             const paymentNo = await acceptedPayment(paymentDTO);
 
@@ -140,10 +146,7 @@ const OrderPaymentSelect = ({ serverData, orderSheet }) => {
         }
     };
 
-
-
     const handleSelectMethod = (e) => {
-
         const key = e.currentTarget.name;
         setPaymentType(key)
         if (key === "CARD") {
@@ -164,37 +167,24 @@ const OrderPaymentSelect = ({ serverData, orderSheet }) => {
             justifyContent={"space-between"}
             wrap="nowrap"
         >
-            {/*  결제 섹션 */}
             <Grid item xs={12} md={7} sx={{ minWidth: 0 }}>
                 <Box sx={{ p: 3, borderRadius: 3 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>
-                        결제 방법
-                    </Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>결제 방법</Typography>
                     <Divider sx={{ mb: 3 }} />
-
                     <Box sx={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
                         <Button name="CARD" variant={paymentType === 'CARD' ? "contained" : "outlined"} sx={{ px: 1, py: 1.5, borderRadius: 2 }} onClick={handleSelectMethod}>신용·체크카드</Button>
                         <Button name="TOSS" variant={paymentType === 'TOSS' ? "contained" : "outlined"} sx={{ p: 0, borderRadius: 2 }} onClick={handleSelectMethod}>
-                            <img
-                                src="../../image/logo/TossPay_Logo_Primary.png"
-                                style={{ width: 100, height: 40 }}
-                            />
+                            <img src="../../image/logo/TossPay_Logo_Primary.png" style={{ width: 100, height: 40 }} alt="toss" />
                         </Button>
                         <Button name="KAKAO" variant={paymentType === 'KAKAO' ? "contained" : "outlined"} sx={{ width: 100, p: 0, borderRadius: 2, }} onClick={handleSelectMethod}>
-                            <img
-                                src="../../image/logo/payment_icon_yellow_medium.png"
-                                style={{ width: 80, height: 30, borderRadius: 7 }}
-                            />
+                            <img src="../../image/logo/payment_icon_yellow_medium.png" style={{ width: 80, height: 30, borderRadius: 7 }} alt="kakao" />
                         </Button>
                     </Box>
                 </Box>
             </Grid>
-            {/* 요금 결제 창 */}
+
             <Grid item xs={12} md={5} sx={{ minWidth: 0 }}>
-                <Paper
-                    variant="outlined"
-                    sx={{ minWidth: 300, p: 3, borderRadius: 3, height: "100%", display: "flex", flexDirection: "column", gap: 2 }}
-                >
+                <Paper variant="outlined" sx={{ minWidth: 300, p: 3, borderRadius: 3, height: "100%", display: "flex", flexDirection: "column", gap: 2 }}>
                     <Typography variant="h6" sx={{ fontWeight: 700 }}>총 결제금액</Typography>
                     <Box sx={{ display: "grid", gridTemplateColumns: "1fr auto auto", rowGap: 1, columnGap: 1 }}>
                         <Typography color="text.secondary">기본 운송 요금</Typography>
@@ -214,13 +204,25 @@ const OrderPaymentSelect = ({ serverData, orderSheet }) => {
                             {serverData.specialOptionCost != null ? Number(serverData.specialOptionCost).toLocaleString() : "\u00A0"}
                         </Typography>
                         <Typography>원</Typography>
+                        
+                        {/*   [추가] 할인 내역 표시 섹션 */}
+                        {discountAmount > 0 && (
+                            <>
+                                <Typography color="error.main" sx={{ fontWeight: 700 }}>쿠폰 할인</Typography>
+                                <Typography color="error.main" sx={{ textAlign: "right", fontWeight: 700 }}>
+                                    - {discountAmount.toLocaleString()}
+                                </Typography>
+                                <Typography color="error.main" sx={{ fontWeight: 700 }}>원</Typography>
+                            </>
+                        )}
                     </Box>
 
                     <Divider />
 
                     <Box sx={{ display: "flex", justifyContent: "flex-end", alignItems: "baseline", gap: 1 }}>
                         <Typography variant="h5" sx={{ fontWeight: 800 }}>
-                            {serverData.totalCost != null ? Number(serverData.totalCost).toLocaleString() : "\u00A0"}
+                            {/*  [수정] 할인된 최종 금액 표시 */}
+                            {finalPaymentAmount.toLocaleString()}
                         </Typography>
                         <Typography variant="h6" sx={{ fontWeight: 800 }}>원</Typography>
                     </Box>
@@ -231,8 +233,6 @@ const OrderPaymentSelect = ({ serverData, orderSheet }) => {
                 </Paper>
             </Grid>
         </Grid>
-
-
     )
 }
 

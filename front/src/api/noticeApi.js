@@ -36,7 +36,7 @@ export const getNoticeDetail = async (noticeId) => {
 
 // 공지사항 생성 (관리자 전용)
 export const createNotice = async (noticeData, userInfo = null) => {
-    const token = localStorage.getItem('accessToken');
+    const token = sessionStorage.getItem('accessToken');
     const headers = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
@@ -51,7 +51,7 @@ export const createNotice = async (noticeData, userInfo = null) => {
 
 // 공지사항 수정 (관리자 전용)
 export const updateNotice = async (noticeId, noticeData, userInfo = null) => {
-    const token = localStorage.getItem('accessToken');
+    const token = sessionStorage.getItem('accessToken');
     const headers = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
@@ -80,7 +80,7 @@ export const updateNotice = async (noticeId, noticeData, userInfo = null) => {
 
 // 공지사항 삭제 (관리자 전용)
 export const deleteNotice = async (noticeId, userInfo = null) => {
-    const token = localStorage.getItem('accessToken');
+    const token = sessionStorage.getItem('accessToken');
     const headers = {
         'Authorization': `Bearer ${token}`
     };

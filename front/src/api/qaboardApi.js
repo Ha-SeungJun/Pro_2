@@ -17,7 +17,7 @@ export const getPostList = async (params = {}, userInfo = {}, isAdmin = false) =
     if (isAdmin) queryParams.append('isAdmin', 'true');
     
     // JWT 토큰 기반 인증으로 통일
-    const token = localStorage.getItem('accessToken');
+    const token = sessionStorage.getItem('accessToken');
     const headers = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
@@ -34,7 +34,7 @@ export const getPostList = async (params = {}, userInfo = {}, isAdmin = false) =
 // 게시글 상세 조회
 export const getPostDetail = async (postId, userInfo = {}) => {
     // JWT 토큰 기반 인증으로 통일
-    const token = localStorage.getItem('accessToken');
+    const token = sessionStorage.getItem('accessToken');
     const headers = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
@@ -49,7 +49,7 @@ export const getPostDetail = async (postId, userInfo = {}) => {
 
 // 게시글 생성
 export const createPost = async (postData, userInfo) => {
-    const token = localStorage.getItem('accessToken');
+    const token = sessionStorage.getItem('accessToken');
     const headers = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
@@ -64,7 +64,7 @@ export const createPost = async (postData, userInfo) => {
 
 // 게시글 수정
 export const updatePost = async (postId, postData, userInfo) => {
-    const token = localStorage.getItem('accessToken');
+    const token = sessionStorage.getItem('accessToken');
     const headers = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
@@ -76,7 +76,7 @@ export const updatePost = async (postId, postData, userInfo) => {
 
 // 게시글 삭제
 export const deletePost = async (postId, userInfo) => {
-    const token = localStorage.getItem('accessToken');
+    const token = sessionStorage.getItem('accessToken');
     const headers = {
         'Authorization': `Bearer ${token}`
     };
@@ -87,7 +87,7 @@ export const deletePost = async (postId, userInfo) => {
 
 // 관리자 답변 생성
 export const createAdminResponse = async (postId, responseData, userInfo) => {
-    const token = localStorage.getItem('accessToken');
+    const token = sessionStorage.getItem('accessToken');
     const headers = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
@@ -99,7 +99,7 @@ export const createAdminResponse = async (postId, responseData, userInfo) => {
 
 // 관리자 답변 수정
 export const updateAdminResponse = async (postId, responseData, userInfo) => {
-    const token = localStorage.getItem('accessToken');
+    const token = sessionStorage.getItem('accessToken');
     const headers = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
@@ -111,7 +111,7 @@ export const updateAdminResponse = async (postId, responseData, userInfo) => {
 
 // 관리자 답변 삭제
 export const deleteAdminResponse = async (postId, userInfo) => {
-    const token = localStorage.getItem('accessToken');
+    const token = sessionStorage.getItem('accessToken');
     const headers = {
         'Authorization': `Bearer ${token}`
     };
@@ -124,7 +124,7 @@ export const deleteAdminResponse = async (postId, userInfo) => {
 export const getMyPosts = async (userInfo, params = {}) => {
     const { page = 0, size = 10 } = params;
     
-    const token = localStorage.getItem('accessToken');
+    const token = sessionStorage.getItem('accessToken');
     const headers = {
         'Authorization': `Bearer ${token}`
     };

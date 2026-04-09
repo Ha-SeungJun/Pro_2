@@ -27,8 +27,8 @@ export default function OAuthCallbackPage() {
 
         if (access && refresh) {
             // 기존 회원 로그인 → 토큰 저장 후 메인으로 이동
-            localStorage.setItem("accessToken", access);
-            localStorage.setItem("refreshToken", refresh);
+            sessionStorage.setItem("accessToken", access);
+            sessionStorage.setItem("refreshToken", refresh);
             navigate("/", { replace: true });
             return;
         }

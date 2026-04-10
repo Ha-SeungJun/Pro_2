@@ -194,6 +194,11 @@ public class ReviewServiceImpl implements ReviewService {
 	public List<MyReviewListDTO> getMyReviews(String memId) {
 	    return reviewRepository.findMyReviewsByWriterMemId(memId);
 	}
+	@Override
+	@Transactional(readOnly = true)
+	public List<MyReviewListDTO> getReceivedReviews(String cargoId) {
+	    return reviewRepository.findReceivedReviewsByCargoId(cargoId);
+	}
 	
 
 

@@ -104,7 +104,14 @@ public interface ReviewRepository extends JpaRepository<Review, Long>{
     	        r.deliveryNo,
     	        r.rating,
     	        r.comment,
-    	        r.createdAt
+    	        r.createdAt,
+    	        e.cargoType,
+    	        e.cargoWeight,
+    	        e.startAddress,
+    	        e.endAddress,
+    	        d.completTime,
+    	        m.cargoOwner.cargoName,
+    	        d.status
     	    )
     	    FROM Review r
     	    JOIN Delivery d ON r.deliveryNo = d.deliveryNo
@@ -116,5 +123,29 @@ public interface ReviewRepository extends JpaRepository<Review, Long>{
     	    ORDER BY r.createdAt DESC
     	    """)
     	List<MyReviewListDTO> findMyReviewsByWriterMemId(@Param("memId") String memId);
-    
+    @Query("""
+    	    SELECT new com.giproject.dto.review.MyReviewListDTO(
+    	        r.reviewNo,
+    	        r.deliveryNo,
+    	        r.rating,
+    	        r.comment,
+    	        r.createdAt,
+    	        e.cargoType,
+    	        e.cargoWeight,
+    	        e.startAddress,
+    	        e.endAddress,
+    	        d.completTime,
+    	        m.cargoOwner.cargoName,
+    	        d.status
+    	    )
+    	    FROM Review r
+    	    JOIN Delivery d ON r.deliveryNo = d.deliveryNo
+    	    JOIN d.payment p
+    	    JOIN p.orderSheet os
+    	    JOIN os.matching m
+    	    JOIN m.estimate e
+    	    WHERE m.cargoOwner.cargoId = :cargoId
+    	    ORDER BY r.createdAt DESC
+    	    """)
+    	List<MyReviewListDTO> findReceivedReviewsByCargoId(@Param("cargoId") String cargoId);
 }

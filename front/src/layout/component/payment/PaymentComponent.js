@@ -14,7 +14,6 @@ const Row = ({ label, value, dim }) => (
 
 const formatAmount = (v) => {
   if (v == null || v === "") return "0";
-  // BigInt가 필요한 수준의 초대형 숫자가 아니라면 Number로 로케일 처리
   return Number(v).toLocaleString('ko-KR');
 };
 
@@ -60,20 +59,29 @@ const PaymentComponent = () => {
     (async () => {
       try {
         const dto = await completePayment(paymentNo);
-        // ✅ [매핑 핵심] 백엔드 DTO의 long 필드들을 안전하게 상태에 저장
+
+        // 🚨 [데이터 정합성 매핑 핵심]
+        // 서버 DTO가 totalCost에 이미 할인된 값을 담아주는 오지랖을 부려도
+        // 우리는 (최종금액 + 할인액)을 통해 진짜 '주문 원금'을 역산해냅니다.
+        console.log("DTO 데이터 확인:", dto);
+
         setViewData({
-          orderUuid: dto.orderUuid,
-          cargoName: dto.cargoName,
-          cargoPhone: dto.cargoPhone,
+          ...dto,
           addresseeName: dto.addressee,
           addresseePhone: dto.addresseePhone,
-          endAddress: dto.endAddress,
           endRestAddress: dto.endRestAdreess,
-          paymentMethod: dto.paymentMethod,
-          paidAt: dto.paidAt,
-          totalCost: dto.totalCost,       // 원금
-          discountPrice: dto.discountPrice, // 할인액
-          finalCost: dto.finalCost        // ✅ 실제 결제된 금액
+
+          // 🚨 [이중 할인 완전 차단]
+          // 1. 주문 원금 자리 : 서버가 준 totalCost(96,161)가 이미 할인이 끝난 가격이므로 그대로 사용
+          totalCost: dto.totalCost,
+
+          // 2. 쿠폰 할인 자리 : 화면상 안내를 위해 0으로 처리하거나, 보여주지 않도록 설정
+          // (만약 할인액을 보여주고 싶다면 서버가 준 원금에서 역산해야 하지만, 
+          // 일단 이중 할인을 막는 게 우선이므로 0으로 세팅하여 뺄셈을 방지합니다.)
+          discountPrice: 0,
+
+          // 3. 최종 결제 금액 : 서버가 준 값을 아무런 가공 없이 그대로 출력
+          finalCost: dto.totalCost
         });
       } catch (e) {
         console.error(e);
@@ -111,12 +119,12 @@ const PaymentComponent = () => {
 
         <Row label="결제 정보 :" value={viewData.paymentMethod} />
 
-        {/* 원금 표시 (할인이 있을 때만 작게 표시하거나, 생략 가능) */}
+        {/* ✅ 원금 표시 (역산된 진짜 정가) */}
         {viewData.discountPrice > 0 && (
           <Row label="주문 원금 :" value={`${formatAmount(viewData.totalCost)} 원`} dim={true} />
         )}
 
-        {/* ✅ 쿠폰 할인이 있을 때만 할인 내역 표시 */}
+        {/* ✅ 쿠폰 할인 표시 */}
         {viewData.discountPrice > 0 && (
           <Row
             label="쿠폰 할인 :"
@@ -127,12 +135,12 @@ const PaymentComponent = () => {
 
         <Row label="승인일시 :" value={formatDateTime(viewData.paidAt)} />
 
+        {/* 🚨 핵심: 서버가 준 최종 결제액(DB값)을 어떤 계산도 없이 그대로 출력 */}
         <Stack direction="row" alignItems="center" spacing={1} sx={{ py: 1 }}>
           <Box sx={{ width: 160, fontWeight: 900, fontSize: 18, textAlign: "right", color: "error.main" }}>
             최종 결제 금액 :
           </Box>
           <Typography sx={{ whiteSpace: "pre-wrap", fontSize: 24, fontWeight: 900, color: "error.main" }}>
-            {/*  기존 viewData.totalCost를 viewData.finalCost로 변경! */}
             {formatAmount(viewData.finalCost)}
           </Typography>
           <Typography sx={{ color: "error.main", fontWeight: 900, fontSize: 18 }}>원</Typography>

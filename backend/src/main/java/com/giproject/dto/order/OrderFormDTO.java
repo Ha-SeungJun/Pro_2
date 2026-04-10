@@ -34,10 +34,15 @@ public class OrderFormDTO {
     private int baseCost;
     private int distanceCost;
     private int specialOptionCost;
-    private int totalCost;
+    private int totalCost; // 원금 (Total)
+    
+    //  실제 결제될 금액을 담을 필드
+    private int finalPaymentAmount; 
+
     // 주문 메타 
     private String orderUuid;
     private String orderTime; 
+    
     // 기타
-    private Long matchingNo; // 주문 생성 시 매칭번호 필요
+    private Long matchingNo; 
 }

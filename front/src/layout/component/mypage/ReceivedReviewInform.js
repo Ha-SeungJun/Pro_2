@@ -12,7 +12,6 @@ import {
   Container,
   Rating,
   Button,
-  Stack,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -20,11 +19,7 @@ import {
   TextField,
 } from "@mui/material";
 import PageComponent from "../common/PageComponent";
-import {
-  getMyReviews,
-  deleteReview,
-  modifyReview,
-} from "../../../api/reviewApi/reviewApi";
+import { getReceivedReviews } from "../../../api/reviewApi/reviewApi";
 
 const initState = {
   dtoList: [],
@@ -85,28 +80,15 @@ const paginate = (data, { page, size }) => {
   };
 };
 
-const MyReviewInform = () => {
+const ReceivedReviewInform = () => {
   const [allReviews, setAllReviews] = useState([]);
   const [serverData, setServerData] = useState(initState);
   const [pageParams, setPageParams] = useState({ page: 1, size: 5 });
   const [loading, setLoading] = useState(true);
 
-  const [openEditModal, setOpenEditModal] = useState(false);
-  const [selectedReview, setSelectedReview] = useState(null);
-  const [editReviewScore, setEditReviewScore] = useState(0);
-  const [editReviewContent, setEditReviewContent] = useState("");
   const [openDetailModal, setOpenDetailModal] = useState(false);
   const [selectedDetailReview, setSelectedDetailReview] = useState(null);
-  const handleOpenDetailModal = (item) => {
-    console.log("상세 리뷰 데이터:",item)
-    setSelectedDetailReview(item);
-    setOpenDetailModal(true);
-  };
 
-  const handleCloseDetailModal = () => {
-    setOpenDetailModal(false);
-    setSelectedDetailReview(null);
-  };
   const movePage = (pageObj) => {
     setPageParams((prev) => ({ ...prev, ...pageObj }));
   };
@@ -121,77 +103,24 @@ const MyReviewInform = () => {
     setServerData(paginate(sorted, nextPageParams));
   };
 
-  const reloadMyReviews = async () => {
-    const data = await getMyReviews();
-    const list = Array.isArray(data) ? data : [];
-    setAllReviews(list);
-    applyPagedData(list);
+  const handleOpenDetailModal = (item) => {
+    setSelectedDetailReview(item);
+    setOpenDetailModal(true);
   };
 
-  const handleOpenEditModal = (item) => {
-    setSelectedReview(item);
-    setEditReviewScore(Number(item.rating) || 0);
-    setEditReviewContent(item.comment || "");
-    setOpenEditModal(true);
-  };
-
-  const handleCloseEditModal = () => {
-    setOpenEditModal(false);
-    setSelectedReview(null);
-    setEditReviewScore(0);
-    setEditReviewContent("");
-  };
-
-  const handleDelete = async (reviewNo) => {
-    if (!window.confirm("정말 삭제하시겠습니까?")) return;
-
-    try {
-      await deleteReview(reviewNo);
-      alert("삭제 완료");
-      await reloadMyReviews();
-    } catch (e) {
-      console.error("리뷰 삭제 실패:", e);
-      alert("삭제 실패");
-    }
-  };
-
-  const handleConfirmModify = async () => {
-    if (!selectedReview) return;
-
-    if (editReviewScore === 0) {
-      alert("별점을 선택해야 합니다.");
-      return;
-    }
-
-    if (!editReviewContent.trim()) {
-      alert("리뷰 내용을 입력해야 합니다.");
-      return;
-    }
-
-    try {
-      await modifyReview(selectedReview.reviewNo, {
-        deliveryNo: selectedReview.deliveryNo,
-        rating: editReviewScore,
-        comment: editReviewContent.trim(),
-      });
-
-      alert("수정 완료");
-      handleCloseEditModal();
-      await reloadMyReviews();
-    } catch (e) {
-      console.error("리뷰 수정 실패:", e);
-      alert("수정 실패");
-    }
+  const handleCloseDetailModal = () => {
+    setOpenDetailModal(false);
+    setSelectedDetailReview(null);
   };
 
   useEffect(() => {
     let cancelled = false;
 
-    const fetchMyReviews = async () => {
+    const fetchReceivedReviews = async () => {
       try {
         setLoading(true);
 
-        const data = await getMyReviews();
+        const data = await getReceivedReviews();
         const list = Array.isArray(data) ? data : [];
 
         if (!cancelled) {
@@ -199,7 +128,7 @@ const MyReviewInform = () => {
           applyPagedData(list, pageParams);
         }
       } catch (error) {
-        console.error("내 리뷰 목록 조회 실패:", error);
+        console.error("받은 리뷰 목록 조회 실패:", error);
         if (!cancelled) {
           setAllReviews([]);
           setServerData(paginate([], pageParams));
@@ -211,7 +140,7 @@ const MyReviewInform = () => {
       }
     };
 
-    fetchMyReviews();
+    fetchReceivedReviews();
 
     return () => {
       cancelled = true;
@@ -225,12 +154,11 @@ const MyReviewInform = () => {
   const tableColgroup = useMemo(
     () => (
       <colgroup>
-        <col style={{ width: "10%" }} />
-        <col style={{ width: "12%" }} />
         <col style={{ width: "14%" }} />
-        <col style={{ width: "34%" }} />
-        <col style={{ width: "15%" }} />
-        <col style={{ width: "15%" }} />
+        <col style={{ width: "14%" }} />
+        <col style={{ width: "14%" }} />
+        <col style={{ width: "38%" }} />
+        <col style={{ width: "20%" }} />
       </colgroup>
     ),
     []
@@ -240,7 +168,7 @@ const MyReviewInform = () => {
     if (loading) {
       return (
         <TableRow>
-          <TableCell colSpan={6} align="center">
+          <TableCell colSpan={5} align="center">
             불러오는 중...
           </TableCell>
         </TableRow>
@@ -250,8 +178,8 @@ const MyReviewInform = () => {
     if (!serverData.dtoList || serverData.dtoList.length === 0) {
       return (
         <TableRow>
-          <TableCell colSpan={6} align="center">
-            작성한 리뷰가 없습니다.
+          <TableCell colSpan={5} align="center">
+            받은 리뷰가 없습니다.
           </TableCell>
         </TableRow>
       );
@@ -259,11 +187,11 @@ const MyReviewInform = () => {
 
     return serverData.dtoList.map((item) => (
       <TableRow key={item.reviewNo}>
-        <TableCell align="center">{item.reviewNo}</TableCell>
-        <TableCell align="center">{item.deliveryNo}</TableCell>
+        <TableCell align="center">{item.cargoType || "-"}</TableCell>
         <TableCell align="center">
           <Rating value={Number(item.rating) || 0} precision={0.5} readOnly />
         </TableCell>
+        <TableCell align="center">{item.driverName || "-"}</TableCell>
         <TableCell align="left">
           <Box
             sx={{
@@ -277,34 +205,14 @@ const MyReviewInform = () => {
             {item.comment || "-"}
           </Box>
         </TableCell>
-        <TableCell align="center">{formatDateTime(item.createdAt)}</TableCell>
         <TableCell align="center">
-          <Stack direction="row" spacing={1} justifyContent="center">
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={() => handleOpenDetailModal(item)}
-            >
-              상세
-            </Button>
-
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={() => handleOpenEditModal(item)}
-            >
-              수정
-            </Button>
-
-            <Button
-              variant="outlined"
-              color="error"
-              size="small"
-              onClick={() => handleDelete(item.reviewNo)}
-            >
-              삭제
-            </Button>
-          </Stack>
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => handleOpenDetailModal(item)}
+          >
+            상세
+          </Button>
         </TableCell>
       </TableRow>
     ));
@@ -314,12 +222,12 @@ const MyReviewInform = () => {
     <Box sx={{ bgcolor: "#f7f9fc", minHeight: "100vh", py: 6 }}>
       <Container maxWidth="xl" disableGutters sx={{ px: { xs: 1, sm: 2 } }}>
         <Typography variant="h5" fontWeight="bold" gutterBottom textAlign="center">
-          내 리뷰 관리
+          내가 받은 리뷰
         </Typography>
 
         <Box mt={6}>
           <Typography variant="h6" fontWeight="bold" gutterBottom>
-            내가 작성한 리뷰 목록
+            차주에게 작성된 리뷰 목록
           </Typography>
 
           <TableContainer
@@ -331,12 +239,11 @@ const MyReviewInform = () => {
               {tableColgroup}
               <TableHead>
                 <TableRow>
-                  <TableCell align="center">리뷰번호</TableCell>
-                  <TableCell align="center">배송번호</TableCell>
+                  <TableCell align="center">화물명</TableCell>
                   <TableCell align="center">별점</TableCell>
+                  <TableCell align="center">운전 기사</TableCell>
                   <TableCell align="center">리뷰 내용</TableCell>
-                  <TableCell align="center">작성일</TableCell>
-                  <TableCell align="center">관리</TableCell>
+                  <TableCell align="center">상세</TableCell>
                 </TableRow>
               </TableHead>
 
@@ -361,59 +268,15 @@ const MyReviewInform = () => {
         </Box>
       </Container>
 
-      <Dialog open={openEditModal} onClose={handleCloseEditModal} maxWidth="sm" fullWidth>
-        <DialogTitle>리뷰 수정</DialogTitle>
-
-        <DialogContent>
-          <Typography variant="body2" sx={{ mb: 1 }}>
-            <strong>리뷰번호:</strong> {selectedReview?.reviewNo ?? "-"}
-          </Typography>
-
-          <Typography variant="body2" sx={{ mb: 2 }}>
-            <strong>배송번호:</strong> {selectedReview?.deliveryNo ?? "-"}
-          </Typography>
-
-          <Typography gutterBottom sx={{ mt: 1 }}>
-            별점
-          </Typography>
-
-          <Rating
-            value={editReviewScore}
-            precision={0.5}
-            onChange={(event, newValue) => setEditReviewScore(newValue || 0)}
-          />
-
-          <TextField
-            fullWidth
-            multiline
-            rows={4}
-            label="리뷰 내용"
-            value={editReviewContent}
-            onChange={(e) => setEditReviewContent(e.target.value)}
-            sx={{ mt: 2 }}
-          />
-        </DialogContent>
-
-        <DialogActions>
-          <Button onClick={handleCloseEditModal}>취소</Button>
-          <Button onClick={handleConfirmModify} variant="contained">
-            저장
-          </Button>
-        </DialogActions>
-      </Dialog>
       <Dialog
         open={openDetailModal}
         onClose={handleCloseDetailModal}
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>리뷰 상세보기</DialogTitle>
+        <DialogTitle>받은 리뷰 상세보기</DialogTitle>
 
         <DialogContent>
-          <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 2 }}>
-            리뷰 대상 배송 정보
-          </Typography>
-
           <Typography variant="body2" sx={{ mb: 1 }}>
             <strong>화물명:</strong> {selectedDetailReview?.cargoType || "-"}
           </Typography>
@@ -438,19 +301,15 @@ const MyReviewInform = () => {
             <strong>운전 기사:</strong> {selectedDetailReview?.driverName || "-"}
           </Typography>
 
-          <Typography variant="body2" sx={{ mb: 3 }}>
+          <Typography variant="body2" sx={{ mb: 2 }}>
             <strong>상태:</strong>{" "}
             {selectedDetailReview?.deliveryStatus === "COMPLETED"
               ? "배송 완료"
               : selectedDetailReview?.deliveryStatus === "IN_TRANSIT"
-                ? "배송 중"
-                : selectedDetailReview?.deliveryStatus === "PENDING"
-                  ? "대기"
-                  : "-"}
-          </Typography>
-
-          <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 1 }}>
-            리뷰 정보
+              ? "배송 중"
+              : selectedDetailReview?.deliveryStatus === "PENDING"
+              ? "대기"
+              : "-"}
           </Typography>
 
           <Typography gutterBottom>별점</Typography>
@@ -479,9 +338,8 @@ const MyReviewInform = () => {
           <Button onClick={handleCloseDetailModal}>닫기</Button>
         </DialogActions>
       </Dialog>
-
     </Box>
   );
 };
 
-export default MyReviewInform;
+export default ReceivedReviewInform;

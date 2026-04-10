@@ -36,7 +36,10 @@ public interface ReviewService {
 	 //버튼 숨기기용
 	 boolean existsByDeliveryNo(Long deliveryNo);
 	 
-	 //내(member:화주)가 작성한 리뷰 보기 
-	 public List<MyReviewListDTO> getMyReviews(String memId);
+	// 내가(화주) 작성한 리뷰
+	 List<MyReviewListDTO> getMyReviews(String memId);
+	 
+	// 내가(차주) 받은 리뷰
+	 List<MyReviewListDTO> getReceivedReviews(String cargoId);
 }
 	 

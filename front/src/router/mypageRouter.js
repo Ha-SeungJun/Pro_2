@@ -6,6 +6,7 @@ const MyInform = lazy(() => import("../layout/component/mypage/MyInform"));
 const EditMyInform = lazy(() => import("../layout/component/mypage/EditMyInform"));
 const EditVehicleInform = lazy(() => import("../layout/component/mypage/EditVehicleInform"));
 const MyReviewInform = lazy(() => import("../layout/component/mypage/MyReviewInform"));/////리뷰
+const ReceivedReviewInform = lazy(() => import("../layout/component/mypage/ReceivedReviewInform"));
 const DeliveryInformCargo = lazy(() => import("../layout/component/mypage/DeliveryInformCargo"));
 const DeliveryInform = lazy(() => import("../layout/component/mypage/DeliveryInform"));
 const OrderSummaryReadOnly = lazy(() => import("../layout/component/mypage/OrderSummaryReadOnly"));
@@ -19,7 +20,7 @@ const mypageRouter = [
     element: <Suspense fallback={Loading}><EditMyInform /></Suspense>
   },
   {
-   path: "vehicle/:cargoId", element: <Suspense fallback={Loading}><EditVehicleInform /></Suspense>
+    path: "vehicle/:cargoId", element: <Suspense fallback={Loading}><EditVehicleInform /></Suspense>
   },
   {
     path: "delivery",
@@ -37,7 +38,11 @@ const mypageRouter = [
     path: "review",
     element: <Suspense fallback={Loading}><MyReviewInform /></Suspense>
   },
-  
+  {
+    path: "review/received",
+    element: <Suspense fallback={Loading}><ReceivedReviewInform /></Suspense>
+  },
+
 ];
 
 export default mypageRouter;

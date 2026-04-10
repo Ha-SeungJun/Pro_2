@@ -4,7 +4,7 @@
 import { useDispatch, useSelector } from "react-redux";
 import { Navigate, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { logout as logoutAction } from "../slice/loginSlice";
+import { loginPostAsync, getUserInfoAsync, logout as logoutAction } from "../slice/loginSlice";
 
 // 백엔드 베이스 URL
 const API_BASE =
@@ -65,27 +65,27 @@ const useCustomLogin = () => {
 
    // ✅ 로그인 처리
    const doLogin = async (loginParam) => {
-      const loginId =
-         loginParam?.loginId ??
-         loginParam?.id ??
-         loginParam?.memId ??
-         "";
-      const password =
-         loginParam?.password ??
-         loginParam?.pw ??
-         loginParam?.password1 ??
-         "";
+   const loginId =
+      loginParam?.loginId ?? loginParam?.id ?? loginParam?.memId ?? "";
+   const password =
+      loginParam?.password ?? loginParam?.pw ?? loginParam?.password1 ?? "";
 
-      const tokens = await loginApi({ loginId, password });
-
-      // remember 옵션 무시하고 항상 sessionStorage에 저장
+   // 1. 토큰 받기
+   const result = await dispatch(loginPostAsync({ loginId, password }));
+   
+   if (loginPostAsync.fulfilled.match(result)) {
+      const tokens = result.payload;
       saveTokens({
          accessToken: tokens.accessToken,
          refreshToken: tokens.refreshToken,
       });
 
-      return tokens;
-   };
+      // 2. 유저 정보 + roles 가져오기
+      await dispatch(getUserInfoAsync());
+   } else {
+      throw new Error(result.payload || "로그인 실패");
+   }
+};
 
    // ✅ 로그아웃 처리
    const doLogout = async () => {

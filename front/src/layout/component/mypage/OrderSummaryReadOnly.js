@@ -106,7 +106,10 @@ const OrderSummaryReadOnly = () => {
   useEffect(() => {
     if (!matchingNo) return;
     postOrderPome(matchingNo)
-      .then((data) => setServerData(data))
+      .then((data) => {
+        console.log(data)
+        setServerData(data)})
+
       .catch(console.error);
   }, [matchingNo]);
 
@@ -217,8 +220,6 @@ const OrderSummaryReadOnly = () => {
           overflow: "hidden",
         }}
       >
-
-
         <Box sx={{ p: 2.5 }}>
           <FieldRow label="기본요금">
             <Typography>{toCurrency(serverData.baseCost)} 원</Typography>
@@ -229,6 +230,15 @@ const OrderSummaryReadOnly = () => {
           <FieldRow label="옵션요금">
             <Typography>{toCurrency(serverData.specialOptionCost)} 원</Typography>
           </FieldRow>
+
+          {/*  쿠폰 할인 표시 (finalPaymentAmount와 totalCost 차이 계산) */}
+          {serverData.finalPaymentAmount !== undefined && serverData.totalCost > serverData.finalPaymentAmount && (
+            <FieldRow label="쿠폰할인">
+              <Typography sx={{ color: "error.main", fontWeight: 700 }}>
+                - {toCurrency(serverData.totalCost - serverData.finalPaymentAmount)} 원
+              </Typography>
+            </FieldRow>
+          )}
 
           <Divider sx={{ my: 2 }} />
 
@@ -252,10 +262,11 @@ const OrderSummaryReadOnly = () => {
                   minHeight: 32,
                   fontWeight: 800,
                   fontSize: 18,
-                  color: "#111",
+                  color: "#d32f2f", // 강조를 위해 붉은색 적용
                 }}
               >
-                {toCurrency(serverData.totalCost)} 원
+                {/* finalPaymentAmount가 0이어도 정상적으로 '0 원'이 출력되도록 처리 */}
+                {toCurrency(serverData.finalPaymentAmount ?? serverData.totalCost)} 원
               </Box>
             </Grid>
           </Grid>

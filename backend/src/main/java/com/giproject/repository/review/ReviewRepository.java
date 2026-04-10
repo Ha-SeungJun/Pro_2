@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import com.giproject.dto.review.MyReviewListDTO;
 import com.giproject.dto.review.ReviewSummaryDTO;
 import com.giproject.entity.review.Review;
 
@@ -94,4 +95,26 @@ public interface ReviewRepository extends JpaRepository<Review, Long>{
             """
         )
         Page<Review> findReviewsByCargoId(@Param("cargoId") String cargoId, Pageable pageable);
+    	
+   
+   
+    @Query("""
+    	    SELECT new com.giproject.dto.review.MyReviewListDTO(
+    	        r.reviewNo,
+    	        r.deliveryNo,
+    	        r.rating,
+    	        r.comment,
+    	        r.createdAt
+    	    )
+    	    FROM Review r
+    	    JOIN Delivery d ON r.deliveryNo = d.deliveryNo
+    	    JOIN d.payment p
+    	    JOIN p.orderSheet os
+    	    JOIN os.matching m
+    	    JOIN m.estimate e
+    	    WHERE e.member.memId = :memId
+    	    ORDER BY r.createdAt DESC
+    	    """)
+    	List<MyReviewListDTO> findMyReviewsByWriterMemId(@Param("memId") String memId);
+    
 }

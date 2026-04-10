@@ -7,6 +7,7 @@ import {
 import { NavLink } from 'react-router-dom';
 import HomeIcon from '@mui/icons-material/Home';
 import DescriptionIcon from '@mui/icons-material/Description';
+import RateReviewIcon from '@mui/icons-material/RateReview';
 import PersonIcon from '@mui/icons-material/Person';
 import BuildIcon from '@mui/icons-material/Build';
 import { useSelector } from 'react-redux';
@@ -219,6 +220,14 @@ const Sidebar = () => {
           )}
         </NavLink>
 
+        <NavLink to="/mypage/review" style={navStyle}>
+          {({ isActive }) => (
+            <ListItemButton sx={isActive ? activeStyle : null}>
+              <ListItemIcon><RateReviewIcon /></ListItemIcon>
+              <ListItemText primary="내 리뷰 관리" />
+            </ListItemButton>
+          )} 
+        </NavLink> 
 
         <NavLink to="/mypage/edit" style={navStyle}>
           {({ isActive }) => (

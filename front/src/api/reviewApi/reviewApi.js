@@ -7,9 +7,6 @@ export const createReview = async (reviewDTO) => {
   const token =
   
     sessionStorage.getItem("accessToken");
-    
-    console.log(reviewDTO);
-    //sessionStorage.getItem("ACCESS_TOKEN");
   const res = await axios.post(`${prefix}/register`, reviewDTO, {
     headers: {
       "Content-Type": "application/json",
@@ -38,6 +35,43 @@ export const getReviewExistsByDeliveryNo = async (deliveryNo) => {
 sessionStorage.getItem("accessToken");
 
   const res = await axios.get(`${prefix}/exists/${deliveryNo}`, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+
+  return res.data;
+};
+
+export const getMyReviews = async () => {
+  const token = sessionStorage.getItem("accessToken");
+
+  const res = await axios.get(`${prefix}/my`, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+
+  return res.data;
+};
+
+export const modifyReview = async (reviewNo, reviewDTO) => {
+  const token = sessionStorage.getItem("accessToken");
+
+  const res = await axios.put(`${prefix}/${reviewNo}`, reviewDTO, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+
+  return res.data;
+};
+
+export const deleteReview = async (reviewNo) => {
+  const token = sessionStorage.getItem("accessToken");
+
+  const res = await axios.delete(`${prefix}/${reviewNo}`, {
     headers: {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },

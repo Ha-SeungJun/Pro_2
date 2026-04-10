@@ -45,7 +45,7 @@ public class AdminResponseServiceImpl implements AdminResponseService {
         QAPost qaPost = qaPostRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다: " + postId));
         
-        // 이미 답변이 있는지 확인 - 더 구체적인 에러 메시지와 함께
+        // 이미 답변이 있는지 확인
         if (adminResponseRepository.existsByQaPostPostId(postId)) {
             log.warn("Attempt to create duplicate response for post: {} by admin: {}", postId, adminId);
             throw new IllegalStateException("해당 게시글에는 이미 답변이 존재합니다. 기존 답변을 수정하거나 삭제 후 다시 작성해주세요.");
@@ -65,6 +65,7 @@ public class AdminResponseServiceImpl implements AdminResponseService {
         
         return convertToDTO(savedResponse);
     }
+
     @Override
     @Transactional(readOnly = true)
     public AdminResponseDTO getResponse(Long postId) {
@@ -75,6 +76,7 @@ public class AdminResponseServiceImpl implements AdminResponseService {
         
         return adminResponse != null ? convertToDTO(adminResponse) : null;
     }
+
     @Transactional
     @Override
     public AdminResponseDTO updateResponse(Long postId, AdminResponseDTO.UpdateRequest updateRequest, String adminId) {
@@ -83,8 +85,6 @@ public class AdminResponseServiceImpl implements AdminResponseService {
         // 답변 조회
         AdminResponse adminResponse = adminResponseRepository.findByQaPostPostId(postId)
                 .orElseThrow(() -> new IllegalArgumentException("답변을 찾을 수 없습니다."));
-        
-        // 관리자는 모든 답변 수정 가능 (권한 검증은 Controller에서 처리)
         
         // 답변 내용 수정
         adminResponse.updateContent(updateRequest.getContent());
@@ -95,6 +95,7 @@ public class AdminResponseServiceImpl implements AdminResponseService {
         
         return convertToDTO(updatedResponse);
     }
+
     @Transactional
     @Override
     public void deleteResponse(Long postId, String adminId) {
@@ -104,12 +105,11 @@ public class AdminResponseServiceImpl implements AdminResponseService {
         AdminResponse adminResponse = adminResponseRepository.findByQaPostPostId(postId)
                 .orElseThrow(() -> new IllegalArgumentException("답변을 찾을 수 없습니다."));
         
-        // 관리자는 모든 답변 삭제 가능 (권한 검증은 Controller에서 처리)
-        
         // 삭제
         adminResponseRepository.delete(adminResponse);
         log.info("Admin response deleted successfully for post: {}", postId);
     }
+
     @Override
     @Transactional(readOnly = true)
     public boolean hasResponse(Long postId) {
@@ -120,7 +120,6 @@ public class AdminResponseServiceImpl implements AdminResponseService {
     @Transactional(readOnly = true)
     public boolean hasResponsePermission(Long responseId, String adminId) {
         // 관리자는 모든 답변에 대한 권한을 가짐
-        // 실제 구현에서는 관리자 역할 검증이 Controller나 Security 레벨에서 처리됨
         return adminResponseRepository.existsById(responseId);
     }
 

@@ -4,7 +4,9 @@ import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.annotation.Transactional;
 
+import com.giproject.dto.review.MyReviewListDTO;
 import com.giproject.dto.review.ReviewDTO;
 import com.giproject.dto.review.ReviewSummaryDTO;
 
@@ -33,4 +35,8 @@ public interface ReviewService {
 	
 	 //버튼 숨기기용
 	 boolean existsByDeliveryNo(Long deliveryNo);
+	 
+	 //내(member:화주)가 작성한 리뷰 보기 
+	 public List<MyReviewListDTO> getMyReviews(String memId);
 }
+	 

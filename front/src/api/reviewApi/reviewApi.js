@@ -79,3 +79,14 @@ export const deleteReview = async (reviewNo) => {
 
   return res.data;
 };
+export const getReceivedReviews =async()=>{
+  const token = sessionStorage.getItem("accessToken");
+
+  const res = await axios.get(`${prefix}/received`,{
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+
+  return res.data;
+};

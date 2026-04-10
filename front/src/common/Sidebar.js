@@ -220,14 +220,14 @@ const Sidebar = () => {
           )}
         </NavLink>
 
-        <NavLink to="/mypage/review" style={navStyle}>
+        <NavLink to={isOwner ? "/mypage/review/received" : "/mypage/review"} style={navStyle}>
           {({ isActive }) => (
             <ListItemButton sx={isActive ? activeStyle : null}>
               <ListItemIcon><RateReviewIcon /></ListItemIcon>
-              <ListItemText primary="내 리뷰 관리" />
+              <ListItemText primary={isOwner ? "내가 받은 리뷰 관리" : "내가 쓴 리뷰 관리"} />
             </ListItemButton>
-          )} 
-        </NavLink> 
+          )}
+        </NavLink>
 
         <NavLink to="/mypage/edit" style={navStyle}>
           {({ isActive }) => (

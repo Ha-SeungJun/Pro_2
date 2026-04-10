@@ -17,39 +17,51 @@ public class CouponTests {
     @Autowired
     private CouponRepository couponRepository;
 
-//    @Test
+    @Test
     @Transactional
     @Commit // 테스트가 끝나도 롤백되지 않고 DB에 남도록 설정 ✅
     public void insertBaseCoupons() {
-        // 1. 정액 할인 쿠폰 (5,000원)
+        // 1. 정율 할인 쿠폰 (10%)
         Coupon c1 = Coupon.builder()
-                .couponName("신규가입 5천원 할인쿠폰")
-                .discountType(DiscountType.FLAT)
-                .discountValue(5000)
-                .maxDiscount(5000)
-                .minOrderPrice(20000)
-                .validDays(30)
-                .build();
-
-        // 2. 정율 할인 쿠폰 (10%)
-        Coupon c2 = Coupon.builder()
                 .couponName("오픈기념 10% 할인쿠폰")
                 .discountType(DiscountType.PERCENT)
                 .discountValue(10)
-                .maxDiscount(10000)
+                .maxDiscount(10000) // 10% 할인 시 최대 10,000원까지 할인
+                .minOrderPrice(0)
+                .validDays(30)
+                .build();
+
+        // 2. 정율 할인 쿠폰 (20%)
+        Coupon c2 = Coupon.builder()
+                .couponName("단골우대 20% 할인쿠폰")
+                .discountType(DiscountType.PERCENT)
+                .discountValue(20)
+                .maxDiscount(20000) // 20% 할인 시 최대 20,000원까지 할인
+                .minOrderPrice(0)
+                .validDays(30)
+                .build();
+
+        // 3. 정율 할인 쿠폰 (30%)
+        Coupon c3 = Coupon.builder()
+                .couponName("VIP전용 30% 특별할인쿠폰")
+                .discountType(DiscountType.PERCENT)
+                .discountValue(30)
+                .maxDiscount(30000) // 30% 할인 시 최대 30,000원까지 할인
                 .minOrderPrice(0)
                 .validDays(30)
                 .build();
 
         couponRepository.save(c1);
         couponRepository.save(c2);
+        couponRepository.save(c3);
 
-        System.out.println(">>> 테스트 쿠폰 마스터 데이터 삽입 완료!");
+        System.out.println(">>> 10%, 20%, 30% 테스트 쿠폰 마스터 데이터 삽입 완료!");
     }
+
     @Autowired
     private MemberCouponService memberCouponService; // 서비스 주입
 
-    @Test
+//    @Test
     @Transactional
     @Commit
     public void testIssueCoupons() {

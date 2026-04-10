@@ -17,6 +17,7 @@ public class OrderSheetDTO {
 	
 	private Long orderNo;
 	private Long matchingNo;
+	private Long mcno;
 	private String orderUuid;
 	private String startRestAddress;
 	private String endRestAddress;

@@ -92,13 +92,12 @@ const OrderComponent = () => {
 
   // [추가] 쿠폰 목록 불러오기 (사용자 ID 'test1' 기준)
   useEffect(() => {
-    getMyCouponList("test1")
-      .then(data => {
-        console.log("서버 데이터 원본:", data);
-        setCoupons(data); 
-      })
-      .catch(console.error);
-  }, []);
+  getMyCouponList() // 👈 빈 괄호로 수정 (test1 삭제)
+    .then(data => {
+      setCoupons(data); 
+    })
+    .catch(console.error);
+}, []);
 
   // ===== [테스트 자동화 함수] ===== 나중에 주석하기
   const fillTestData = () => {

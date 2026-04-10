@@ -1,5 +1,7 @@
 package com.giproject.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -17,6 +19,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+// 지연 로딩 시 발생하는 가짜 프록시 객체를 무시
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Coupon {
 	
 	public enum DiscountType { FLAT, PERCENT } // FLAT: 원, PERCENT: %

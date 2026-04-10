@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react"; //   useMemo 추가
+import React, { useEffect, useState, useMemo } from "react"; 
 import {
     Box,
     Paper,
@@ -31,16 +31,14 @@ const iniState = {
     provider: ""
 }
 
-//   [수정] Props에 selectedMcno와 discountAmount 추가
 const OrderPaymentSelect = ({ serverData, orderSheet, selectedMcno, discountAmount = 0 }) => {
     const navigate = useNavigate();
     const [paymentType, setPaymentType] = useState(null);
     const [orderType, setOrderType] = useState(iniState);
 
-    //   [추가] 실제 결제할 최종 금액 계산 로직
     const finalPaymentAmount = useMemo(() => {
         const total = Number(serverData.totalCost ?? 0);
-        return Math.max(0, total - discountAmount); // 0원 미만 방지
+        return Math.max(0, total - discountAmount); 
     }, [serverData.totalCost, discountAmount]);
 
     const handleCheck = () => {
@@ -77,18 +75,24 @@ const OrderPaymentSelect = ({ serverData, orderSheet, selectedMcno, discountAmou
             if (!orderType.channelKey || !orderType.payMethod) return alert("결제 수단을 선택해주세요.");
             if (serverData?.totalCost == null) return alert("결제 금액이 유효하지 않습니다.");
             
-            //   [수정] 할인으로 인해 0원이 되었거나 원금이 0원인 경우
+            // 0원 결제 (전액 할인 등) 처리
             if (finalPaymentAmount === 0) {
-                const payload = { ...orderSheet, matchingNo: Number(serverData.matchingNo) };
+                // 🚨 mcno 추가: 백엔드 OrderSheetDTO.mcno와 매핑됨
+                const payload = { 
+                    ...orderSheet, 
+                    matchingNo: Number(serverData.matchingNo),
+                    mcno: selectedMcno || null 
+                };
                 const orderNo = await postOrderCreate(payload);
                 if (!orderNo) { alert("주문서 번호를 받지 못했습니다."); return; }
+                
                 const paymentDTO = {
                     orderSheetNo: orderNo,
                     paymentId: crypto.randomUUID(),
                     paymentMethod: "FREE",
                     easyPayProvider: null,
                     currency: "KRW",
-                    mcno: selectedMcno || null //   [추가] 쿠폰 번호 서버 전송
+                    mcno: selectedMcno || null 
                 };
                 const paymentNo = await acceptedPayment(paymentDTO);
                 createDelivery(paymentNo);
@@ -101,7 +105,7 @@ const OrderPaymentSelect = ({ serverData, orderSheet, selectedMcno, discountAmou
             const orderData = {
                 paymentId,
                 orderName: serverData.ordererName,
-                totalAmount: finalPaymentAmount, //   [수정] 할인된 최종 금액으로 결제 요청
+                totalAmount: finalPaymentAmount, 
                 channelKey: orderType.channelKey,
                 payMethod: orderType.payMethod,
                 provider: orderType.provider,
@@ -115,7 +119,14 @@ const OrderPaymentSelect = ({ serverData, orderSheet, selectedMcno, discountAmou
                 return;
             }
 
-            const payload = { ...orderSheet, matchingNo: Number(serverData.matchingNo) };
+            // 일반 결제 성공 후 주문 생성
+            // 🚨 mcno 추가: 백엔드 OrderSheetDTO.mcno와 매핑됨
+            const payload = { 
+                ...orderSheet, 
+                matchingNo: Number(serverData.matchingNo),
+                mcno: selectedMcno || null 
+            };
+            
             const orderNo = await postOrderCreate(payload);
             if (!orderNo) {
                 console.error("create response:", orderNo);
@@ -128,7 +139,7 @@ const OrderPaymentSelect = ({ serverData, orderSheet, selectedMcno, discountAmou
                 paymentMethod: orderType.payMethod,
                 easyPayProvider: orderType.payMethod === "EASY_PAY" ? orderType.provider : null,
                 currency: "KRW",
-                mcno: selectedMcno || null //   [추가] 백엔드 승인 API로 쿠폰 번호 전송
+                mcno: selectedMcno || null 
             }
             const paymentNo = await acceptedPayment(paymentDTO);
 
@@ -205,7 +216,6 @@ const OrderPaymentSelect = ({ serverData, orderSheet, selectedMcno, discountAmou
                         </Typography>
                         <Typography>원</Typography>
                         
-                        {/*   [추가] 할인 내역 표시 섹션 */}
                         {discountAmount > 0 && (
                             <>
                                 <Typography color="error.main" sx={{ fontWeight: 700 }}>쿠폰 할인</Typography>
@@ -221,7 +231,6 @@ const OrderPaymentSelect = ({ serverData, orderSheet, selectedMcno, discountAmou
 
                     <Box sx={{ display: "flex", justifyContent: "flex-end", alignItems: "baseline", gap: 1 }}>
                         <Typography variant="h5" sx={{ fontWeight: 800 }}>
-                            {/*  [수정] 할인된 최종 금액 표시 */}
                             {finalPaymentAmount.toLocaleString()}
                         </Typography>
                         <Typography variant="h6" sx={{ fontWeight: 800 }}>원</Typography>

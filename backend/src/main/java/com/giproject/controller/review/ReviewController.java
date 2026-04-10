@@ -6,8 +6,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import com.giproject.dto.review.MyReviewListDTO;
 import com.giproject.dto.review.ReviewDTO;
 import com.giproject.dto.review.ReviewSummaryDTO;
 import com.giproject.service.review.ReviewService;
@@ -53,19 +55,24 @@ public class ReviewController {
     @DeleteMapping("/{reviewNo}")
     public ResponseEntity<String> remove(
             @PathVariable(name = "reviewNo") Long reviewNo,
-            @RequestParam(name = "loginId") String loginId,
-            @RequestParam(value = "isAdmin", defaultValue = "false") boolean isAdmin) {
+            @RequestParam(value = "isAdmin", defaultValue = "false") boolean isAdmin,
+            Authentication authentication) {
+
+        String loginId = authentication.getName();
 
         reviewService.remove(reviewNo, loginId, isAdmin);
         return ResponseEntity.ok("리뷰가 삭제되었습니다.");
     }
     @PutMapping("/{reviewNo}")
     public ResponseEntity<String> modify(
-    		@PathVariable(name = "reviewNo") Long reviewNo,
-    		@RequestParam(name = "loginId") String loginId,
-    		@RequestBody ReviewDTO reviewDTO){
-    	reviewService.modify(reviewNo, reviewDTO, loginId);
-    	return ResponseEntity.ok("리뷰가 수정되었습니다.");
+            @PathVariable(name = "reviewNo") Long reviewNo,
+            @RequestBody ReviewDTO reviewDTO,
+            Authentication authentication){
+
+        String loginId = authentication.getName();
+
+        reviewService.modify(reviewNo, reviewDTO, loginId);
+        return ResponseEntity.ok("리뷰가 수정되었습니다.");
     }
  
     @GetMapping("/summary/{cargoId}")
@@ -79,6 +86,14 @@ public class ReviewController {
             @PageableDefault(size = 10) Pageable pageable) {
 
         return ResponseEntity.ok(reviewService.getReviewsByCargoId(cargoId, pageable));
+    }
+    @GetMapping("/my")
+    public ResponseEntity<List<MyReviewListDTO>> getMyReviews(Authentication authentication) {
+        log.info("authentication = {}", authentication);
+        log.info("loginId = {}", authentication.getName());
+
+        String loginId = authentication.getName();
+        return ResponseEntity.ok(reviewService.getMyReviews(loginId));
     }
     
 }

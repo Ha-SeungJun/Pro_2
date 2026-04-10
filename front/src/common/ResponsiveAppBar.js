@@ -35,7 +35,7 @@ const pages = [
 
 const settings = [
   { label: '마이페이지', path: '/mypage' },
-  { label: '주문내역 확인', path: '/mypage' },
+  // { label: '주문내역 확인', path: '/mypage' },
   { label: '배송상태', path: '/mypage' },
   { label: '로그아웃', path: '/logout' },
 ];

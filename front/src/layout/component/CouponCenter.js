@@ -2,15 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { Box, Button, Typography, Paper, List, ListItem, ListItemText, Divider } from '@mui/material';
 import axios from 'axios';
 
-const CouponCenter = ({ userId }) => {
+// 🚨 1. 부모 컴포넌트에서 userType(로그인 유형)도 같이 넘겨받도록 추가합니다.
+const CouponCenter = ({ userId, userType }) => {
     const [coupons, setCoupons] = useState([]);
     const [loading, setLoading] = useState(false);
 
     // 1. 내 쿠폰 목록 불러오기
     const fetchMyCoupons = async () => {
         try {
-            // userId가 'admin'이라고 가정하거나 props로 전달받음
-            const res = await axios.get(`/g2i4/coupons/my-list/${userId}`);
+            // 🚨 2. 토큰을 세션 스토리지에서 꺼냅니다.
+            const token = sessionStorage.getItem("accessToken") || sessionStorage.getItem("ACCESS_TOKEN");
+            
+            // 🚨 3. 주소에서 ${userId}를 지우고, 헤더에 신분증(토큰)을 실어서 보냅니다!
+            const res = await axios.get(`/g2i4/coupons/my-list`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
             setCoupons(res.data);
         } catch (err) {
             console.error("쿠폰 목록 로드 실패:", err);
@@ -21,8 +27,13 @@ const CouponCenter = ({ userId }) => {
     const handleIssueCoupons = async () => {
         setLoading(true);
         try {
-            await axios.post('/g2i4/coupons/issue-test', { memId: userId });
-            alert("테스트 쿠폰 2종이 발급되었습니다!");
+            // 발급할 때도 토큰을 챙겨가는 것이 안전합니다.
+            const token = sessionStorage.getItem("accessToken") || sessionStorage.getItem("ACCESS_TOKEN");
+            await axios.post('/g2i4/coupons/issue-test', 
+                { memId: userId }, 
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            alert("테스트 쿠폰이 발급되었습니다!");
             fetchMyCoupons(); // 발급 후 목록 새로고침
         } catch (err) {
             alert("발급 실패: " + err.message);
@@ -32,8 +43,16 @@ const CouponCenter = ({ userId }) => {
     };
 
     useEffect(() => {
-        if (userId) fetchMyCoupons();
-    }, [userId]);
+        // userType이 MEMBER(화주)일 때만 쿠폰을 불러옵니다.
+        if (userId && userType === 'MEMBER') {
+            fetchMyCoupons();
+        }
+    }, [userId, userType]);
+
+    // 🚨 4. 차주(DRIVER)인 경우 아예 이 화면 자체를 안 그립니다! (빈 화면 반환)
+    if (userType !== 'MEMBER') {
+        return null; // 차주 계정에서는 쿠폰 센터가 통째로 증발합니다.
+    }
 
     return (
         <Box sx={{ p: 4, maxWidth: 600, mx: 'auto' }}>
@@ -62,7 +81,7 @@ const CouponCenter = ({ userId }) => {
                                 <ListItem>
                                     <ListItemText 
                                         primary={mc.coupon.couponName} 
-                                        secondary={`만료일: ${new Date(mc.expiry_date).toLocaleDateString()} 까지`} 
+                                        secondary={`만료일: ${new Date(mc.expiryDate || mc.expiry_date).toLocaleDateString()} 까지`} 
                                     />
                                     <Typography variant="body2" color="primary" fontWeight="bold">
                                         {mc.coupon.discountType === 'FLAT' 

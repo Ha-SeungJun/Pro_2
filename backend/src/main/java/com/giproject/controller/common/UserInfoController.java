@@ -71,8 +71,10 @@ public class UserInfoController {
             data.put("profileImage", fileName);
             data.put("webPath", webPath);
 
+            boolean isAdmin = m.getMemberRoleList().contains("ADMIN");
+
             Map<String,Object> body = new LinkedHashMap<>();
-            body.put("userType", "MEMBER");
+            body.put("userType", isAdmin ? "ADMIN" : "MEMBER");  // ← 수정
             body.put("data", data);
             return ResponseEntity.ok(body);
         }

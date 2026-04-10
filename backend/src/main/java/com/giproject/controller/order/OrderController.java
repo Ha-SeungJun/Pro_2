@@ -30,10 +30,8 @@ public class OrderController {
 	
 	@PostMapping("/create")
 	public ResponseEntity<Long> createOrder(@RequestBody OrderSheetDTO dto) {
-		Long no=dto.getMatchingNo();
-		
-		Long orderNo=orderService.placeOrderFromPayment(dto, no);
-		
-		return ResponseEntity.ok(orderNo);
+	   
+	    Long orderNo = orderService.placeOrderFromPayment(dto, dto.getMatchingNo(), dto.getMcno());
+	    return ResponseEntity.ok(orderNo);
 	}
 }

@@ -12,6 +12,6 @@ import com.giproject.entity.member.MemberCoupon;
 public interface MemberCouponRepository extends JpaRepository<MemberCoupon, Long>{
 
 	@Query("Select mc From MemberCoupon mc Join Fetch mc.coupon "
-			+ "Where mc.member.memId = :memId AND mc.isUsed = false AND mc.expiryDate > :now")
+	        + "Where mc.member.memId = :memId AND mc.isUsed = false AND mc.expiryDate > :now")
 	List<MemberCoupon> findAvailableCoupons(@Param("memId") String memId, @Param("now") LocalDateTime now);
 }

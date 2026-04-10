@@ -43,4 +43,12 @@ public class MemberCoupon {
 
     private LocalDateTime expiryDate;  // 만료 일시
     private LocalDateTime usedDate;    // 실제 사용 일시
+    public void changeUsed(boolean used) {
+        this.isUsed = used;
+        if (used) {
+            this.usedDate = LocalDateTime.now(); // 사용한 시점의 시간 기록
+        } else {
+            this.usedDate = null;
+        }
+    }
 }

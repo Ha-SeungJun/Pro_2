@@ -100,5 +100,10 @@ public class ReviewController {
         String loginId = authentication.getName();
         return ResponseEntity.ok(reviewService.getReceivedReviews(loginId));
     }
+    @GetMapping("/summary/my")
+    public ResponseEntity<ReviewSummaryDTO> getMyReceivedReviewSummary(Authentication authentication) {
+        String loginId = authentication.getName();
+        return ResponseEntity.ok(reviewService.getSummaryByCargoId(loginId));
+    }
     
 }

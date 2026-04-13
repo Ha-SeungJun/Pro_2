@@ -1,24 +1,73 @@
 import React, { useEffect, useState } from "react";
-import { Box, Typography, Grid, Button, TextField, Card, CardMedia, InputAdornment, IconButton, FormControl, InputLabel, Select, MenuItem, Dialog, DialogContent, DialogActions, Alert } from "@mui/material";
-import Carousel from "react-material-ui-carousel";
+import { Box, Typography, Grid, Button, TextField, InputAdornment, IconButton, FormControl, InputLabel, Select, MenuItem, Dialog, DialogContent, DialogActions } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
-import { postSearchFeesBasic } from "../api/estimateApi/estimateApi";
-import { calculateDistanceBetweenAddresses } from "../layout/component/common/calculateDistanceBetweenAddresses";
-import { deleteBasicRow } from "../api/adminApi/adminApi";
 import { useSelector } from "react-redux";
-import MainFeesUtil from "../layout/component/common/MainFeesUtil";
-import { API_SERVER_HOST } from "../api/serverConfig";
-import { getNotices } from "../api/noticeApi";
 import { useNavigate } from "react-router-dom";
 
+// API 로직
+import { postSearchFeesBasic } from "../api/estimateApi/estimateApi";
+import { calculateDistanceBetweenAddresses } from "../layout/component/common/calculateDistanceBetweenAddresses";
+import MainFeesUtil from "../layout/component/common/MainFeesUtil";
+import { getNotices } from "../api/noticeApi";
+
+// 커스텀 섹션 컴포넌트
+import HeroSection from '../components/HeroSection';
+import ProcessSection from '../components/ProcessSection';
+import InfoSection from '../components/InfoSection';
+import QASection from '../components/QASection';
+import FloatingButtons from '../components/FloatingButtons';
+
+// ✅ 사진 이름 매칭 (기현님이 수정한 scooter.png 반영 완료!)
+import damasImg from '../assets/damas.png'; 
+import bikeImg from '../assets/bike.png'; 
+import ton1Img from '../assets/1truck.png';
+import ton11Img from '../assets/11truck.png';
+import ton18Img from '../assets/18truck.png';
+import ton25Img from '../assets/25truck.png';
+import { API_SERVER_HOST } from "../api/serverConfig";
+
 const initState = {
-  startAddress: '',
-  endAddress: '',
-  cargoType: '',
-  cargoWeight: '',
-  totalCost: 0,
-  distanceKm: ''
-};
+  startAddress: '', endAddress: '', cargoType: '', cargoWeight: '', totalCost: 0, distanceKm: ''
+}
+
+const vehicleStaticList = [
+  {
+    name: '오토바이 퀵',
+    desc1: '서류나 작은 소화물을 가장 빠르게 전달해야 할 때 이용하는 서비스입니다.',
+    desc2: '교통체증에 구애받지 않고 신속 정확하게 배송해 드립니다.',
+    img: bikeImg
+  },
+  {
+    name: '다마스 용달 & 퀵',
+    desc1: '짐이 많지 않은 소형화물을 이동할때 적합한 용달 & 퀵으로 가장많이 이용되는 서비스입니다.',
+    desc2: '소형이사나 1인이사 등 소량의 물품을 옮길때 적합한 차량으로 최소 2만원 부터 이용가능합니다.',
+    img: damasImg
+  },
+  {
+    name: '1톤 용달',
+    desc1: '가장 대중적인 화물 운송 수단으로 원룸 이사나 중형 화물에 적합합니다.',
+    desc2: '적재 공간이 넓어 다양한 형태의 짐을 안전하게 운송할 수 있습니다.',
+    img: ton1Img
+  },
+  {
+    name: '11톤 화물',
+    desc1: '생활물품·가전·마트 납품 같은 중형급 물류 등의 화물배송에 적합합니다.',
+    desc2: '(적재공간 : 1100mm*1100mm 팔레트 16~18개)',
+    img: ton11Img
+  },
+  {
+    name: '18톤 화물',
+    desc1: '공산품·산업재 장거리 운송 등의 대형 화물배송에 적합합니다.',
+    desc2: '(적재공간 : 1100mm*1100mm 팔레트 18개)',
+    img: ton18Img
+  },
+  {
+    name: '25톤 화물',
+    desc1: '철강·원자재·특수 대형 장비 등의 초대형 화물배송에 적합합니다.',
+    desc2: '(적재공간 : 1100mm*1100mm 팔레트 18개)',
+    img: ton25Img
+  }
+];
 
 const HomePage = () => {
   const [estimate, setEstimate] = useState(initState);
@@ -26,28 +75,27 @@ const HomePage = () => {
   const [baseCost, setBaseCost] = useState(0);
   const [distanceCost, setDistanceCost] = useState(0);
   const [exPrice, setExprice] = useState(0);
-  const [showAll, setShowAll] = useState(false);
-  const visibleFees = showAll ? fees : fees.slice(0, 3);
   const [openFees, setOpenFees] = useState(false);
   const [openPrice, setOpenPrice] = useState(false);
+
   const [deleteMode, setDeleteMode] = useState(false); // ← 삭제 모드
+
+  const [notices, setNotices] = useState([]);
+  
+  const [selectedVehicleIndex, setSelectedVehicleIndex] = useState(0); 
+
   const { roles } = useSelector(state => state.login);
   const isAdmin = roles.includes("ROLE_ADMIN");
-  const [notices, setNotices] = useState([]);
-  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   const DEFAULT_TRUCK_IMG = "/image/placeholders/truck.svg";
 
   const loadNotices = async () => {
     try {
-      setLoading(true);
       const response = await getNotices();
       setNotices(response.content || []);
     } catch (err) {
       console.error('공지사항 로드 실패:', err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -87,6 +135,7 @@ const HomePage = () => {
     setBaseCost(base);
     setDistanceCost(distCost);
     setEstimate(prev => ({ ...prev, totalCost: total, baseCost: base, distanceCost: distCost }));
+
     setExprice(total);
   }, [estimate.cargoWeight, estimate.distanceKm, fees]);
 
@@ -112,151 +161,105 @@ const HomePage = () => {
     navigate(`/noboard/post/${noticeId}`);
   };
 
-  // 삭제 모드에서 차량 클릭 시 삭제
-  const handleVehicleDelete = async (vehicle) => {
-    if (!deleteMode) return;
-    if (!window.confirm(`'${vehicle.weight}' 차량을 삭제하시겠습니까?`)) return;
-    try {
-      await deleteBasicRow(vehicle.weight);
-      await fetchFees();
-    } catch (e) {
-      alert("삭제 실패");
-    }
-  };
-
   return (
     <Box>
-      <Carousel animation="fade" indicators={false}>
-        <Box sx={{
-          height: 400, backgroundColor: "#90a8f0",
-          display: "flex", justifyContent: "center", alignItems: "center",
-          backgroundImage: 'url(/image/logo/CargoPhoto.jpg)',
-          backgroundSize: '100% 100%', backgroundPosition: 'center', backgroundRepeat: 'no-repeat',
-        }}>
-          <Typography variant="h3" color="white"></Typography>
-        </Box>
-        <Box sx={{
-          height: 400, backgroundColor: "#b8a8ff",
-          display: "flex", justifyContent: "center", alignItems: "center",
-          backgroundImage: 'url(/image/logo/CargoPhoto2.jpg)',
-          backgroundSize: '100% 100%', backgroundPosition: 'center', backgroundRepeat: 'no-repeat',
-        }}>
-          <Typography variant="h3" color="white"></Typography>
-        </Box>
-        <Box sx={{
-          height: 400, backgroundColor: "#b8a8ff",
-          display: "flex", justifyContent: "center", alignItems: "center",
-          backgroundImage: 'url(/image/logo/CargoPhoto.png)',
-          backgroundSize: '100% 100%', backgroundPosition: 'center', backgroundRepeat: 'no-repeat',
-        }}>
-          <Typography variant="h3" color="white"></Typography>
-        </Box>
-      </Carousel>
+      <HeroSection />
 
-      {/* 차량 종류 */}
-      <Box>
-        <Box sx={{ py: 5, textAlign: "center" }}>
-          <Typography variant="h5" fontWeight="bold" gutterBottom>차량 종류</Typography>
+      <ProcessSection />
+      <InfoSection />
+      <QASection />
 
-          {/* 삭제 모드 안내 */}
-          {deleteMode && (
-            <Alert severity="warning" sx={{ mb: 2, maxWidth: 600, mx: "auto" }}>
-              삭제 모드 ON — 삭제할 차량 이미지를 클릭하세요.
-            </Alert>
-          )}
+      {/* 차량 종류 소개 섹션 */}
+      <section className="py-24 bg-[#f8f9fb] font-sans antialiased text-gray-900">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex flex-col lg:flex-row gap-16">
+            
+            <div className="w-full lg:w-1/3 flex flex-col">
+              <div className="mb-12">
+                <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-4 break-keep">용달화물 서비스 소개</h2>
+                <p className="text-gray-600 text-lg break-keep">
+                  퍼스트로드는 <span className="text-red-600 font-bold">빅데이터 기반</span>으로<br />
+                  <span className="text-red-600 font-bold">최적의 거리별 요금</span>을 제공해드립니다.
+                </p>
+              </div>
 
-          <Grid container spacing={2} justifyContent="center">
-            {visibleFees.map((basic) => {
-              const img = normalizeUrl(basic?.cargoImage) || DEFAULT_TRUCK_IMG;
-              return (
-                <Grid item key={basic?.tno}>
-                  <Box
-                    onClick={() => handleVehicleDelete(basic)}
-                    sx={{
-                      position: "relative",
-                      cursor: deleteMode ? "pointer" : "default",
-                      "&:hover": deleteMode ? { opacity: 0.7 } : {},
-                    }}
+              <div className="flex flex-col gap-4 max-h-[500px] overflow-y-auto p-4 -m-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                {vehicleStaticList.map((vehicle, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setSelectedVehicleIndex(index)}
+                    className={`py-5 px-8 rounded-[2rem] flex justify-between items-center transition-all duration-300 bg-white ${
+                      selectedVehicleIndex === index 
+                        ? 'shadow-lg border-2 border-transparent ring-2 ring-red-600 transform scale-105'
+                        : 'shadow-sm border border-gray-100 hover:shadow-md'
+                    }`}
                   >
-                    {/* 삭제 모드 X 표시 */}
-                    {deleteMode && (
-                      <Box sx={{
-                        position: "absolute", top: 4, right: 4, zIndex: 1,
-                        bgcolor: "red", borderRadius: "50%",
-                        width: 24, height: 24,
-                        display: "flex", alignItems: "center", justifyContent: "center"
-                      }}>
-                        <Typography color="white" fontSize={13} fontWeight="bold">X</Typography>
-                      </Box>
-                    )}
-                    <Card sx={{
-                      width: { xs: 160, sm: 220, md: 300 },
-                      height: { xs: 110, sm: 150, md: 200 },
-                      overflow: "hidden",
-                      border: deleteMode ? "2px solid red" : "none",
-                    }}>
-                      <CardMedia
-                        component="img"
-                        src={img}
-                        alt={basic.weight || "truck"}
-                        sx={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center', display: 'block' }}
-                      />
-                    </Card>
-                    <Typography>{basic.cargoName ? `${basic.cargoName} (${basic.weight})` : basic.weight}</Typography>
-                  </Box>
-                </Grid>
-              );
-            })}
-          </Grid>
+                    <span className="flex items-center gap-6">
+                      <span className="font-bold text-xl text-black">
+                        {index < 9 ? `0${index + 1}` : index + 1}
+                      </span>
+                      <span className="text-xl font-bold text-black">{vehicle.name}</span>
+                    </span>
+                    <span className="text-gray-400 text-2xl">〉</span>
+                  </button>
+                ))}
+              </div>
+            </div>
 
-          {/* 버튼 묶음 */}
-          <Box sx={{ display: "flex", justifyContent: "center", gap: 2, mt: 2 }}>
-            {fees.length > 3 && (
-              <Button variant="contained" onClick={() => setShowAll((prev) => !prev)}>
-                {showAll ? "접기" : "더보기"}
+            <div className="w-full lg:w-2/3 flex flex-col justify-start gap-12 mt-12 lg:mt-0"> 
+              
+              <div className="flex items-center gap-6 mb-8 lg:mb-12">
+                <span className="font-bold text-3xl text-red-600">
+                  {selectedVehicleIndex < 9 ? `0${selectedVehicleIndex + 1}` : selectedVehicleIndex + 1}
+                </span>
+                <h3 className="text-4xl md:text-5xl font-black text-gray-900">{vehicleStaticList[selectedVehicleIndex].name}</h3>
+              </div>
+
+              <div className="flex-grow flex flex-col gap-8 mb-10">
+                  <div className="text-gray-800 text-lg md:text-xl font-bold break-keep leading-relaxed">
+                    {vehicleStaticList[selectedVehicleIndex].desc1}
+                  </div>
+                  <div className="text-gray-600 text-base break-keep leading-relaxed">
+                    {vehicleStaticList[selectedVehicleIndex].desc2}
+                  </div>
+              </div>
+
+              <div className="w-full flex justify-end">
+                  <img
+                    src={vehicleStaticList[selectedVehicleIndex].img}
+                    alt={vehicleStaticList[selectedVehicleIndex].name}
+                    className="w-full max-w-[600px] h-auto object-contain drop-shadow-2xl"
+                  />
+              </div>
+            </div>
+            
+          </div>
+          
+          {isAdmin && (
+            <div className="flex justify-center mt-12">
+              <Button variant="contained" color="primary" size="large" onClick={() => setOpenFees(true)}>
+                + 차량/요금 등록하기
               </Button>
-            )}
-            {isAdmin && (
-              <>
-                <Button variant="contained" onClick={() => setOpenFees(true)}>
-                  등록하기
-                </Button>
-                <Button
-                  variant={deleteMode ? "contained" : "outlined"}
-                  color="error"
-                  onClick={() => setDeleteMode(!deleteMode)}
-                >
-                  {deleteMode ? "삭제 모드 OFF" : "삭제하기"}
-                </Button>
-              </>
-            )}
-          </Box>
-        </Box>
+            </div>
+          )}
+        </div>
+      </section>
 
-        {/* 등록 모달 */}
-        <MainFeesUtil
-          open={openFees}
-          onClose={() => setOpenFees(false)}
-          onSuccess={() => {
-            setOpenFees(false);
-            fetchFees();
-          }}
-        />
-      </Box>
+      <MainFeesUtil open={openFees} onClose={() => setOpenFees(false)} onSuccess={() => { setOpenFees(false); fetchFees(); }} />
 
-      {/* 간편조회 / 공지사항 */}
-      <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center', py: 6 }}>
+      {/* 간편조회 및 공지사항 */}
+      <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center', py: 10, bgcolor: 'white' }}>
         <Box sx={{ width: '100%', maxWidth: '1200px', px: 2 }}>
-          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 5 }}>
-            {/* 간편조회 */}
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 8 }}>
+            
             <Box sx={{ width: { xs: '100%', md: '50%' } }}>
               <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                <Typography variant="h6" fontWeight="bold" gutterBottom>간편조회</Typography>
+                <Typography variant="h5" fontWeight="bold" gutterBottom mb={4}>간편조회</Typography>
                 <Grid container spacing={2}>
                   <Grid item xs={6}>
                     <TextField
-                      placeholder="출발지 주소"
-                      value={estimate.startAddress}
+
+                      placeholder="출발지 주소" name="startAddress" value={estimate.startAddress} fullWidth
                       InputProps={{
                         readOnly: true,
                         endAdornment: (
@@ -271,8 +274,8 @@ const HomePage = () => {
                   </Grid>
                   <Grid item xs={6}>
                     <TextField
-                      placeholder="도착지 주소"
-                      value={estimate.endAddress}
+
+                      placeholder="도착지 주소" name="endAddress" value={estimate.endAddress} fullWidth
                       InputProps={{
                         readOnly: true,
                         endAdornment: (
@@ -286,12 +289,11 @@ const HomePage = () => {
                     />
                   </Grid>
                 </Grid>
-                <FormControl fullWidth sx={{ mt: 2 }}>
+                <FormControl fullWidth sx={{ mt: 3 }}>
                   <InputLabel id="cargo-fee-label">화물 무게</InputLabel>
                   <Select
-                    labelId="cargo-fee-label"
-                    label="화물 무게"
-                    value={estimate.cargoWeight || ''}
+
+                    labelId="cargo-fee-label" label="화물 무게" name="cargoWeight" value={estimate.cargoWeight || ''}
                     onChange={(e) => setEstimate(prev => ({ ...prev, cargoWeight: e.target.value }))}
                   >
                     {fees.map(fee => (
@@ -299,28 +301,28 @@ const HomePage = () => {
                     ))}
                   </Select>
                 </FormControl>
-                <Typography variant="caption" sx={{ mt: 1, mb: 2 }}>
-                  주소 및 화물 무게를 입력후 조회하기 버튼을 눌러주세요
-                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 1.5, mb: 3 }}>주소 및 화물 무게를 입력후 조회하기 버튼을 눌러주세요</Typography>
                 <Box sx={{ mt: 'auto', display: 'flex', justifyContent: 'flex-end' }}>
-                  <Button variant="contained" onClick={calculateDistance}>조회하기</Button>
+                  <Button variant="contained" size="large" onClick={calculateDistance} sx={{ bgcolor: '#299AF0' }}>
+                    조회하기
+                  </Button>
+
                 </Box>
               </Box>
             </Box>
 
-            {/* 공지사항 */}
             <Box sx={{ width: { xs: '100%', md: '50%' } }}>
               <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                <Typography variant="h6" fontWeight="bold" gutterBottom>공지사항</Typography>
-                <Grid container spacing={0.5}>
+                <Typography variant="h5" fontWeight="bold" gutterBottom mb={4}>공지사항</Typography>
+                <Grid container spacing={1}>
                   {notices.slice(0, 4).map((notice) => (
-                    <Grid item xs={12} key={notice.noticeId} sx={{ width: '100%' }}>
+                    <Grid item xs={12} key={notice.noticeId}>
                       <Box
                         sx={{
-                          border: '1px solid #eee', borderRadius: 1,
-                          px: 1.5, py: 0.75, height: 44,
-                          display: 'flex', alignItems: 'center',
-                          cursor: 'pointer', '&:hover': { backgroundColor: '#f9f9f9' }
+
+                          border: '1px solid #e0e0e0', borderRadius: 2, px: 2, py: 1.5,
+                          display: 'flex', alignItems: 'center', cursor: 'pointer',
+                          '&:hover': { backgroundColor: '#f8f9fa' }
                         }}
                         onClick={() => handleRowClick(notice.noticeId)}
                       >
@@ -337,17 +339,18 @@ const HomePage = () => {
         </Box>
       </Box>
 
-      {/* 간편조회 결과 다이얼로그 */}
-      <Dialog open={openPrice} onClose={handleClickCancel}
-        PaperProps={{ sx: { width: 400, height: 150, borderRadius: 2, p: 2 } }}>
+      <Dialog open={openPrice} onClose={handleClickCancel} PaperProps={{ sx: { width: 400, borderRadius: 3, p: 2 } }}>
         <DialogContent>
-          <Typography fontSize={20} fontWeight='bold'>예상금액은 {Number(exPrice)}원 입니다.</Typography>
-          <Typography fontSize={15} fontWeight='bold'>본 금액은 예상 견적이며 물품에 따라 상세금액과 차이가 있을 수 있습니다.</Typography>
+          <Typography fontSize={22} fontWeight='bold' mb={1} color="#299AF0">예상금액은 {Number(exPrice).toLocaleString()}원 입니다.</Typography>
+          <Typography fontSize={14} color="text.secondary">본 금액은 예상 견적이며 물품에 따라 상세금액과 차이가 있을 수 있습니다.</Typography>
         </DialogContent>
-        <DialogActions>
-          <Button color="error" onClick={handleClickCancel}>확인</Button>
+        <DialogActions sx={{ pb: 2, pr: 3 }}>
+          <Button variant="contained" color="primary" onClick={handleClickCancel} disableElevation>확인</Button>
         </DialogActions>
       </Dialog>
+
+      <FloatingButtons />
+      
     </Box>
   );
 };

@@ -1,7 +1,7 @@
 import React from 'react';
-import logo from '../assets/logo.png'; // 로고 경로 확인!
+import logo from '../assets/logo.png';
 
-const Footer = () => {
+const SiteFooter = () => {
   return (
     <footer className="bg-gray-900 py-16 border-t border-gray-800 text-gray-300">
       <div className="max-w-7xl mx-auto px-6">
@@ -41,4 +41,4 @@ const Footer = () => {
   );
 };
 
-export default Footer;
+export default SiteFooter;

@@ -66,10 +66,25 @@ export default function ResponsiveAppBar() {
   const accessToken = (typeof window !== 'undefined') ? pickToken() : null;
   const isLogin = hasReduxLogin || Boolean(accessToken);
 
+  // 수정: 관리자 여부 판별
+  const roles = Array.isArray(loginState?.roles) ? loginState.roles : [];
+  const isAdmin = roles.includes('ROLE_ADMIN');
+
+  // 수정: 관리자면 /admin, 아니면 /mypage
+  const myPagePath = isAdmin ? '/admin' : '/mypage';
+
+  // 수정: 관리자면 관리자페이지, 아니면 마이페이지
+  const myPageLabel = isAdmin ? '관리자페이지' : '마이페이지';
+
+  // 수정: 회원님 대신 이메일 우선 표시
+  const displayUserName =
+    loginState?.email ||
+    loginState?.nickname ||
+    loginState?.memberId ||
+    '회원';
 
   // ✅ 1) 앱 로드 시: 토큰 리프레시 로직 (기존 엔진 유지)
   useEffect(() => {
-
     if (hasReduxLogin || accessToken) return;
     let aborted = false;
     const silentRefresh = async () => {
@@ -134,7 +149,6 @@ export default function ResponsiveAppBar() {
       sessionStorage.removeItem('accessToken');
       sessionStorage.removeItem('refreshToken');
 
-
       try {
         await fetch(`${API_BASE}/api/auth/logout`, { method: 'POST' });
       } catch { /* ignore */ }
@@ -153,40 +167,68 @@ export default function ResponsiveAppBar() {
               <img className="w-56 md:w-72 h-auto object-contain" src={logo} alt="퍼스트로드 로고" />
             </Link>
           </div>
+
           <nav className="hidden md:flex items-center space-x-6">
             <Link to="/quick-search" className="text-base font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
               간편조회
             </Link>
+
             <Link to="/noboard" className="text-base font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
               공지사항
             </Link>
+
+            {/* 수정: 문의사항 메뉴 추가 */}
+            <Link to="/qaboard" className="text-base font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
+              문의사항
+            </Link>
+
             <Link to="/guide" className="text-base font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
               이용가이드
             </Link>
+
             <Link to="/estimatepage" className="text-base font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
-                온라인 퀵 접수
+              온라인 퀵 접수
             </Link>
-            <Link to="/mypage" className="text-base font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
-              마이페이지
+
+            {/* 수정: 온라인 퀵 접수 오른쪽에 운송 접수 목록 추가 */}
+            <Link to="/estimatepage/list" className="text-base font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
+              운송 접수 목록
             </Link>
           </nav>
-          <div className="flex items-center space-x-4 text-lg">
-            {/* 로그인 상태에 따라 버튼이 자동으로 바뀝니다! */}
+
+          {/* 수정: 오른쪽 영역 간격 정리 */}
+          <div className="flex items-center space-x-2 text-lg">
             {isLogin ? (
               <>
-                <span className="font-bold text-gray-700">{loginState?.nickname || '회원'}님</span>
+                {/* 수정: 관리자페이지/마이페이지 링크를 이메일과 분리 */}
+                <Link
+                  to={myPagePath}
+                  className="text-base font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap ml-6"
+                >
+                  {myPageLabel}
+                </Link>
+
+                <span className="font-bold text-gray-700 whitespace-nowrap">
+                  {displayUserName}
+                </span>
+
                 <span className="text-gray-300">|</span>
-                <button onClick={handleLogout} className="hover:text-red-600 font-bold cursor-pointer">로그아웃</button>
+
+                <button onClick={handleLogout} className="hover:text-red-600 font-bold cursor-pointer whitespace-nowrap">
+                  로그아웃
+                </button>
               </>
             ) : (
               <>
-                <Link to="/login" className="hover:text-red-600 font-bold">로그인</Link>
+                <Link to="/login" className="hover:text-red-600 font-bold whitespace-nowrap">로그인</Link>
                 <span className="text-gray-300">|</span>
-                <Link to="/signup" className="hover:text-red-600 font-bold">회원가입</Link>
+                <Link to="/signup" className="hover:text-red-600 font-bold whitespace-nowrap">회원가입</Link>
               </>
             )}
+
             <span className="text-gray-300">|</span>
-            <a href="#" className="text-red-500 font-bold hover:text-red-700">
+
+            <a href="#" className="text-red-500 font-bold hover:text-red-700 whitespace-nowrap">
               최대 <span className='text-xl'>10%</span> 적립
             </a>
           </div>

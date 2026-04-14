@@ -38,6 +38,9 @@ const NaverRedirectPage = lazy(() => import("../pages/NaverRedirectPage"));
 const GoogleRedirectPage = lazy(() => import("../pages/GoogleRedirectPage"));
 const KakaoRedirectPage = lazy(() => import("../pages/KakaoRedirectPage")); 
 
+// test 
+const EstimateMain = lazy(() => import("../pages/EstimatePage")); 
+
 const root = createBrowserRouter([
     {
         path: "",
@@ -81,7 +84,7 @@ const root = createBrowserRouter([
             },
             {
                 path: "estimatepage",
-                element: <Suspense fallback={Loading}><Estimate /></Suspense>,
+                element: <Suspense fallback={Loading}><EstimateMain /></Suspense>,
                 children: estimateRouter.children
             },
             {

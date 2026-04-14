@@ -1,5 +1,4 @@
 package com.giproject.dto.review;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -31,4 +30,6 @@ public class MyReviewListDTO {
     private LocalDateTime deliveryCompletedAt;
     private String driverName;
     private DeliveryStatus deliveryStatus;
+    
+    private String writerId;
 }

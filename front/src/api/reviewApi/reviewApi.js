@@ -90,3 +90,15 @@ export const getReceivedReviews =async()=>{
 
   return res.data;
 };
+
+export const getMyReceivedReviewSummary = async () => {
+  const token = sessionStorage.getItem("accessToken");
+
+  const res = await axios.get(`${prefix}/summary/my`, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+
+  return res.data;
+};

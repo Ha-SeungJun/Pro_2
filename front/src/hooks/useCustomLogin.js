@@ -9,6 +9,7 @@ import { loginPostAsync, getUserInfoAsync, logout as logoutAction } from "../sli
 // 백엔드 베이스 URL
 const API_BASE =
    process.env.REACT_APP_API_BASE ||
+
    process.env.REACT_APP_API_BASE ||
    "http://localhost:8080";
 

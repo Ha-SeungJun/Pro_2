@@ -2,18 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { Box, Typography, Button, TextField, FormControl, Select, MenuItem, Checkbox, FormControlLabel, Grid } from '@mui/material';
+import axios from 'axios';
+import MapComponent from '../layout/component/common/MapComponent2';
 
-// ✅ 견적서 전용 에셋 이미지 매칭
 import bikeImg from '../assets/quote/scooter.png';
 import damasImg from '../assets/quote/damassicon.png';
 
-// ✅ 트럭 이미지 (기현님이 분류해준 톤수별 트럭!)
+//  트럭 이미지 
 import ton1Img from '../assets/quote/1tontruck.png'; 
 import ton5Img from '../assets/quote/5tontruck.png'; 
 import ton10Img from '../assets/quote/10tontruck.png'; 
 import ton25Img from '../assets/quote/25tontrucck.png'; 
 
-// ✅ 가전, 가구, 기타 아이콘 (추가된 에셋 완벽 반영)
+// 가전, 가구, 기타 아이콘 
 import tvImg from '../assets/quote/tv.png';
 import iceImg from '../assets/quote/ice.png';
 import washImg from '../assets/quote/wash.png';
@@ -21,15 +22,15 @@ import stylerImg from '../assets/quote/styler.png';
 import airImg from '../assets/quote/air.png';
 import washcloseImg from '../assets/quote/washclose.png';
 import sofaImg from '../assets/quote/sofa.png';
-import bedImg from '../assets/quote/bed.png';       // 침대 추가!
+import bedImg from '../assets/quote/bed.png';      
 import chairImg from '../assets/quote/chair.png';
 import closeImg from '../assets/quote/close.png'; 
-import boxImg from '../assets/quote/box.png';       // 박스, 작은가전/가구용 추가!
-import bongtuImg from '../assets/quote/bongtu.png'; // 봉투 추가!
-import paletImg from '../assets/quote/palet.png';   // jpg -> png 에러 수정 완료!
+import boxImg from '../assets/quote/box.png';       
+import bongtuImg from '../assets/quote/bongtu.png'; 
+import paletImg from '../assets/quote/palet.png';   
 import gitarImg from '../assets/quote/gitar.png';
+import { calculateDistanceBetweenAddresses } from '../layout/component/common/calculateDistanceBetweenAddresses';
 
-// ✅ 품목 카테고리 (새로운 아이콘들 배치 완료)
 const itemCategories = {
   가전: [
     { id: 'tv', name: 'TV', img: tvImg },
@@ -56,18 +57,22 @@ const itemCategories = {
   ]
 };
 
-// ✅ 트럭 제원 세분화 (선택폭 확장 & 그룹별 트럭 이미지 매칭)
 const truckSpecs = {
   '1ton': { name: '1톤 화물', img: ton1Img, weight: '1t', length: '2800mm', width: '1600mm' },
   '1.4ton': { name: '1.4톤 화물', img: ton1Img, weight: '1.4t', length: '3100mm', width: '1600mm' },
   '2.5ton': { name: '2.5톤 화물', img: ton1Img, weight: '2.5t', length: '4300mm', width: '1900mm' },
-  '3.5ton': { name: '3.5톤 화물', img: ton1Img, weight: '3.5t', length: '4600mm', width: '2000mm' },
-  '5ton': { name: '5톤 화물', img: ton5Img, weight: '5t', length: '6200mm', width: '2300mm' },
-  '11ton': { name: '11톤 화물', img: ton10Img, weight: '11t', length: '9000mm', width: '2400mm' },
-  '15ton': { name: '15톤 화물', img: ton10Img, weight: '15t', length: '9000mm', width: '2400mm' },
+  '3.5ton': { name: '3.5톤 화물', img: ton10Img, weight: '3.5t', length: '4600mm', width: '2000mm' },
+  '5ton': { name: '5톤 화물', img: ton10Img, weight: '5t', length: '6200mm', width: '2300mm' },
+  '11ton': { name: '11톤 화물', img: ton5Img, weight: '11t', length: '9000mm', width: '2400mm' },
+  '15ton': { name: '15톤 화물', img: ton5Img, weight: '15t', length: '9000mm', width: '2400mm' },
   '18ton': { name: '18톤 화물', img: ton25Img, weight: '18t', length: '10000mm', width: '2400mm' },
   '25ton': { name: '25톤 화물', img: ton25Img, weight: '25t', length: '10000mm', width: '2400mm' },
 };
+
+const freightTypes = [
+  '차종무관', '카고', '윙바디', '탑', '리프트카고', 
+  '리프트윙바디', '리프트자바라', '냉동탑', '냉장탑'
+];
 
 const steps = ['주소입력', '배송방법 선택', '배송품목/옵션', '접수'];
 
@@ -82,19 +87,19 @@ const loadPostcodeScript = (callback) => {
 
 const QuotationRequestPage = () => {
   const navigate = useNavigate();
+  const { token } = useSelector(state => state.login);
   const [currentStep, setCurrentStep] = useState(1);
   const [serviceType, setServiceType] = useState('quick'); 
-  const [exPrice, setExprice] = useState(0); // ✅ 처음엔 예상 요금 0원으로 세팅
+  const [exPrice, setExprice] = useState(0);
+  const [isCalculating, setIsCalculating] = useState(false);
   const [activeTab, setActiveTab] = useState('가전');
 
   const [formData, setFormData] = useState({
     clientName: '', clientPhone: '',
-    
-    // ✅ 이름/연락처 맘대로 쓸 수 있게 독립 변수 생성
     startSameAsClient: false, startName: '', startPhone: '', startAddress: '', startDetail: '', 
     endSameAsClient: false, endName: '', endPhone: '', endAddress: '', endDetail: '', 
-    
-    freightVehicle: '1ton', quickVehicle: '오토바이', // 퀵 기본값 오토바이
+    // freightType 초기값을 선언하여 에러를 방지합니다.
+    freightVehicle: '1ton', freightType: '차종무관', quickVehicle: '오토바이', 
     quickTripType: 'one-way', quickOption: '일반',
     deliveryItem: '', memo: '', paymentMethod: '신용카드', taxInvoice: '발행하겠습니다.',
   });
@@ -110,7 +115,6 @@ const QuotationRequestPage = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // ✅ "의뢰인과 동일" 켰다 껐다 할 수 있는 토글 함수
   const handleSameAsClientToggle = (type) => (e) => {
     const isChecked = e.target.checked;
     setFormData(prev => ({
@@ -128,12 +132,114 @@ const QuotationRequestPage = () => {
     }).open();
   }
 
-  const handleNextStep = () => {
-    if (currentStep === steps.length) {
-      alert("견적서가 정상적으로 제출되었습니다.");
-      navigate('/');
+  const handleNextStep = async () => {
+    if (currentStep === 3) {
+      if (!formData.startAddress || !formData.endAddress) {
+        alert("출발지와 도착지 주소를 모두 입력해주세요!");
+        return;
+      }
+
+      setIsCalculating(true); 
+      try {
+        const distanceKm = await calculateDistanceBetweenAddresses(formData.startAddress, formData.endAddress);
+        
+        let calcPrice = 0;
+        const dist = Math.floor(distanceKm); 
+
+        if (serviceType === 'quick') {
+          // 1. 퀵서비스 요금
+          if (formData.quickVehicle === '오토바이') {
+            calcPrice = 10000 + (dist * 1000); // 오토바이: 기본 1만 + km당 1천원
+          } else {
+            calcPrice = 20000 + (dist * 1200); // 다마스: 기본 2만 + km당 1.2천원
+          }
+        } else {
+          // 2. 화물운송 요금
+          let baseFreight = 40000; // 1톤, 1.4톤, 2.5톤, 3.5톤 기준 4만원
+          
+          if (formData.freightVehicle.includes('5ton')) {
+            baseFreight = 80000;
+          } else if (formData.freightVehicle.includes('10ton') || formData.freightVehicle.includes('11ton') || formData.freightVehicle.includes('15ton')) {
+            baseFreight = 150000;
+          } else if (formData.freightVehicle.includes('18ton') || formData.freightVehicle.includes('25ton')) {
+            baseFreight = 250000;
+          }
+
+          calcPrice = baseFreight + (dist * 1500); 
+        }
+        
+        setExprice(calcPrice); 
+        setCurrentStep(prev => prev + 1); 
+      } catch (error) {
+        alert("거리 계산 중 문제가 발생했습니다. 주소를 다시 확인해주세요.");
+      } finally {
+        setIsCalculating(false); // 계산 중 깃발 내리기
+      }
       return;
     }
+
+    // 마지막 4단계: [접수완료] 버튼 눌렀을 때 진짜 DB로 전송!
+    if (currentStep === steps.length) {
+      try {
+        // Redux 및 브라우저 저장소에서 토큰을 모두 탐색하여 가져옵니다.
+        const activeToken = token || localStorage.getItem('accessToken') || localStorage.getItem('token');
+
+        // 토큰이 존재하지 않을 경우에만 차단합니다.
+        if (!activeToken) {
+          alert("로그인 후 이용 가능한 서비스입니다!");
+          navigate('/login');
+          return;
+        }
+
+        // 백엔드 엔티티에 맞춰 전송할 데이터를 객체로 생성합니다.
+        const submitData = {
+          clientName: formData.clientName,
+          clientPhone: formData.clientPhone,
+          startName: formData.startName,
+          startPhone: formData.startPhone,
+          startAddress: formData.startAddress,
+          startDetail: formData.startDetail,
+          endName: formData.endName,
+          endPhone: formData.endPhone,
+          endAddress: formData.endAddress,
+          endDetail: formData.endDetail,
+          
+          serviceType: serviceType,
+          vehicleType: serviceType === 'quick' 
+                       ? formData.quickVehicle 
+                       : `${truckSpecs[formData.freightVehicle].name} (${formData.freightType})`,
+                       
+          deliveryItem: formData.deliveryItem,
+          deliveryOption: formData.quickOption,
+          paymentMethod: formData.paymentMethod,
+          memo: formData.memo,
+          totalPrice: exPrice
+        };
+
+        console.log("DB로 쏠 최종 데이터 포장 완료:", submitData);
+
+        // Authorization 헤더에 찾은 토큰을 담아 전송합니다.
+        const response = await axios.post(
+          'http://localhost:8080/g2i4/estimate/', 
+          submitData,
+          {
+            headers: {
+              Authorization: `Bearer ${activeToken}`
+            }
+          }
+        );
+
+        if (response.status === 200 || response.status === 201) {
+          alert("견적 접수가 완료되었습니다! 기사님이 곧 배정됩니다.");
+          navigate('/');
+        }
+      } catch (error) {
+        console.error("DB 전송 실패:", error);
+        alert("접수 중 오류가 발생했습니다. 스프링부트(8080)가 켜져 있는지 확인해 주세요!");
+      }
+      return;
+    }
+    
     setCurrentStep(prev => prev + 1);
   };
 
@@ -180,7 +286,6 @@ const QuotationRequestPage = () => {
                 <div>
                   <h3 className="text-xl font-bold mb-4">출발지 주소</h3>
                   <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 flex flex-col gap-4">
-                    {/* ✅ Checkbox로 바꿔서 해제/선택 마음대로 가능! */}
                     <FormControlLabel 
                       control={<Checkbox checked={formData.startSameAsClient} onChange={handleSameAsClientToggle('start')} sx={{ color: '#ef4444', '&.Mui-checked': { color: '#ef4444' } }} />} 
                       label={<span className="text-sm font-medium text-gray-700">의뢰인과 동일</span>} 
@@ -262,6 +367,14 @@ const QuotationRequestPage = () => {
                           ))}
                         </Select>
                       </FormControl>
+
+                      <FormControl fullWidth>
+                        <Select value={formData.freightType} name="freightType" onChange={handleInputChange} sx={{ borderRadius: '0.5rem', bgcolor: 'white' }}>
+                          {freightTypes.map(type => (
+                            <MenuItem key={type} value={type}>{type}</MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
                     </div>
                     <div className="w-2/3 border-2 border-[#1cc8c6] rounded-2xl p-6 bg-[#f0fbfb] flex items-center justify-between">
                        <img src={truckSpecs[formData.freightVehicle].img} alt="트럭" className="w-48 h-auto object-contain drop-shadow-md" />
@@ -339,15 +452,12 @@ const QuotationRequestPage = () => {
             ========================================== */}
             {currentStep === 4 && (
               <div className="flex flex-col md:flex-row gap-8 h-[600px]">
-                <div className="flex-1 bg-[#e5e7eb] rounded-2xl border border-gray-200 relative overflow-hidden flex justify-center items-center">
-                   <div className="absolute top-0 left-0 w-full h-full opacity-30" style={{ backgroundImage: 'url(https://ssl.pstatic.net/static/maps/v5/api/bg_grid.png)' }}></div>
-                   <div className="z-10 text-center flex flex-col items-center">
-                     <span className="text-6xl mb-4">🗺️</span>
-                     <p className="font-bold text-gray-700 text-xl">지도 API 연결 영역</p>
-                     <p className="text-sm text-gray-500 mt-2">출발지: {formData.startAddress || '미입력'}</p>
-                     <p className="text-sm text-gray-500">도착지: {formData.endAddress || '미입력'}</p>
-                   </div>
+                
+                {/* ✅ 가짜 지도 플레이스홀더 지우고 진짜 카카오 지도(MapComponent) 투입! */}
+                <div className="flex-1 rounded-2xl border border-gray-200 relative overflow-hidden bg-white">
+                   <MapComponent startAddress={formData.startAddress} endAddress={formData.endAddress} />
                 </div>
+
                 <div className="w-full md:w-[400px] flex flex-col gap-4">
                    <div className="p-6 border border-gray-200 rounded-xl bg-white shadow-sm flex gap-4 items-start">
                      <span className="w-3 h-3 rounded-full border-2 border-gray-400 mt-1"></span>
@@ -373,10 +483,15 @@ const QuotationRequestPage = () => {
           {/* 하단 고정 스티키 바 (견적요약 & 버튼) */}
           <div className="bg-[#f3f4f6] px-8 py-6 border-t border-gray-200 flex justify-between items-center">
             <div className="flex gap-12">
-               {/* ✅ Step 1에서는 '선택 전', '-' 로 표시되도록 수정! */}
+               {/* 👇 이 부분 텍스트를 수정해 주세요! 👇 */}
                <p className="text-gray-600 font-medium">차량: <span className="font-bold text-black ml-2">
-                 {currentStep === 1 ? '선택 전' : (serviceType === 'quick' ? formData.quickVehicle : truckSpecs[formData.freightVehicle].name)}
+                 {currentStep === 1 
+                   ? '선택 전' 
+                   : (serviceType === 'quick' 
+                       ? formData.quickVehicle 
+                       : `${truckSpecs[formData.freightVehicle].name} (${formData.freightType})`)}
                </span></p>
+               {/* 👆 수정 완료 👆 */}
                <p className="text-gray-600 font-medium">예상가격: <span className="font-black text-2xl text-black ml-2">
                  {currentStep === 1 ? '-' : `${Number(exPrice).toLocaleString()}원`}
                </span></p>

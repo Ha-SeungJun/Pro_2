@@ -144,7 +144,6 @@ export default function ResponsiveAppBar() {
     }
   };
 
-  // 🚀 여기서부터 기현님의 UI 껍데기 적용!
   return (
     <header className="relative z-50 bg-white shadow-md border-b border-gray-100 text-gray-800 font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
@@ -154,11 +153,20 @@ export default function ResponsiveAppBar() {
               <img className="w-56 md:w-72 h-auto object-contain" src={logo} alt="퍼스트로드 로고" />
             </Link>
           </div>
-          <nav className="hidden md:flex space-x-12">
-            <Link to="/estimatepage" className="text-2xl font-bold hover:text-red-600 transition-colors">
+          <nav className="hidden md:flex items-center space-x-6">
+            <Link to="/quick-search" className="text-base font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
+              간편조회
+            </Link>
+            <Link to="/noboard" className="text-base font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
+              공지사항
+            </Link>
+            <Link to="/guide" className="text-base font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
+              이용가이드
+            </Link>
+            <Link to="/estimatepage" className="text-base font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
                 온라인 퀵 접수
             </Link>
-            <Link to="/mypage" className="text-2xl font-bold hover:text-red-600 transition-colors">
+            <Link to="/mypage" className="text-base font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
               마이페이지
             </Link>
           </nav>

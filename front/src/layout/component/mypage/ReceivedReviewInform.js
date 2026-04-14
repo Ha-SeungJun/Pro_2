@@ -17,10 +17,45 @@ import {
   DialogContent,
   DialogActions,
   TextField,
+  Card,
+  CardContent,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  LinearProgress,
+  Stack,
+  Divider,
+  Avatar,
 } from "@mui/material";
 import PageComponent from "../common/PageComponent";
 import { getReceivedReviews } from "../../../api/reviewApi/reviewApi";
+import { getMyReceivedReviewSummary } from "../../../api/reviewApi/reviewApi";
 
+
+const API_BASE =
+  process.env.REACT_APP_API_BASE ||
+  "http://localhost:8080";
+
+const DEFAULT_AVATAR = "/image/placeholders/avatar.svg";
+
+const getFirst = (...candidates) =>
+  candidates.find((v) => v !== undefined && v !== null && v !== "") ?? "";
+
+const normalizeProfileUrl = (v) => {
+  if (!v) return null;
+  if (v.startsWith("http")) return v;
+  if (v.startsWith("/g2i4/uploads/")) return `${API_BASE}${v}`;
+  return `${API_BASE}/g2i4/uploads/user_profile/${encodeURIComponent(v)}`;
+};
+
+const ratingRows = [
+  { key: "five", value: 5, label: "5점" },
+  { key: "four", value: 4, label: "4점" },
+  { key: "three", value: 3, label: "3점" },
+  { key: "two", value: 2, label: "2점" },
+  { key: "one", value: 1, label: "1점" },
+];
 const initState = {
   dtoList: [],
   pageNumList: [],
@@ -88,18 +123,126 @@ const ReceivedReviewInform = () => {
 
   const [openDetailModal, setOpenDetailModal] = useState(false);
   const [selectedDetailReview, setSelectedDetailReview] = useState(null);
+  const [sortType, setSortType] = useState("latest");
 
+  const [profileInfo, setProfileInfo] = useState({
+  id: "",
+  name: "",
+  avatarUrl: null,
+});
+  const sortReviews = (list, sortType) => {
+    const copied = [...list];
+
+    switch (sortType) {
+      case "ratingDesc":
+        return copied.sort((a, b) => (Number(b.rating) || 0) - (Number(a.rating) || 0));
+      case "ratingAsc":
+        return copied.sort((a, b) => (Number(a.rating) || 0) - (Number(b.rating) || 0));
+      case "oldest":
+        return copied.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      case "latest":
+      default:
+        return copied.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
+  };
   const movePage = (pageObj) => {
     setPageParams((prev) => ({ ...prev, ...pageObj }));
   };
+  const [summary, setSummary] = useState({
+    cargoId: "",
+    avgRating: 0,
+    reviewCount: 0,
+  });
 
-  const applyPagedData = (list, nextPageParams = pageParams) => {
-    const sorted = [...list].sort((a, b) => {
-      const A = a?.reviewNo ?? 0;
-      const B = b?.reviewNo ?? 0;
-      return B - A;
-    });
+  useEffect(() => {
+    let cancelled = false;
 
+    const fetchSummary = async () => {
+      try {
+        const data = await getMyReceivedReviewSummary();
+
+        if (!cancelled) {
+          setSummary({
+            cargoId: data?.cargoId ?? "",
+            avgRating: Number(data?.avgRating ?? 0),
+            reviewCount: Number(data?.reviewCount ?? 0),
+          });
+        }
+      } catch (error) {
+        console.error("받은 리뷰 요약 조회 실패:", error);
+        if (!cancelled) {
+          setSummary({
+            cargoId: "",
+            avgRating: 0,
+            reviewCount: 0,
+          });
+        }
+      }
+    };
+
+    fetchSummary();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchUserInfo = async () => {
+      try {
+        const token = sessionStorage.getItem("accessToken");
+
+        const res = await fetch(`${API_BASE}/g2i4/user/info`, {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+
+        const raw = await res.json();
+
+        const data =
+          raw?.data ||
+          raw?.user ||
+          raw?.payload ||
+          raw?.profile ||
+          raw?.account ||
+          raw?.result ||
+          raw ||
+          {};
+
+        const id = getFirst(data.cargo_id, data.cargoId, data.id, data.username);
+        const name = getFirst(data.cargo_name, data.cargoName, data.name);
+        const avatarName = getFirst(
+          data.webPath,
+          data.profileImage,
+          data.cargo_profile_image,
+          data.profile
+        );
+
+        const avatarUrl = normalizeProfileUrl(avatarName);
+
+        if (!cancelled) {
+          setProfileInfo({
+            id: id || "",
+            name: name || "",
+            avatarUrl: avatarUrl || null,
+          });
+        }
+      } catch (error) {
+        console.error("프로필 정보 조회 실패:", error);
+      }
+    };
+
+    fetchUserInfo();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const applyPagedData = (list, nextPageParams = pageParams, nextSortType = sortType) => {
+    const sorted = sortReviews(list, nextSortType);
     setServerData(paginate(sorted, nextPageParams));
   };
 
@@ -148,17 +291,18 @@ const ReceivedReviewInform = () => {
   }, []);
 
   useEffect(() => {
-    applyPagedData(allReviews, pageParams);
-  }, [pageParams]);
+    applyPagedData(allReviews, pageParams, sortType);
+  }, [pageParams, sortType, allReviews]);
 
   const tableColgroup = useMemo(
     () => (
       <colgroup>
+        <col style={{ width: "18%" }} />
         <col style={{ width: "14%" }} />
+        <col style={{ width: "16%" }} />
+        <col style={{ width: "28%" }} />
         <col style={{ width: "14%" }} />
-        <col style={{ width: "14%" }} />
-        <col style={{ width: "38%" }} />
-        <col style={{ width: "20%" }} />
+        <col style={{ width: "10%" }} />
       </colgroup>
     ),
     []
@@ -188,10 +332,11 @@ const ReceivedReviewInform = () => {
     return serverData.dtoList.map((item) => (
       <TableRow key={item.reviewNo}>
         <TableCell align="center">{item.cargoType || "-"}</TableCell>
+        <TableCell align="center">{item.writerId || "-"}</TableCell>
         <TableCell align="center">
           <Rating value={Number(item.rating) || 0} precision={0.5} readOnly />
         </TableCell>
-        <TableCell align="center">{item.driverName || "-"}</TableCell>
+
         <TableCell align="left">
           <Box
             sx={{
@@ -206,6 +351,10 @@ const ReceivedReviewInform = () => {
           </Box>
         </TableCell>
         <TableCell align="center">
+          {formatDateTime(item.createdAt)}
+        </TableCell>
+
+        <TableCell align="center">
           <Button
             variant="outlined"
             size="small"
@@ -217,7 +366,35 @@ const ReceivedReviewInform = () => {
       </TableRow>
     ));
   };
+  const reviewStats = useMemo(() => {
+    const stats = {
+      total: allReviews.length,
+      avg: 0,
+      five: 0,
+      four: 0,
+      three: 0,
+      two: 0,
+      one: 0,
+    };
 
+    if (allReviews.length === 0) return stats;
+
+    let sum = 0;
+
+    allReviews.forEach((item) => {
+      const rating = Number(item.rating) || 0;
+      sum += rating;
+
+      if (rating >= 5) stats.five += 1;
+      else if (rating >= 4) stats.four += 1;
+      else if (rating >= 3) stats.three += 1;
+      else if (rating >= 2) stats.two += 1;
+      else stats.one += 1;
+    });
+
+    stats.avg = sum / allReviews.length;
+    return stats;
+  }, [allReviews]);
   return (
     <Box sx={{ bgcolor: "#f7f9fc", minHeight: "100vh", py: 6 }}>
       <Container maxWidth="xl" disableGutters sx={{ px: { xs: 1, sm: 2 } }}>
@@ -225,11 +402,171 @@ const ReceivedReviewInform = () => {
           내가 받은 리뷰
         </Typography>
 
+        <Box sx={{ mb: 4 }}>
+          <Card
+            elevation={0}
+            sx={{
+              borderRadius: 4,
+              border: "1px solid #e5e7eb",
+              background: "linear-gradient(135deg, #ffffff 0%, #f8fbff 100%)",
+            }}
+          >
+            <CardContent sx={{ px: 4, py: 3 }}>
+              <Typography
+                variant="h6"
+                fontWeight="bold"
+                textAlign="center"
+                sx={{ mb: 3 }}
+              >
+                내 리뷰 평점 요약
+              </Typography>
+
+              <Stack
+                direction={{ xs: "column", md: "row" }}
+                spacing={4}
+                alignItems="center"
+                justifyContent="space-between"
+              >
+                <Box
+                  sx={{
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Avatar
+                    src={profileInfo.avatarUrl || DEFAULT_AVATAR}
+                    alt={profileInfo.name || "프로필"}
+                    sx={{
+                      width: 88,
+                      height: 88,
+                      mb: 1.5,
+                      border: "2px solid #e5e7eb",
+                    }}
+                    imgProps={{
+                      referrerPolicy: "no-referrer",
+                      crossOrigin: "anonymous",
+                      onError: (e) => {
+                        e.currentTarget.src = DEFAULT_AVATAR;
+                      },
+                    }}
+                  />
+
+                  <Typography variant="subtitle1" fontWeight="bold">
+                    {profileInfo.name || profileInfo.id || "차주"}
+                  </Typography>
+
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    {profileInfo.id || "-"}
+                  </Typography>
+
+                  <Typography
+                    variant="h2"
+                    fontWeight="bold"
+                    sx={{ lineHeight: 1, mb: 1 }}
+                  >
+                    {summary.avgRating.toFixed(1)}
+                  </Typography>
+
+                  <Rating
+                    value={summary.avgRating}
+                    precision={0.5}
+                    readOnly
+                    sx={{ mb: 1 }}
+                  />
+
+                  <Typography variant="body1" color="text.secondary">
+                    총 리뷰 수 {summary.reviewCount}개
+                  </Typography>
+                </Box>
+
+                <Divider
+                  orientation="vertical"
+                  flexItem
+                  sx={{ display: { xs: "none", md: "block" } }}
+                />
+
+                <Box sx={{ flex: 1.4, width: "100%" }}>
+                  <Stack spacing={1.2}>
+                    {[
+                      { key: "five", value: 5, label: "5점" },
+                      { key: "four", value: 4, label: "4점" },
+                      { key: "three", value: 3, label: "3점" },
+                      { key: "two", value: 2, label: "2점" },
+                      { key: "one", value: 1, label: "1점" },
+                    ].map(({ key, value, label }) => {
+                      const count = reviewStats[key];
+                      const percent =
+                        reviewStats.total > 0 ? (count / reviewStats.total) * 100 : 0;
+
+                      return (
+                        <Box
+                          key={key}
+                          sx={{
+                            display: "grid",
+                            gridTemplateColumns: "56px 84px 1fr 42px",
+                            alignItems: "center",
+                            gap: 1.5,
+                          }}
+                        >
+                          <Typography variant="body2" fontWeight="medium">
+                            {label}
+                          </Typography>
+
+                          <Rating value={value} readOnly size="small" />
+
+                          <LinearProgress
+                            variant="determinate"
+                            value={percent}
+                            sx={{
+                              height: 8,
+                              borderRadius: 999,
+                              backgroundColor: "#e5e7eb",
+                            }}
+                          />
+
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            textAlign="right"
+                          >
+                            {count}개
+                          </Typography>
+                        </Box>
+                      );
+                    })}
+                  </Stack>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Box>
+
         <Box mt={6}>
           <Typography variant="h6" fontWeight="bold" gutterBottom>
-            차주에게 작성된 리뷰 목록
-          </Typography>
 
+          </Typography>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+            <Typography variant="h6" fontWeight="bold">
+              차주에게 작성된 리뷰 목록
+            </Typography>
+
+            <FormControl size="small" sx={{ minWidth: 180 }}>
+              <InputLabel>정렬</InputLabel>
+              <Select
+                value={sortType}
+                label="정렬"
+                onChange={(e) => setSortType(e.target.value)}
+              >
+                <MenuItem value="latest">최신 순</MenuItem>
+                <MenuItem value="oldest">오래된 순</MenuItem>
+                <MenuItem value="ratingDesc">별점 높은 순</MenuItem>
+                <MenuItem value="ratingAsc">별점 낮은 순</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
           <TableContainer
             component={Paper}
             elevation={1}
@@ -239,10 +576,12 @@ const ReceivedReviewInform = () => {
               {tableColgroup}
               <TableHead>
                 <TableRow>
+
                   <TableCell align="center">화물명</TableCell>
+                  <TableCell align="center">작성자</TableCell>
                   <TableCell align="center">별점</TableCell>
-                  <TableCell align="center">운전 기사</TableCell>
                   <TableCell align="center">리뷰 내용</TableCell>
+                  <TableCell align="center">작성일</TableCell>
                   <TableCell align="center">상세</TableCell>
                 </TableRow>
               </TableHead>
@@ -298,7 +637,7 @@ const ReceivedReviewInform = () => {
           </Typography>
 
           <Typography variant="body2" sx={{ mb: 2 }}>
-            <strong>운전 기사:</strong> {selectedDetailReview?.driverName || "-"}
+            <strong>작성자:</strong> {selectedDetailReview?.writerId || "-"}
           </Typography>
 
           <Typography variant="body2" sx={{ mb: 2 }}>
@@ -306,10 +645,10 @@ const ReceivedReviewInform = () => {
             {selectedDetailReview?.deliveryStatus === "COMPLETED"
               ? "배송 완료"
               : selectedDetailReview?.deliveryStatus === "IN_TRANSIT"
-              ? "배송 중"
-              : selectedDetailReview?.deliveryStatus === "PENDING"
-              ? "대기"
-              : "-"}
+                ? "배송 중"
+                : selectedDetailReview?.deliveryStatus === "PENDING"
+                  ? "대기"
+                  : "-"}
           </Typography>
 
           <Typography gutterBottom>별점</Typography>

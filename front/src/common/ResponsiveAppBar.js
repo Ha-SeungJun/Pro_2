@@ -65,7 +65,13 @@ export default function ResponsiveAppBar() {
   const hasReduxLogin = Boolean(loginState?.email || loginState?.memberId);
   const accessToken = (typeof window !== 'undefined') ? pickToken() : null;
   const isLogin = hasReduxLogin || Boolean(accessToken);
+  const roles = loginState?.roles || loginState?.rolenames || [];
+  const rolesArr = Array.isArray(roles) ? roles : [roles].filter(Boolean);
 
+  // 관리자 여부: ROLE_ADMIN 포함 여부 확인
+  const isAdmin = rolesArr.some(r => String(r).toUpperCase().includes('ADMIN'));
+  // 차주 여부: ROLE_DRIVER 포함 여부 확인
+  const isDriver = rolesArr.some(r => String(r).toUpperCase().includes('DRIVER'));
 
   // ✅ 1) 앱 로드 시: 토큰 리프레시 로직 (기존 엔진 유지)
   useEffect(() => {
@@ -164,7 +170,7 @@ export default function ResponsiveAppBar() {
               이용가이드
             </Link>
             <Link to="/estimatepage" className="text-base font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
-                온라인 퀵 접수
+              온라인 퀵 접수
             </Link>
             <Link to="/mypage" className="text-base font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
               마이페이지
@@ -185,10 +191,17 @@ export default function ResponsiveAppBar() {
                 <Link to="/signup" className="hover:text-red-600 font-bold">회원가입</Link>
               </>
             )}
-            <span className="text-gray-300">|</span>
-            <a href="#" className="text-red-500 font-bold hover:text-red-700">
-              최대 <span className='text-xl'>10%</span> 적립
-            </a>
+            {(!isAdmin && !isDriver) && (
+              <>
+                <span className="text-gray-300">|</span>
+                <Link
+                  to={isLogin ? "/mypage/edit" : "/login"}
+                  className="text-red-500 font-bold hover:text-red-700"
+                >
+                  최대 <span className='text-xl'>30%</span> 할인
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from "react-router-dom";
 
 const steps = [
   { id: 'STEP 1', title: '요금조회', desc: '출발지와 도착지 기준 무료 요금조회', svg: <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/></svg> },
@@ -10,6 +11,7 @@ const steps = [
 ];
 
 const ProcessSection = () => {
+  const navigate = useNavigate();
   return (
     <section className="py-24 bg-white font-sans">
       <div className="max-w-7xl mx-auto px-6 text-center text-gray-900">
@@ -28,7 +30,10 @@ const ProcessSection = () => {
           ))}
         </div>
         <div className="mt-16">
-            <button className="bg-red-600 text-white font-bold py-5 px-12 rounded-full text-xl shadow-lg hover:bg-red-700 transition-colors">
+            <button 
+              onClick={() => navigate('/estimatepage')}
+              className="bg-red-600 text-white font-bold py-5 px-12 rounded-full text-xl shadow-lg hover:bg-red-700 transition-colors"
+            >
               온라인 퀵&화물 접수하기
             </button>
         </div>

@@ -1,11 +1,14 @@
 import React from 'react';
-// ✅ 기현님이 assets 폴더에 넣은 비디오 파일을 직접 불러옵니다! (이름 맞춤)
 import mainVideo from '../assets/mainpage.mp4';
+import { useNavigate } from "react-router-dom";
 
 const HeroSection = () => {
+  const navigate = useNavigate();
+
   return (
     <section className="relative w-full h-screen overflow-hidden">
       
+      {/* 배경 비디오 */}
       <video className="absolute top-0 left-0 w-full h-full object-cover z-0" autoPlay loop muted playsInline>
         <source src={mainVideo} type="video/mp4" />
       </video>
@@ -26,14 +29,15 @@ const HeroSection = () => {
             퍼스트로드가 고객님의 비즈니스 성공을 싣고 달립니다.
           </p>
           
-          <div className="flex flex-col sm:flex-row gap-6 justify-center w-full max-w-sm sm:max-w-none">
-            <button className="flex items-center justify-center bg-white text-gray-900 font-bold py-5 px-12 rounded-full text-2xl hover:-translate-y-2 hover:shadow-2xl transition-all duration-300">
-              📞 1111-1111
-            </button>
-            <button className="bg-red-600 text-white font-bold py-5 px-12 rounded-full text-2xl hover:-translate-y-2 hover:shadow-[0_8px_30px_rgba(220,38,38,0.5)] transition-all duration-300">
+          <div className="flex justify-center w-full">
+            <button 
+              onClick={() => navigate('/estimatepage')} 
+              className="bg-red-600 text-white font-bold py-5 px-16 rounded-full text-2xl hover:-translate-y-2 hover:shadow-[0_8px_30px_rgba(220,38,38,0.5)] transition-all duration-300"
+            >
               온라인 접수하기
             </button>
           </div>
+          
         </div>
       </div>
     </section>

@@ -1,14 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Box, Typography, Grid, Button, TextField, InputAdornment, IconButton, FormControl, InputLabel, Select, MenuItem, Dialog, DialogContent, DialogActions } from "@mui/material";
-import SearchIcon from "@mui/icons-material/Search";
+import { Box } from "@mui/material";
 import { useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
-
-// API 로직
-import { postSearchFeesBasic } from "../api/estimateApi/estimateApi";
-import { calculateDistanceBetweenAddresses } from "../layout/component/common/calculateDistanceBetweenAddresses";
-import MainFeesUtil from "../layout/component/common/MainFeesUtil";
-import { getNotices } from "../api/noticeApi";
 
 // 커스텀 섹션 컴포넌트
 import HeroSection from '../components/HeroSection';
@@ -17,7 +9,7 @@ import InfoSection from '../components/InfoSection';
 import QASection from '../components/QASection';
 import FloatingButtons from '../components/FloatingButtons';
 
-// ✅ 사진 이름 매칭 (기현님이 수정한 scooter.png 반영 완료!)
+// ✅ 기본 차량 사진
 import damasImg from '../assets/damas.png'; 
 import bikeImg from '../assets/bike.png'; 
 import ton1Img from '../assets/1truck.png';
@@ -25,9 +17,15 @@ import ton11Img from '../assets/11truck.png';
 import ton18Img from '../assets/18truck.png';
 import ton25Img from '../assets/25truck.png';
 
-const initState = {
-  startAddress: '', endAddress: '', cargoType: '', cargoWeight: '', totalCost: 0, distanceKm: ''
-}
+// ✅ 특수 차량 5종 사진
+import topTruckImg from '../assets/toptruck.png';
+import wingImg from '../assets/wing.png';
+import jangImg from '../assets/jangkkuktruck.png';
+import liftImg from '../assets/lift.png';
+import iceTruckImg from '../assets/icetruck.png';
+
+import { Button } from "@mui/material";
+import MainFeesUtil from "../layout/component/common/MainFeesUtil";
 
 const vehicleStaticList = [
   {
@@ -68,85 +66,55 @@ const vehicleStaticList = [
   }
 ];
 
+const specialVehicleList = [
+  { 
+    name: '탑차', 
+    img: topTruckImg, 
+    desc: '비 또는 눈과 같이 물품에 손상이 가면 안되는 적재물에 이용되며, 적재함 뒷문이 개방되는 차량입니다.' 
+  },
+  { 
+    name: '윙바디', 
+    img: wingImg, 
+    desc: '차량 양 옆을 개방하여 화물을 적재할 수 있어 파레트를 지게차 등으로 상/하차 할 수 있는 차량입니다.' 
+  },
+  { 
+    name: '장축', 
+    img: jangImg, 
+    desc: '기본 적재함보다 길며, 많은 양의 화물을 적재할 수 있는 차량입니다.' 
+  },
+  { 
+    name: '리프트', 
+    img: liftImg, 
+    desc: '적재함 뒷부분에 파워게이트가 있어 오토바이나 무거운 화물을 들어올릴 수 있는 차량입니다.' 
+  },
+  { 
+    name: '냉동차', 
+    img: iceTruckImg, 
+    desc: '냉동이 필요한 수산물 등을 배송할 때 이용하는 차량입니다.' 
+  }
+];
+
 const HomePage = () => {
-  const [estimate, setEstimate] = useState(initState);
-  const [fees, setFees] = useState([]);
-  const [exPrice, setExprice] = useState(0);
-  const [openFees, setOpenFees] = useState(false);
-  const [openPrice, setOpenPrice] = useState(false);
-  const [notices, setNotices] = useState([]);
-  
   const [selectedVehicleIndex, setSelectedVehicleIndex] = useState(0); 
+  const [openFees, setOpenFees] = useState(false);
 
   const { roles } = useSelector(state => state.login);
-  const isAdmin = roles.includes("ROLE_ADMIN");
-  const navigate = useNavigate();
-
-  const loadNotices = async () => {
-    try {
-      const response = await getNotices();
-      setNotices(response.content || []);
-    } catch (err) {
-      console.error('공지사항 로드 실패:', err);
-    }
-  };
-
-  const fetchFees = async () => {
-    try {
-      const data = await postSearchFeesBasic();
-      setFees(data);
-    } catch (error) {
-      console.log("API 호출 실패", error);
-    }
-  };
-
-  useEffect(() => {
-    loadNotices();
-    fetchFees();
-  }, []);
-
-  useEffect(() => {
-    const fee = fees.find(f => f.weight === estimate.cargoWeight) || null;
-    const dist = Number(estimate.distanceKm ?? 0);
-    const base = Number(fee?.initialCharge ?? 0);
-    const rate = Number(fee?.ratePerKm ?? 0);
-    const total = base + (dist * rate);
-
-    setEstimate(prev => ({ ...prev, totalCost: total }));
-    setExprice(total);
-  }, [estimate.cargoWeight, estimate.distanceKm, fees]);
-
-  const handleAddressSearch = (setter) => {
-    new window.daum.Postcode({
-      oncomplete: function (data) { setter(data.address); },
-    }).open();
-  }
-
-  const handleClickCancel = () => setOpenPrice(false);
-
-  const calculateDistance = async () => {
-    try {
-      const km = await calculateDistanceBetweenAddresses(estimate.startAddress, estimate.endAddress);
-      setEstimate(prev => ({ ...prev, distanceKm: km }));
-      setOpenPrice(true);
-    } catch (err) {
-      alert("거리 계산 중 문제가 발생했습니다. 주소를 다시 확인해주세요.");
-    }
-  };
-
-  const handleRowClick = (noticeId) => {
-    navigate(`/noboard/post/${noticeId}`);
-  };
+  const isAdmin = roles?.includes("ROLE_ADMIN");
 
   return (
     <Box>
+      {/* 🚀 간편조회 및 공지사항 영역(Box)을 메인에서 완전히 제거했습니다! */}
+      
+      {/* 기존 헤더(메인 배너) */}
       <HeroSection />
 
       <ProcessSection />
       <InfoSection />
       <QASection />
 
-      {/* 차량 종류 소개 섹션 */}
+      {/* ==========================================
+          차량 종류 소개 섹션 (01 ~ 06)
+      ========================================== */}
       <section className="py-24 bg-[#f8f9fb] font-sans antialiased text-gray-900">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex flex-col lg:flex-row gap-16">
@@ -184,7 +152,6 @@ const HomePage = () => {
             </div>
 
             <div className="w-full lg:w-2/3 flex flex-col justify-start gap-12 mt-12 lg:mt-0"> 
-              
               <div className="flex items-center gap-6 mb-8 lg:mb-12">
                 <span className="font-bold text-3xl text-red-600">
                   {selectedVehicleIndex < 9 ? `0${selectedVehicleIndex + 1}` : selectedVehicleIndex + 1}
@@ -222,105 +189,46 @@ const HomePage = () => {
         </div>
       </section>
 
-      <MainFeesUtil open={openFees} onClose={() => setOpenFees(false)} onSuccess={() => { setOpenFees(false); fetchFees(); }} />
+      {/* ==========================================
+          특수 차량 5종 소개 섹션 (탑차 ~ 냉동차)
+      ========================================== */}
+      <section className="py-24 bg-white w-full flex justify-center border-t border-gray-100">
+        <div className="max-w-7xl w-full px-6 flex flex-col items-center">
+          
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-4 tracking-tight">
+              탑차부터 냉동차까지 화물에 맞는 차종을 선택하실 수 있습니다.
+            </h2>
+            <p className="text-gray-500 text-lg">
+              1톤 이상 트럭에 탑차 / 윙바디 / 장축 / 리프트 / 냉동차 등 차종을 선택하실 수 있으며, 차종에 따라 추가비용이 발생합니다.
+            </p>
+          </div>
 
-      {/* 간편조회 및 공지사항 */}
-      <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center', py: 10, bgcolor: 'white' }}>
-        <Box sx={{ width: '100%', maxWidth: '1200px', px: 2 }}>
-          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 8 }}>
-            
-            <Box sx={{ width: { xs: '100%', md: '50%' } }}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                <Typography variant="h5" fontWeight="bold" gutterBottom mb={4}>간편조회</Typography>
-                <Grid container spacing={2}>
-                  <Grid item xs={6}>
-                    <TextField
-                      placeholder="출발지 주소" name="startAddress" value={estimate.startAddress} fullWidth
-                      InputProps={{
-                        readOnly: true,
-                        endAdornment: (
-                          <InputAdornment position="end">
-                            <IconButton onClick={() => handleAddressSearch(addr => setEstimate(prev => ({ ...prev, startAddress: addr })))}>
-                              <SearchIcon />
-                            </IconButton>
-                          </InputAdornment>
-                        ),
-                      }}
-                    />
-                  </Grid>
-                  <Grid item xs={6}>
-                    <TextField
-                      placeholder="도착지 주소" name="endAddress" value={estimate.endAddress} fullWidth
-                      InputProps={{
-                        readOnly: true,
-                        endAdornment: (
-                          <InputAdornment position="end">
-                            <IconButton onClick={() => handleAddressSearch(addr => setEstimate(prev => ({ ...prev, endAddress: addr })))}>
-                              <SearchIcon />
-                            </IconButton>
-                          </InputAdornment>
-                        ),
-                      }}
-                    />
-                  </Grid>
-                </Grid>
-                <FormControl fullWidth sx={{ mt: 3 }}>
-                  <InputLabel id="cargo-fee-label">화물 무게</InputLabel>
-                  <Select
-                    labelId="cargo-fee-label" label="화물 무게" name="cargoWeight" value={estimate.cargoWeight || ''}
-                    onChange={(e) => setEstimate(prev => ({ ...prev, cargoWeight: e.target.value }))}
-                  >
-                    {fees.map(fee => (
-                      <MenuItem key={fee.tno} value={fee.weight}>{fee.weight}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 1.5, mb: 3 }}>주소 및 화물 무게를 입력후 조회하기 버튼을 눌러주세요</Typography>
-                <Box sx={{ mt: 'auto', display: 'flex', justifyContent: 'flex-end' }}>
-                  <Button variant="contained" size="large" onClick={calculateDistance} sx={{ bgcolor: '#299AF0' }}>
-                    조회하기
-                  </Button>
-                </Box>
-              </Box>
-            </Box>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-8 w-full">
+            {specialVehicleList.map((item, index) => (
+              <div key={index} className="flex flex-col items-center text-center">
+                
+                <div className="w-48 h-48 flex items-center justify-center mb-6 overflow-hidden">
+                   <img 
+                     src={item.img} 
+                     alt={item.name} 
+                     className="w-full h-auto object-contain hover:scale-105 transition-transform duration-300" 
+                   />
+                </div>
 
-            <Box sx={{ width: { xs: '100%', md: '50%' } }}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                <Typography variant="h5" fontWeight="bold" gutterBottom mb={4}>공지사항</Typography>
-                <Grid container spacing={1}>
-                  {notices.slice(0, 4).map((notice) => (
-                    <Grid item xs={12} key={notice.noticeId}>
-                      <Box
-                        sx={{
-                          border: '1px solid #e0e0e0', borderRadius: 2, px: 2, py: 1.5,
-                          display: 'flex', alignItems: 'center', cursor: 'pointer',
-                          '&:hover': { backgroundColor: '#f8f9fa' }
-                        }}
-                        onClick={() => handleRowClick(notice.noticeId)}
-                      >
-                        <Typography sx={{ width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {notice.title}
-                        </Typography>
-                      </Box>
-                    </Grid>
-                  ))}
-                </Grid>
-              </Box>
-            </Box>
+                <h4 className="text-xl font-bold text-gray-800 mb-3">{item.name}</h4>
+                <p className="text-sm text-gray-500 break-keep leading-relaxed px-2">
+                  {item.desc}
+                </p>
 
-          </Box>
-        </Box>
-      </Box>
+              </div>
+            ))}
+          </div>
+          
+        </div>
+      </section>
 
-      <Dialog open={openPrice} onClose={handleClickCancel} PaperProps={{ sx: { width: 400, borderRadius: 3, p: 2 } }}>
-        <DialogContent>
-          <Typography fontSize={22} fontWeight='bold' mb={1} color="#299AF0">예상금액은 {Number(exPrice).toLocaleString()}원 입니다.</Typography>
-          <Typography fontSize={14} color="text.secondary">본 금액은 예상 견적이며 물품에 따라 상세금액과 차이가 있을 수 있습니다.</Typography>
-        </DialogContent>
-        <DialogActions sx={{ pb: 2, pr: 3 }}>
-          <Button variant="contained" color="primary" onClick={handleClickCancel} disableElevation>확인</Button>
-        </DialogActions>
-      </Dialog>
+      <MainFeesUtil open={openFees} onClose={() => setOpenFees(false)} onSuccess={() => setOpenFees(false)} />
 
       <FloatingButtons />
       

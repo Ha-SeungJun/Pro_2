@@ -61,8 +61,7 @@ const LoginComponent = ({
           flexDirection: 'column',
           justifyContent: 'center',
           alignItems: 'center',
-          minHeight: '90vh',
-          backgroundColor: '#f5f5f5',
+          minHeight: '80vh',
           px: 2,
         }}
       >

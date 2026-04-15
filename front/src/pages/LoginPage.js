@@ -49,19 +49,19 @@ const LoginPage = () => {
         navigate(`/find-password${qs}`);
     }, [navigate]);
 
-    return (
-        <div className="fixed top-0 left-0 z-[1055] flex flex-col h-full w-full">
-            <div className="flex flex-wrap w-full h-full justify-center items-center border-2">
-                <LoginComponent
-                    onSubmit={handleSubmit}
-                    onFindId={handleFindId}
-                    onFindPassword={handleFindPassword}
-                    loading={loading}
-                    initialLoginId={prefillId}
-                    resetSignal={resetSignal} // 실패 시 비번 초기화 신호
-                />
+ return (
+        <div className="flex flex-col w-full justify-center items-center py-4">
+            <div className="w-full max-w-[450px] px-4">
+                    <LoginComponent
+                        onSubmit={handleSubmit}
+                        onFindId={handleFindId}
+                        onFindPassword={handleFindPassword}
+                        loading={loading}
+                        initialLoginId={prefillId}
+                        resetSignal={resetSignal}
+                    />
+                </div>
             </div>
-        </div>
     );
 };
 

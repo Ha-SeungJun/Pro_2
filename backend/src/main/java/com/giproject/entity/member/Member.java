@@ -25,7 +25,7 @@ public class Member {
     @EqualsAndHashCode.Include
     @Column(name = "mem_id", length = 50, nullable = false)
     private String memId; // 문자열 PK (로그인 ID)
-
+    
     /** user_index.login_id 와 읽기 전용 연결 */
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "mem_id", referencedColumnName = "login_id",
@@ -34,7 +34,8 @@ public class Member {
 
     @Column(name = "mem_email", unique = true, nullable = false, length = 120)
     private String memEmail;
-
+    
+    
     /** 반드시 해시 저장(BCrypt) */
     @Column(name = "mem_pw", nullable = false, length = 200)
     private String memPw;

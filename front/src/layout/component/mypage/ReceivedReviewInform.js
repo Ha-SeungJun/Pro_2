@@ -28,10 +28,12 @@ import {
   Divider,
   Avatar,
 } from "@mui/material";
+import * as PortOne from "@portone/browser-sdk/v2";
 import PageComponent from "../common/PageComponent";
 import { getReceivedReviews } from "../../../api/reviewApi/reviewApi";
 import { getMyReceivedReviewSummary } from "../../../api/reviewApi/reviewApi";
-
+import { getMyVerificationStatus, startVerification, confirmVerification } from "../../../api/verificationApi/verificationApi";
+import DriverProfileCard from "../common/DriverProfileCard";
 
 const API_BASE =
   process.env.REACT_APP_API_BASE ||
@@ -119,17 +121,22 @@ const ReceivedReviewInform = () => {
   const [allReviews, setAllReviews] = useState([]);
   const [serverData, setServerData] = useState(initState);
   const [pageParams, setPageParams] = useState({ page: 1, size: 5 });
-  const [loading, setLoading] = useState(true);
 
   const [openDetailModal, setOpenDetailModal] = useState(false);
   const [selectedDetailReview, setSelectedDetailReview] = useState(null);
   const [sortType, setSortType] = useState("latest");
 
   const [profileInfo, setProfileInfo] = useState({
-  id: "",
-  name: "",
-  avatarUrl: null,
-});
+    id: "",
+    name: "",
+    avatarUrl: null,
+  });
+  const [verification, setVerification] = useState({
+    isVerified: false,
+    verifiedAt: null,
+    verifiedPhone: null,
+  });
+  const [loading, setLoading] = useState(false);
   const sortReviews = (list, sortType) => {
     const copied = [...list];
 
@@ -153,6 +160,57 @@ const ReceivedReviewInform = () => {
     avgRating: 0,
     reviewCount: 0,
   });
+
+  const fetchVerificationStatus = async () => {
+    try {
+      const data = await getMyVerificationStatus();
+
+      setVerification({
+        isVerified: Boolean(data?.isVerified),
+        verifiedAt: data?.verifiedAt ?? null,
+        verifiedPhone: data?.verifiedPhone ?? null,
+      });
+    } catch (error) {
+      console.error("본인인증 상태 조회 실패:", error);
+    }
+  };
+  const handleVerificationClick = async () => {
+    if (verification.isVerified) return;
+
+    setLoading(true);
+
+    try {
+      const data = await startVerification();
+
+      const response = await PortOne.requestIdentityVerification({
+        storeId: data.storeId,
+        identityVerificationId: data.identityVerificationId,
+        channelKey: data.channelKey,
+        redirectUrl: data.redirectUrl,
+      });
+
+      // 실패 응답
+      if (response?.code !== undefined) {
+        alert(response.message || "본인인증에 실패했습니다.");
+        return;
+      }
+
+      // 인증 완료 확인
+      await confirmVerification({
+        identityVerificationId: data.identityVerificationId,
+      });
+
+      // 여기 추가: 서버에서 최신 상태 다시 읽기
+      await fetchVerificationStatus();
+
+      alert("본인인증이 완료되었습니다.");
+    } catch (error) {
+      console.error("본인인증 시작 실패:", error);
+      alert("본인인증 시작에 실패했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -181,6 +239,39 @@ const ReceivedReviewInform = () => {
     };
 
     fetchSummary();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchVerification = async () => {
+      try {
+        const data = await getMyVerificationStatus();
+
+        if (!cancelled) {
+          setVerification({
+            isVerified: Boolean(data?.isVerified),
+            verifiedAt: data?.verifiedAt ?? null,
+            verifiedPhone: data?.verifiedPhone ?? null,
+          });
+        }
+      } catch (error) {
+        console.error("본인인증 상태 조회 실패:", error);
+        if (!cancelled) {
+          setVerification({
+            isVerified: false,
+            verifiedAt: null,
+            verifiedPhone: null,
+          });
+        }
+      }
+    };
+
+    fetchVerification();
 
     return () => {
       cancelled = true;
@@ -402,148 +493,19 @@ const ReceivedReviewInform = () => {
           내가 받은 리뷰
         </Typography>
 
+        
         <Box sx={{ mb: 4 }}>
-          <Card
-            elevation={0}
-            sx={{
-              borderRadius: 4,
-              border: "1px solid #e5e7eb",
-              background: "linear-gradient(135deg, #ffffff 0%, #f8fbff 100%)",
-            }}
-          >
-            <CardContent sx={{ px: 4, py: 3 }}>
-              <Typography
-                variant="h6"
-                fontWeight="bold"
-                textAlign="center"
-                sx={{ mb: 3 }}
-              >
-                내 리뷰 평점 요약
-              </Typography>
-
-              <Stack
-                direction={{ xs: "column", md: "row" }}
-                spacing={4}
-                alignItems="center"
-                justifyContent="space-between"
-              >
-                <Box
-                  sx={{
-                    flex: 1,
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Avatar
-                    src={profileInfo.avatarUrl || DEFAULT_AVATAR}
-                    alt={profileInfo.name || "프로필"}
-                    sx={{
-                      width: 88,
-                      height: 88,
-                      mb: 1.5,
-                      border: "2px solid #e5e7eb",
-                    }}
-                    imgProps={{
-                      referrerPolicy: "no-referrer",
-                      crossOrigin: "anonymous",
-                      onError: (e) => {
-                        e.currentTarget.src = DEFAULT_AVATAR;
-                      },
-                    }}
-                  />
-
-                  <Typography variant="subtitle1" fontWeight="bold">
-                    {profileInfo.name || profileInfo.id || "차주"}
-                  </Typography>
-
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                    {profileInfo.id || "-"}
-                  </Typography>
-
-                  <Typography
-                    variant="h2"
-                    fontWeight="bold"
-                    sx={{ lineHeight: 1, mb: 1 }}
-                  >
-                    {summary.avgRating.toFixed(1)}
-                  </Typography>
-
-                  <Rating
-                    value={summary.avgRating}
-                    precision={0.5}
-                    readOnly
-                    sx={{ mb: 1 }}
-                  />
-
-                  <Typography variant="body1" color="text.secondary">
-                    총 리뷰 수 {summary.reviewCount}개
-                  </Typography>
-                </Box>
-
-                <Divider
-                  orientation="vertical"
-                  flexItem
-                  sx={{ display: { xs: "none", md: "block" } }}
-                />
-
-                <Box sx={{ flex: 1.4, width: "100%" }}>
-                  <Stack spacing={1.2}>
-                    {[
-                      { key: "five", value: 5, label: "5점" },
-                      { key: "four", value: 4, label: "4점" },
-                      { key: "three", value: 3, label: "3점" },
-                      { key: "two", value: 2, label: "2점" },
-                      { key: "one", value: 1, label: "1점" },
-                    ].map(({ key, value, label }) => {
-                      const count = reviewStats[key];
-                      const percent =
-                        reviewStats.total > 0 ? (count / reviewStats.total) * 100 : 0;
-
-                      return (
-                        <Box
-                          key={key}
-                          sx={{
-                            display: "grid",
-                            gridTemplateColumns: "56px 84px 1fr 42px",
-                            alignItems: "center",
-                            gap: 1.5,
-                          }}
-                        >
-                          <Typography variant="body2" fontWeight="medium">
-                            {label}
-                          </Typography>
-
-                          <Rating value={value} readOnly size="small" />
-
-                          <LinearProgress
-                            variant="determinate"
-                            value={percent}
-                            sx={{
-                              height: 8,
-                              borderRadius: 999,
-                              backgroundColor: "#e5e7eb",
-                            }}
-                          />
-
-                          <Typography
-                            variant="body2"
-                            color="text.secondary"
-                            textAlign="right"
-                          >
-                            {count}개
-                          </Typography>
-                        </Box>
-                      );
-                    })}
-                  </Stack>
-                </Box>
-              </Stack>
-            </CardContent>
-          </Card>
+          <DriverProfileCard
+            title="프로필"
+            profileInfo={profileInfo}
+            summary={summary}
+            verification={verification}
+            reviewStats={reviewStats}
+            showVerifyButton={true}
+            verifyButtonLoading={loading}
+            onVerifyClick={handleVerificationClick}
+          />
         </Box>
-
         <Box mt={6}>
           <Typography variant="h6" fontWeight="bold" gutterBottom>
 

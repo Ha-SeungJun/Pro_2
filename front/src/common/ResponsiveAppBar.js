@@ -67,9 +67,9 @@ export default function ResponsiveAppBar() {
   const isLogin = hasReduxLogin || Boolean(accessToken);
 
   // 2. ✅ roles 정의 (순서가 가장 먼저 와야 합니다!)
-  const roles = Array.isArray(loginState?.roles) ? loginState.roles : 
-                (loginState?.roles ? [loginState.roles] : []);
-  
+  const roles = Array.isArray(loginState?.roles) ? loginState.roles :
+    (loginState?.roles ? [loginState.roles] : []);
+
   // 3. ✅ 정의된 roles를 사용하여 권한 판별
   const isAdmin = roles.includes('ROLE_ADMIN');
   const isDriver = roles.some(r => String(r).toUpperCase().includes('DRIVER'));
@@ -156,84 +156,67 @@ export default function ResponsiveAppBar() {
   };
 
   return (
-    <header className="relative z-50 bg-white shadow-md border-b border-gray-100 text-gray-800 font-sans">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
-        <div className="flex justify-between items-center h-28">
-          <div className="flex-shrink-0 flex items-center">
-            <Link to="/">
-              <img className="w-56 md:w-72 h-auto object-contain" src={logo} alt="퍼스트로드 로고" />
+    <header className="relative z-50 bg-white shadow-md border-b border-gray-100 text-gray-800 font-sans w-full">
+      <div className="w-full px-4 sm:px-6 lg:px-8">
+        {/* py-2로 줄여서 모바일 상하 여백 축소, gap-2로 요소 간 간격 축소 */}
+        <div className="flex flex-col md:flex-row justify-between items-center min-h-[5rem] md:h-28 py-2 md:py-0 relative gap-2 md:gap-4">
+
+          {/* 1. 로고 영역: 모바일(기본)에서는 mt-0으로 여백 제거, md 이상에서만 mt-4 적용 */}
+          <div className="flex-1 flex justify-start items-center">
+            <Link to="/" className="mt-0 md:mt-4">
+              <img
+                className="w-48 md:w-80 h-auto object-contain" // 모바일에서 로고 크기도 살짝 줄임 (w-48)
+                src={logo}
+                alt="퍼스트로드 로고"
+              />
             </Link>
           </div>
 
-          <nav className="hidden md:flex items-center space-x-6">
-            <Link to="/quick-search" className="text-base font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
+          {/* 2. 중앙 메뉴: 모바일에서 글자 크기 살짝 조정 및 간격 최적화 */}
+          <nav className="flex flex-wrap justify-center items-center gap-x-6 gap-y-1 
+                md:gap-x-10 md:absolute md:left-1/2 md:-translate-x-1/2 
+                -mt-6 md:mt-0"> {/* -mt-6을 추가해 모바일에서 위로 확 끌어올림 */}
+
+            <Link to="/quick-search" className="text-base md:text-xl font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
               간편조회
             </Link>
-
-            <Link to="/noboard" className="text-base font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
+            <Link to="/noboard" className="text-base md:text-xl font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
               공지사항
             </Link>
-
-            {/* 수정: 문의사항 메뉴 추가 */}
-            <Link to="/qaboard" className="text-base font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
+            <Link to="/qaboard" className="text-base md:text-xl font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
               문의사항
             </Link>
-
-            <Link to="/guide" className="text-base font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
+            <Link to="/guide" className="text-base md:text-xl font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
               이용가이드
             </Link>
-
-            <Link to="/estimatepage" className="text-base font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
+            <Link to="/estimatepage" className="text-base md:text-xl font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
               온라인 퀵 접수
             </Link>
-
-            {/* 수정: 온라인 퀵 접수 오른쪽에 운송 접수 목록 추가 */}
-            <Link to="/estimatepage/list" className="text-base font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
+            <Link to="/estimatepage/list" className="text-base md:text-xl font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
               운송 접수 목록
             </Link>
           </nav>
 
-          {/* 수정: 오른쪽 영역 간격 정리 */}
-          <div className="flex items-center space-x-2 text-lg">
+          {/* 3. 오른쪽 영역: 모바일에서 상단 여백 제거 */}
+          <div className="flex-1 flex justify-end items-center space-x-2 text-sm md:text-lg pb-2 md:pb-0">
             {isLogin ? (
               <>
-                {/* 수정: 관리자페이지/마이페이지 링크를 이메일과 분리 */}
-                <Link
-                  to={myPagePath}
-                  className="text-base font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap ml-6"
-                >
-                  {myPageLabel}
-                </Link>
-
-                <span className="font-bold text-gray-700 whitespace-nowrap">
-                  {displayUserName}
-                </span>
-
+                <Link to={myPagePath} className="font-bold text-gray-700 hover:text-red-600 ml-2 md:ml-6">{myPageLabel}</Link>
+                <span className="font-bold text-gray-700">{displayUserName}</span>
                 <span className="text-gray-300">|</span>
-
-                <button onClick={handleLogout} className="hover:text-red-600 font-bold cursor-pointer whitespace-nowrap">
-                  로그아웃
-                </button>
+                <button onClick={handleLogout} className="hover:text-red-600 font-bold">로그아웃</button>
               </>
             ) : (
               <>
-                <Link to="/login" className="hover:text-red-600 font-bold whitespace-nowrap">로그인</Link>
+                <Link to="/login" className="hover:text-red-600 font-bold">로그인</Link>
                 <span className="text-gray-300">|</span>
-                <Link to="/signup" className="hover:text-red-600 font-bold whitespace-nowrap">회원가입</Link>
+                <Link to="/signup" className="hover:text-red-600 font-bold">회원가입</Link>
               </>
             )}
-            {(!isAdmin && !isDriver) && (
-              <>
-                <span className="text-gray-300">|</span>
-                <Link
-                  to={isLogin ? "/mypage/edit" : "/login"}
-                  className="text-red-500 font-bold hover:text-red-700"
-                >
-                  최대 <span className='text-xl'>30%</span> 할인
-                </Link>
-              </>
-            )}
-
+          </div>
+          <div className="hidden lg:flex items-center">
+            <span className="text-gray-300 mx-2">|</span>
+            <Link to="/login" className="text-red-500 font-bold">최대 30% 할인</Link>
           </div>
         </div>
       </div>

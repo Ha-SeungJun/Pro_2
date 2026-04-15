@@ -316,7 +316,7 @@ const HomePage = () => {
       </section>
 
       <MainFeesUtil open={openFees} onClose={() => setOpenFees(false)} onSuccess={() => setOpenFees(false)} />
-      <FloatingButtons />
+      
     </Box>
   );
 };

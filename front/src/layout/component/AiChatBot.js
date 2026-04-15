@@ -10,7 +10,6 @@ const AiChatBot = () => {
     ]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
-    // 💡 초기값을 false로 두어 처음엔 버튼만 보이게 합니다.
     const [isOpen, setIsOpen] = useState(false);
 
     useEffect(() => {
@@ -39,37 +38,36 @@ const AiChatBot = () => {
         }
     };
 
-
-
     return (
         <>
-            {/* 1. 플로팅 버튼 (창이 닫혀있을 때만 보임) */}
+            {/* 1. 플로팅 버튼 (fixed 제거, App.js의 flex 컨테이너 영향을 받음) */}
             {!isOpen && (
                 <div
                     onClick={() => setIsOpen(true)}
                     style={{
-                        position: 'fixed', bottom: '20px', right: '20px',
-                        width: '60px', height: '60px', borderRadius: '50%',
+                        /* ✅ 외부 fixed 제거, 크기만 유지 */
+                        width: '64px', height: '64px', borderRadius: '50%',
                         backgroundColor: '#0056b3', color: 'white', display: 'flex',
                         justifyContent: 'center', alignItems: 'center', fontSize: '30px',
-                        cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', zIndex: 10000
+                        cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                        border: '2px solid white' // 다른 버튼과 통일감
                     }}
                 >
                     🤖
                 </div>
             )}
 
-            {/* 2. 채팅창 (isOpen이 true일 때만 보임) */}
+            {/* 2. 채팅창 (열렸을 때는 기존처럼 fixed로 화면 중앙 근처에 유지) */}
             {isOpen && (
                 <Draggable nodeRef={nodeRef} handle=".chat-header">
                     <div
                         ref={nodeRef}
                         style={{
-                            position: 'fixed', bottom: '20px', right: '20px',
+                            position: 'fixed', bottom: '100px', right: '40px',
                             width: '350px', backgroundColor: 'white',
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)', borderRadius: '10px',
+                            boxShadow: '0 8px 24px rgba(0,0,0,0.2)', borderRadius: '15px',
                             display: 'flex', flexDirection: 'column', overflow: 'hidden',
-                            border: '1px solid #ddd', zIndex: 9999
+                            border: '1px solid #ddd', zIndex: 10001
                         }}
                     >
                         {/* 헤더 */}
@@ -83,7 +81,7 @@ const AiChatBot = () => {
                         >
                             <span>G2I4 AI 상담원</span>
                             <button
-                                onClick={() => setIsOpen(false)} // 창 닫기
+                                onClick={() => setIsOpen(false)}
                                 style={{ background: 'none', border: 'none', color: 'white', fontSize: '20px', cursor: 'pointer' }}
                             >
                                 ✕

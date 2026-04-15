@@ -258,7 +258,8 @@ const WritePost = () => {
                   label="작성자"
                   fullWidth
                   value={formData.author}
-                  onChange={(e) => handleInputChange('author', e.target.value)}
+                  // onChange={(e) => handleInputChange('author', e.target.value)}
+                  InputProps={{ readOnly: true }}
                   error={!!errors.author}
                   helperText={errors.author}
                   placeholder="작성자명을 입력하세요"

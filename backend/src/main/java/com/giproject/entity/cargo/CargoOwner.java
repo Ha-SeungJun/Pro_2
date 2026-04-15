@@ -37,6 +37,18 @@ public class CargoOwner {
     )
     private UserIndex userIndex;
 
+    /*---------회원 본인 인증----------*/
+    @Builder.Default
+    @Column(name = "is_verified", nullable = false)
+    private Boolean isVerified = false;
+
+    @Column(name = "verified_at")
+    private LocalDateTime verifiedAt;
+
+    @Column(name = "verified_phone", length = 20)
+    private String verifiedPhone;
+    
+    
     /** 반드시 해시 저장(BCrypt) */
     @Column(name = "cargo_pw", nullable = false, length = 200)
     private String cargoPw;

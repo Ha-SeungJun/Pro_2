@@ -27,7 +27,7 @@ const Header = () => {
             <a href="#" className="hover:text-red-600 font-bold">로그인</a>
             <span className="text-gray-300">|</span>
             <a href="#" className="text-red-500 font-bold hover:text-red-700">
-              최대 <span className='text-xl'>10%</span> 적립
+              최대 <span className='text-xl'>30%</span> 적립
             </a>
           </div>
         </div>

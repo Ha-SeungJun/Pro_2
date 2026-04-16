@@ -73,18 +73,18 @@ public interface DeliveryRepository extends JpaRepository<Delivery, Long> {
                 YEAR(d.complet_time) AS y,
                 MONTH(d.complet_time) AS m,
                 SUM(e.total_cost)     AS revenue
-            FROM 2teamproject.delivery d
-            JOIN 2teamproject.payment      p  ON p.payment_no   = d.payment_no
-            JOIN 2teamproject.order_sheet  os ON os.order_no    = p.order_sheet_no
-            JOIN 2teamproject.matching     mt ON mt.matching_no = os.matching_no
-            JOIN 2teamproject.estimate     e  ON e.eno          = mt.eno
+            FROM delivery d
+            JOIN payment      p  ON p.payment_no   = d.payment_no
+            JOIN order_sheet  os ON os.order_no    = p.order_sheet_no
+            JOIN matching     mt ON mt.matching_no = os.matching_no
+            JOIN estimate     e  ON e.eno          = mt.eno
             WHERE d.status = 'COMPLETED'
               AND mt.cargo_id = :cargoId
               AND d.complet_time IS NOT NULL
             GROUP BY YEAR(d.complet_time), MONTH(d.complet_time)
             ORDER BY y, m
             """, nativeQuery = true)
-        List<MonthlyRevenueRow> findMonthlyRevenueByCargoId(@Param("cargoId") String cargoId);
+    List<MonthlyRevenueRow> findMonthlyRevenueByCargoId(@Param("cargoId") String cargoId);
     
     // order_sheet.matching_no → payment → delivery
     @Query("""

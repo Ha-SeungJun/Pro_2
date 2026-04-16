@@ -204,10 +204,10 @@ const DeliveryInfoPage = () => {
 
   //모달 열기 함수 추가
   const handleReviewClick = (item) => {
-  setselectedDeliveryNoForReview(item.deliveryNo);
-  setSelectedReviewItem(item);
-  setOpenReviewModal(true);
-};
+    setselectedDeliveryNoForReview(item.deliveryNo);
+    setSelectedReviewItem(item);
+    setOpenReviewModal(true);
+  };
   //모달 닫기 함수 추가
   const handleCloseReviewModal = () => {
     setOpenReviewModal(false);
@@ -424,12 +424,13 @@ const DeliveryInfoPage = () => {
     <colgroup>
       <col style={{ width: '10%' }} />
       <col style={{ width: '5%' }} />
-      <col style={{ width: '15%' }} />
-      <col style={{ width: '15%' }} />
+      <col style={{ width: '13%' }} />
+      <col style={{ width: '13%' }} />
       <col style={{ width: '12%' }} />
       <col style={{ width: '10%' }} /> {/* 운전 기사 */}
-      {isMember && <col style={{ width: '10%' }} />} {/* 신고 */}
-      <col style={{ width: '10%' }} />  {/* 상태 */}
+      {isMember && <col style={{ width: '9%' }} />}  {/* 리뷰 */}
+      {isMember && <col style={{ width: '9%' }} />}  {/* 신고 */}
+      <col style={{ width: '10%' }} />               {/* 주문서 보기 */}
     </colgroup>
   ), [isMember]);
 
@@ -572,62 +573,73 @@ const DeliveryInfoPage = () => {
 
   // 렌더러: 완료 (여기에 신고 버튼 추가)
   const renderCompletedRows = (list) => {
-    if (!list || list.length === 0) {
-      return (
-        <TableRow>
-          <TableCell colSpan={isMember ? 8 : 7} align="center">항목이 없습니다.</TableCell>
-        </TableRow>
-      );
-    }
-    return list.map((item) => {
-      const doneAt = item.deliveryCompletedAt ?? item.endTime ?? null;
+  if (!list || list.length === 0) {
+    return (
+      <TableRow>
+        <TableCell colSpan={isMember ? 9 : 7} align="center">항목이 없습니다.</TableCell>
+      </TableRow>
+    );
+  }
+  return list.map((item) => {
+    const doneAt = item.deliveryCompletedAt ?? item.endTime ?? null;
+    const matchingNo = item?.matchingNo ?? item?.mno ?? item?.matching_no ?? null;
 
-      // matchingNo만 안전 추출
-      const matchingNo = item?.matchingNo ?? item?.mno ?? item?.matching_no ?? null;
+    return (
+      <TableRow key={item.eno}>
+        <TableCell align="center">{item.cargoType}</TableCell>
+        <TableCell align="center">{item.cargoWeight}</TableCell>
+        <TableCell align="center">{item.startAddress}</TableCell>
+        <TableCell align="center">{item.endAddress}</TableCell>
+        <TableCell align="center" style={{ whiteSpace: 'nowrap' }}>{formatDateHour(doneAt)}</TableCell>
+        <TableCell align="center">{isOwner ? (item.memName || '-') : (item.driverName ?? '-')}</TableCell>
 
-      return (
-        <TableRow key={item.eno}>
-          <TableCell align="center">{item.cargoType}</TableCell>
-          <TableCell align="center">{item.cargoWeight}</TableCell>
-          <TableCell align="center">{item.startAddress}</TableCell>
-          <TableCell align="center">{item.endAddress}</TableCell>
-          <TableCell align="center" style={{ whiteSpace: 'nowrap' }}>{formatDateHour(doneAt)}</TableCell>
-          <TableCell align="center"> {isOwner ? (item.memName || '-') : (item.driverName ?? '-')}</TableCell>
-
-          {isMember && (
-            <TableCell align="center">
-              <Box display="flex" gap={1} justifyContent="center">
-                <Button
-                  variant="contained"
-                  size="small"
-                  disabled={reviewedMap[item.deliveryNo]}
-                  onClick={() => handleReviewClick(item)}
-                  sx={{ minWidth: 90 }}
-                >
-                  {reviewedMap[item.deliveryNo] ? '작성완료' : '리뷰'}
-                </Button>
-
-                {matchingNo && (
-                  <Button
-                    size="small"
-                    color="error"
-                    variant="outlined"
-                    onClick={() => handleOpenReportModal(matchingNo)}
-                  >
-                    신고
-                  </Button>
-                )}
-              </Box>
-            </TableCell>
-          )}
-
+        {/* 리뷰 (회원 전용) */}
+        {isMember && (
           <TableCell align="center">
-            <Typography variant="body2" sx={{ color: 'success.main' }}>배송 완료</Typography>
+            <Button
+              variant="contained"
+              size="small"
+              disabled={reviewedMap[item.deliveryNo]}
+              onClick={() => handleReviewClick(item)}
+              sx={{ minWidth: 80 }}
+            >
+              {reviewedMap[item.deliveryNo] ? '작성완료' : '리뷰'}
+            </Button>
           </TableCell>
-        </TableRow>
-      );
-    });
-  };
+        )}
+
+        {/* 신고 (회원 전용) */}
+        {isMember && (
+          <TableCell align="center">
+            {matchingNo ? (
+              <Button
+                size="small"
+                color="error"
+                variant="outlined"
+                onClick={() => handleOpenReportModal(matchingNo)}
+              >
+                신고
+              </Button>
+            ) : (
+              <Typography variant="body2" color="text.secondary">-</Typography>
+            )}
+          </TableCell>
+        )}
+
+        {/* 주문서 보기 */}
+        <TableCell align="center">
+          {matchingNo ? (
+            <Button variant="outlined" size="small" onClick={() => handleViewOrderSummary(matchingNo)}>
+              주문서 보기
+            </Button>
+          ) : (
+            <Typography variant="body2" color="text.secondary">-</Typography>
+          )}
+        </TableCell>
+      </TableRow>
+    );
+  });
+};
 
   if (!userType) return <Box sx={{ p: 6 }}>사용자 타입 확인 중…</Box>;
 
@@ -712,8 +724,9 @@ const DeliveryInfoPage = () => {
                   <TableCell align="center">도착지</TableCell>
                   <TableCell align="center">{isMember ? '배송 완료일' : '완료일'}</TableCell>
                   <TableCell align="center">{isOwner ? '의뢰자 이름' : '운전 기사'}</TableCell>
+                  {isMember && <TableCell align="center">리뷰</TableCell>}
                   {isMember && <TableCell align="center">신고</TableCell>}
-                  <TableCell align="center">상태</TableCell>
+                  <TableCell align="center">주문서 보기</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>{renderCompletedRows(completedData.dtoList)}</TableBody>

@@ -60,16 +60,29 @@ export default function ResponsiveAppBar() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // Redux 상태 및 로그인 여부 확인 (기존 엔진)
+  // 1. 상태 가져오기
   const loginState = useSelector((state) => state?.login);
   const hasReduxLogin = Boolean(loginState?.email || loginState?.memberId);
   const accessToken = (typeof window !== 'undefined') ? pickToken() : null;
   const isLogin = hasReduxLogin || Boolean(accessToken);
 
+  // 2. ✅ roles 정의 (순서가 가장 먼저 와야 합니다!)
+  const roles = Array.isArray(loginState?.roles) ? loginState.roles :
+    (loginState?.roles ? [loginState.roles] : []);
+
+  // 3. ✅ 정의된 roles를 사용하여 권한 판별
+  const isAdmin = roles.includes('ROLE_ADMIN');
+  const isDriver = roles.some(r => String(r).toUpperCase().includes('DRIVER'));
+
+  // 4. 나머지 경로 및 이름 설정
+  const myPagePath = isAdmin ? '/admin' : '/mypage';
+  const myPageLabel = isAdmin ? '관리자페이지' : '마이페이지';
+  const displayUserName = loginState?.memberId || loginState?.nickname || loginState?.email || '회원';
+
+
 
   // ✅ 1) 앱 로드 시: 토큰 리프레시 로직 (기존 엔진 유지)
   useEffect(() => {
-
     if (hasReduxLogin || accessToken) return;
     let aborted = false;
     const silentRefresh = async () => {
@@ -134,7 +147,6 @@ export default function ResponsiveAppBar() {
       sessionStorage.removeItem('accessToken');
       sessionStorage.removeItem('refreshToken');
 
-
       try {
         await fetch(`${API_BASE}/api/auth/logout`, { method: 'POST' });
       } catch { /* ignore */ }
@@ -145,38 +157,51 @@ export default function ResponsiveAppBar() {
   };
 
   return (
-    <header className="relative z-50 bg-white shadow-md border-b border-gray-100 text-gray-800 font-sans">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
-        <div className="flex justify-between items-center h-28">
-          <div className="flex-shrink-0 flex items-center">
-            <Link to="/">
-              <img className="w-56 md:w-72 h-auto object-contain" src={logo} alt="퍼스트로드 로고" />
+    <header className="relative z-50 bg-white shadow-md border-b border-gray-100 text-gray-800 font-sans w-full">
+      <div className="w-full px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col md:flex-row justify-between items-center min-h-[5rem] md:h-28 py-2 md:py-0 relative gap-2 md:gap-4">
+
+          <div className="flex-1 flex justify-start items-center">
+            <Link to="/" className="mt-0 md:mt-4">
+              <img
+                className="w-48 md:w-80 h-auto object-contain" 
+                src={logo}
+                alt="퍼스트로드 로고"
+              />
             </Link>
           </div>
-          <nav className="hidden md:flex items-center space-x-6">
-            <Link to="/quick-search" className="text-base font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
+
+          <nav className="flex flex-wrap justify-center items-center gap-x-6 gap-y-1 
+                md:gap-x-10 md:absolute md:left-1/2 md:-translate-x-1/2 
+                -mt-6 md:mt-0">
+            <Link to="/quick-search" className="text-base md:text-xl font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
               간편조회
             </Link>
-            <Link to="/noboard" className="text-base font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
+            <Link to="/noboard" className="text-base md:text-xl font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
               공지사항
             </Link>
-            <Link to="/guide" className="text-base font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
+            <Link to="/qaboard" className="text-base md:text-xl font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
+              문의사항
+            </Link>
+            <Link to="/guide" className="text-base md:text-xl font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
               이용가이드
             </Link>
-            <Link to="/estimatepage" className="text-base font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
-                온라인 퀵 접수
+            <Link to="/estimatepage" className="text-base md:text-xl font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
+              온라인 퀵 접수
             </Link>
-            <Link to="/mypage" className="text-base font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
-              마이페이지
+            <Link to="/estimatepage/list" className="text-base md:text-xl font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
+              운송 접수 목록
             </Link>
           </nav>
-          <div className="flex items-center space-x-4 text-lg">
-            {/* 로그인 상태에 따라 버튼이 자동으로 바뀝니다! */}
+
+          <div className="flex-1 flex justify-end items-center space-x-2 text-sm md:text-lg pb-2 md:pb-0">
             {isLogin ? (
               <>
-                <span className="font-bold text-gray-700">{loginState?.nickname || '회원'}님</span>
+
+                <Link to={myPagePath} className="font-bold text-gray-700 hover:text-red-600 ml-2 md:ml-6">{displayUserName}</Link>
+
                 <span className="text-gray-300">|</span>
-                <button onClick={handleLogout} className="hover:text-red-600 font-bold cursor-pointer">로그아웃</button>
+                <button onClick={handleLogout} className="hover:text-red-600 font-bold">로그아웃</button>
               </>
             ) : (
               <>
@@ -185,11 +210,12 @@ export default function ResponsiveAppBar() {
                 <Link to="/signup" className="hover:text-red-600 font-bold">회원가입</Link>
               </>
             )}
-            <span className="text-gray-300">|</span>
-            <a href="#" className="text-red-500 font-bold hover:text-red-700">
-              최대 <span className='text-xl'>10%</span> 적립
-            </a>
           </div>
+
+          <div className="hidden lg:flex items-center">
+            <Link to="/login" className="text-red-500 font-bold">최대 30% 할인</Link>
+          </div>
+
         </div>
       </div>
     </header>

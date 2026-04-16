@@ -65,7 +65,7 @@ const truckSpecs = {
   '5ton': { name: '5톤 화물', img: ton10Img, weight: '5t', length: '6200mm', width: '2300mm' },
   '11ton': { name: '11톤 화물', img: ton5Img, weight: '11t', length: '9000mm', width: '2400mm' },
   '15ton': { name: '15톤 화물', img: ton5Img, weight: '15t', length: '9000mm', width: '2400mm' },
-  '18ton': { name: '18톤 화물', img: ton25Img, weight: '18t', length: '10000mm', width: '2400mm' },
+  '18ton': { name: '18ton 화물', img: ton25Img, weight: '18t', length: '10000mm', width: '2400mm' },
   '25ton': { name: '25톤 화물', img: ton25Img, weight: '25t', length: '10000mm', width: '2400mm' },
 };
 
@@ -182,7 +182,10 @@ const QuotationRequestPage = () => {
     if (currentStep === steps.length) {
       try {
         // Redux 및 브라우저 저장소에서 토큰을 모두 탐색하여 가져옵니다.
-        const activeToken = token || localStorage.getItem('accessToken') || localStorage.getItem('token');
+        const activeToken = token || 
+                            sessionStorage.getItem('accessToken') || 
+                            sessionStorage.getItem('token') || 
+                            localStorage.getItem('accessToken');
 
         // 토큰이 존재하지 않을 경우에만 차단합니다.
         if (!activeToken) {
@@ -208,6 +211,12 @@ const QuotationRequestPage = () => {
           vehicleType: serviceType === 'quick' 
                        ? formData.quickVehicle 
                        : `${truckSpecs[formData.freightVehicle].name} (${formData.freightType})`,
+          
+          // 📍 추가된 부분: DB의 weight 컬럼과 100% 일치시키기 위한 전송 데이터
+          cargoWeight: serviceType === 'quick' ? '0.5톤' : 
+                       formData.freightVehicle === '1ton' ? '1톤' : 
+                       formData.freightVehicle === '5ton' ? '5톤' : 
+                       formData.freightVehicle.includes('ton') && parseInt(formData.freightVehicle) >= 11 ? '5톤이상' : '1톤',
                        
           deliveryItem: formData.deliveryItem,
           deliveryOption: formData.quickOption,

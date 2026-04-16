@@ -47,8 +47,10 @@ useEffect(() => {
 
       const safeRoles = Array.isArray(roles) ? roles : [];
       const isDriver = safeRoles.includes("ROLE_DRIVER");
+      const isShipper = safeRoles.includes("ROLE_SHIPPER"); // ✅ 화주 권한 확인 로직 추가
 
-      if (!isDriver) {
+      // ✅ 기사도 아니고 화주도 아닐 때만 차단하도록 조건 추가
+      if (!isDriver && !isShipper) {
         if (!ignore) setServerData(initState);
         return;
       }
@@ -118,11 +120,13 @@ useEffect(() => {
 
   const safeRoles = Array.isArray(roles) ? roles : [];
   const isDriver = safeRoles.includes("ROLE_DRIVER"); // ← 수락/거절 버튼 표시 여부
+  const isShipper = safeRoles.includes("ROLE_SHIPPER"); // ✅ 화주 여부 변수 추가
 
   const renderData = (list) => {
     if (!list || list.length === 0) {
       return (
         <TableRow>
+          {/* ✅ 화주일 때도 colSpan이 대응되도록 수정하지 않고 기존 isDriver 로직 유지 */}
           <TableCell colSpan={isDriver ? 9 : 7} align="center">견적의뢰가 없습니다</TableCell>
         </TableRow>
       );

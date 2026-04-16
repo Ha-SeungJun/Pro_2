@@ -7,7 +7,6 @@ const CounselorChat = () => {
     const [input, setInput] = useState('');
     const scrollRef = useRef();
 
-    // 창이 열릴 때 시스템 메시지 자동 추가
     useEffect(() => {
         if (isOpen && messages.length === 0) {
             setMessages([{
@@ -50,16 +49,21 @@ const CounselorChat = () => {
     };
 
     return (
-        <div style={{ position: 'fixed', bottom: '100px', right: '20px', zIndex: 1000 }}>
+        /* ✅ 최상위 div의 fixed 속성을 제거했습니다. (App.js에서 관리) */
+        <div style={{ position: 'relative' }}>
             <button onClick={() => setIsOpen(!isOpen)} style={btnStyle}>
-                {isOpen ? '닫기' : '상담사 연결'}
+                {isOpen ? '✕' : (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <span style={{ fontSize: '24px' }}>💬</span>
+                        <span style={{ fontSize: '9px' }}>상담사</span>
+                    </div>
+                )}
             </button>
 
             {isOpen && (
                 <div style={chatWinStyle}>
-                    {/* 상단 공지 바 */}
                     <div style={noticeStyle}>
-                        ⚠️ 실시간 상담 지연 안내 (AI 상담 권장)
+                        ⚠️ 실시간 상담 지연 안내 (AI 권장)
                     </div>
 
                     <div style={msgListStyle}>
@@ -76,7 +80,7 @@ const CounselorChat = () => {
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                            placeholder="메시지를 입력하세요..."
+                            placeholder="메시지 입력..."
                             style={{ flex: 1, border: 'none', outline: 'none' }}
                         />
                         <button onClick={handleSend} style={sendBtn}>전송</button>
@@ -87,15 +91,43 @@ const CounselorChat = () => {
     );
 };
 
-// CSS-in-JS 스타일 정의 (간략화)
-const btnStyle = { padding: '10px 20px', borderRadius: '20px', backgroundColor: '#FFD400', border: 'none', cursor: 'pointer', fontWeight: 'bold' };
-const chatWinStyle = { width: '320px', height: '480px', backgroundColor: '#f5f5f5', border: '1px solid #ddd', borderRadius: '10px', display: 'flex', flexDirection: 'column', marginTop: '10px' };
+// ✅ 스타일 업데이트: 다른 버튼들과 일체감을 주기 위해 원형으로 변경
+const btnStyle = { 
+    width: '64px', 
+    height: '64px', 
+    borderRadius: '50%', 
+    backgroundColor: '#FFD400', 
+    border: '2px solid white', 
+    cursor: 'pointer', 
+    fontWeight: 'bold',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 0
+};
+
+// 채팅창 위치는 버튼 위쪽으로 뜨도록 조정
+const chatWinStyle = { 
+    position: 'absolute',
+    bottom: '80px',
+    right: '0',
+    width: '320px', 
+    height: '450px', 
+    backgroundColor: '#f5f5f5', 
+    border: '1px solid #ddd', 
+    borderRadius: '15px', 
+    display: 'flex', 
+    flexDirection: 'column',
+    boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+    overflow: 'hidden'
+};
+
 const noticeStyle = { backgroundColor: '#ffeded', color: '#d9534f', fontSize: '11px', padding: '8px', textAlign: 'center', fontWeight: 'bold' };
 const msgListStyle = { flex: 1, overflowY: 'auto', padding: '10px' };
-const aiBtnStyle = { backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '5px', padding: '8px 15px', fontSize: '12px', cursor: 'pointer' };
 const inputArea = { display: 'flex', padding: '10px', backgroundColor: 'white', borderTop: '1px solid #ddd' };
-const myMsg = { textAlign: 'right', marginBottom: '10px', color: '#333' };
-const otherMsg = { textAlign: 'left', marginBottom: '10px', color: '#555' };
-const sendBtn = { backgroundColor: 'transparent', border: 'none', color: '#007bff', fontWeight: 'bold' };
+const myMsg = { textAlign: 'right', marginBottom: '10px', color: '#333', fontSize: '13px' };
+const otherMsg = { textAlign: 'left', marginBottom: '10px', color: '#555', fontSize: '13px' };
+const sendBtn = { backgroundColor: 'transparent', border: 'none', color: '#007bff', fontWeight: 'bold', cursor: 'pointer' };
 
 export default CounselorChat;

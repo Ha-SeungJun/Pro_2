@@ -6,7 +6,7 @@ import adminRouter from "./adminRouter";
 import SignUpPage from "../pages/SignUpPage";
 import estimateRouter from "./estimateRouter";
 import orderRouter from "./orderRouter";
-import BulletinBoard from "../layout/component/noboard/NoBoard"; 
+import BulletinBoard from "../layout/component/noboard/NoBoard";
 import PostView from "../layout/component/noboard/NoboardPostView";
 import RequireAuth from "../layout/component/auth/RequireAuth";
 import WritePost from "../layout/component/noboard/NoboardWritePost";
@@ -34,9 +34,12 @@ const FindIdPage = lazy(() => import("../pages/FindIdPage"));
 const FindPasswordPage = lazy(() => import("../pages/FindPasswordPage"));
 
 // 소셜 콜백 페이지
-const NaverRedirectPage = lazy(() => import("../pages/NaverRedirectPage")); 
+const NaverRedirectPage = lazy(() => import("../pages/NaverRedirectPage"));
 const GoogleRedirectPage = lazy(() => import("../pages/GoogleRedirectPage"));
-const KakaoRedirectPage = lazy(() => import("../pages/KakaoRedirectPage")); 
+const KakaoRedirectPage = lazy(() => import("../pages/KakaoRedirectPage"));
+
+// test 
+const EstimateMain = lazy(() => import("../pages/EstimatePage"));
 
 const root = createBrowserRouter([
     {
@@ -68,7 +71,7 @@ const root = createBrowserRouter([
                 element: <Suspense fallback={Loading}><KakaoRedirectPage /></Suspense>
             },
             {
-                path: "auth/callback",   
+                path: "auth/callback",
                 element: <Suspense fallback={Loading}><OAuthCallbackPage /></Suspense>
             },
             {
@@ -81,7 +84,7 @@ const root = createBrowserRouter([
             },
             {
                 path: "estimatepage",
-                element: <Suspense fallback={Loading}><Estimate /></Suspense>,
+                element: <Suspense fallback={Loading}><EstimateMain /></Suspense>,
                 children: estimateRouter.children
             },
             {
@@ -121,29 +124,29 @@ const root = createBrowserRouter([
             {
                 path: "guide",
                 element: <GuidePage />
+            },
+            {
+                path: "signup",
+                element: <SignUpPage />
             }
         ]
     },
     {
         path: "mypage",
-        element: <RequireAuth />,                
+        element: <RequireAuth />,
         children: [{
             element: (
                 <Suspense fallback={Loading}>
                     <MyPageLayout />
                 </Suspense>
             ),
-            children: mypageRouter  
+            children: mypageRouter
         }]
     },
     {
         path: "admin",
         element: <Suspense fallback={Loading}><Admin /></Suspense>,
         children: adminRouter()
-    },
-    {
-        path: "signup",
-        element: <SignUpPage />
     }
 ]);
 

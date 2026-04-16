@@ -107,7 +107,7 @@ public class SecurityConfig {
                                  "/g2i4/uploads/**","/g2i4/mypage/**","/g2i4/user/**","/g2i4/cargo/**","/g2i4/member/**",
                                  "/g2i4/qna/**","/g2i4/coupons/**","/api/**").permitAll()
 
-                .requestMatchers("/g2i4/estimate/list").hasAuthority("ROLE_DRIVER")
+                .requestMatchers("/g2i4/estimate/list").hasAnyAuthority("ROLE_DRIVER","ROLE_SHIPPER")
 
                 .anyRequest().authenticated()
             )

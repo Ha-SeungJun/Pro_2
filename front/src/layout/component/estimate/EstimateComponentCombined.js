@@ -105,7 +105,7 @@ const EstimateComponentCombined = () => {
     const handleSpecialNoteChange = (e) => {
         const selected = extra.filter((n) => e.target.value.includes(n.extraChargeTitle));
         setSpecialMenuOpen(false);
-        setSpecialNotes(selected);
+        setSpecialNotes(selected);  
     };
 
     const handleAddressSearch = (setter) => {

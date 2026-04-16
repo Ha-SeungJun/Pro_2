@@ -6,7 +6,7 @@ import { fetchCoordsByAddress } from './calculateDistanceBetweenAddresses';
 // 기현님의 카카오 REST API 키 (길찾기 경로 받아올 때 필수!)
 const REST_API_KEY = "d381d00137ba5677a3ee0355c4c95abf"; 
 
-const MapComponent = ({ startAddress, endAddress }) => {
+const MapComponent2 = ({ startAddress, endAddress }) => {
   const mapContainer = useRef(null);
 
   useEffect(() => {
@@ -91,4 +91,4 @@ const MapComponent = ({ startAddress, endAddress }) => {
   );
 };
 
-export default MapComponent;
+export default MapComponent2;

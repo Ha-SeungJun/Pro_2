@@ -9,7 +9,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import com.giproject.dto.review.DriverDetailDTO;
+import com.giproject.dto.review.DriverProfileCardDTO;
 import com.giproject.dto.review.MyReviewListDTO;
+import com.giproject.dto.review.MyReviewWithDriverIdDTO;
 import com.giproject.dto.review.ReviewDTO;
 import com.giproject.dto.review.ReviewSummaryDTO;
 import com.giproject.service.review.ReviewService;
@@ -105,5 +108,25 @@ public class ReviewController {
         String loginId = authentication.getName();
         return ResponseEntity.ok(reviewService.getSummaryByCargoId(loginId));
     }
+    @GetMapping("/my/with-driver-id")
+    public ResponseEntity<List<MyReviewWithDriverIdDTO>> getMyReviewsWithDriverId(Authentication authentication) {
+        log.info("authentication = {}", authentication);
+        log.info("loginId = {}", authentication.getName());
+
+        String loginId = authentication.getName();
+        return ResponseEntity.ok(reviewService.getMyReviewsWithDriverId(loginId));
+    }
+
+    @GetMapping("/driver-profile/{cargoId}")
+    public ResponseEntity<DriverProfileCardDTO> getDriverProfileCard(
+            @PathVariable(name = "cargoId") String cargoId) {
+        return ResponseEntity.ok(reviewService.getDriverProfileCard(cargoId));
+    }
+    @GetMapping("/driver-detail/{cargoId}")
+    public ResponseEntity<DriverDetailDTO> getDriverDetail(
+            @PathVariable(name = "cargoId") String cargoId) {
+        return ResponseEntity.ok(reviewService.getDriverDetail(cargoId));
+    }
+    
     
 }

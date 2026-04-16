@@ -6,7 +6,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.giproject.dto.review.DriverDetailDTO;
+import com.giproject.dto.review.DriverProfileCardDTO;
 import com.giproject.dto.review.MyReviewListDTO;
+import com.giproject.dto.review.MyReviewWithDriverIdDTO;
 import com.giproject.dto.review.ReviewDTO;
 import com.giproject.dto.review.ReviewSummaryDTO;
 
@@ -41,5 +44,13 @@ public interface ReviewService {
 	 
 	// 내가(차주) 받은 리뷰
 	 List<MyReviewListDTO> getReceivedReviews(String cargoId);
+	 
+	// 내가(화주) 작성한 리뷰 + 차주 식별자 포함
+	 List<MyReviewWithDriverIdDTO> getMyReviewsWithDriverId(String memId);
+
+	// 차주 프로필 카드 조회
+	DriverProfileCardDTO getDriverProfileCard(String cargoId);
+	
+	DriverDetailDTO getDriverDetail(String cargoId);
 }
 	 

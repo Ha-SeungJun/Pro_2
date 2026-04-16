@@ -18,10 +18,16 @@ import {
   DialogContent,
   DialogActions,
   TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
+import DriverProfileCard from "../common/DriverProfileCard.js";
 import PageComponent from "../common/PageComponent";
 import {
-  getMyReviews,
+  getMyReviewsWithDriverId,
+  getDriverDetail,
   deleteReview,
   modifyReview,
 } from "../../../api/reviewApi/reviewApi";
@@ -97,8 +103,39 @@ const MyReviewInform = () => {
   const [editReviewContent, setEditReviewContent] = useState("");
   const [openDetailModal, setOpenDetailModal] = useState(false);
   const [selectedDetailReview, setSelectedDetailReview] = useState(null);
+  const [openDriverDetailModal, setOpenDriverDetailModal] = useState(false);
+  const [selectedDriverDetail, setSelectedDriverDetail] = useState(null);
+  const [driverReviewSortType, setDriverReviewSortType] = useState("latest");
+  const [driverReviewPage, setDriverReviewPage] = useState(1);
+  const DRIVER_REVIEW_PAGE_SIZE = 3;
+
+  const handleOpenDriverDetailModal = async (item) => {
+    if (!item?.driverId) {
+      alert("차주 식별 정보가 없습니다.");
+      return;
+    }
+
+    try {
+      const data = await getDriverDetail(item.driverId);
+      console.log("차주 상세 응답:", data);
+      setSelectedDriverDetail(data);
+      setDriverReviewSortType("latest");
+      setDriverReviewPage(1);
+      setOpenDriverDetailModal(true);
+    } catch (error) {
+      console.error("차주 상세 조회 실패:", error);
+      alert("차주 상세 정보를 불러오지 못했습니다.");
+    }
+  };
+
+  const handleCloseDriverDetailModal = () => {
+    setOpenDriverDetailModal(false);
+    setSelectedDriverDetail(null);
+    setDriverReviewPage(1);
+  };
+
   const handleOpenDetailModal = (item) => {
-    console.log("상세 리뷰 데이터:",item)
+    console.log("상세 리뷰 데이터:", item)
     setSelectedDetailReview(item);
     setOpenDetailModal(true);
   };
@@ -122,7 +159,7 @@ const MyReviewInform = () => {
   };
 
   const reloadMyReviews = async () => {
-    const data = await getMyReviews();
+    const data = await getMyReviewsWithDriverId();
     const list = Array.isArray(data) ? data : [];
     setAllReviews(list);
     applyPagedData(list);
@@ -191,7 +228,7 @@ const MyReviewInform = () => {
       try {
         setLoading(true);
 
-        const data = await getMyReviews();
+        const data = await getMyReviewsWithDriverId();
         const list = Array.isArray(data) ? data : [];
 
         if (!cancelled) {
@@ -225,11 +262,12 @@ const MyReviewInform = () => {
   const tableColgroup = useMemo(
     () => (
       <colgroup>
-        <col style={{ width: "10%" }} />
-        <col style={{ width: "12%" }} />
+        <col style={{ width: "9%" }} />
+        <col style={{ width: "11%" }} />
         <col style={{ width: "14%" }} />
-        <col style={{ width: "34%" }} />
-        <col style={{ width: "15%" }} />
+        <col style={{ width: "14%" }} />
+        <col style={{ width: "24%" }} />
+        <col style={{ width: "13%" }} />
         <col style={{ width: "15%" }} />
       </colgroup>
     ),
@@ -240,7 +278,7 @@ const MyReviewInform = () => {
     if (loading) {
       return (
         <TableRow>
-          <TableCell colSpan={6} align="center">
+          <TableCell colSpan={7} align="center">
             불러오는 중...
           </TableCell>
         </TableRow>
@@ -250,7 +288,7 @@ const MyReviewInform = () => {
     if (!serverData.dtoList || serverData.dtoList.length === 0) {
       return (
         <TableRow>
-          <TableCell colSpan={6} align="center">
+          <TableCell colSpan={7} align="center">
             작성한 리뷰가 없습니다.
           </TableCell>
         </TableRow>
@@ -261,6 +299,23 @@ const MyReviewInform = () => {
       <TableRow key={item.reviewNo}>
         <TableCell align="center">{item.reviewNo}</TableCell>
         <TableCell align="center">{item.deliveryNo}</TableCell>
+
+        <TableCell align="center">
+          <Button
+            variant="text"
+            size="small"
+            onClick={() => handleOpenDriverDetailModal(item)}
+            sx={{
+              textTransform: "none",
+              fontWeight: 600,
+              minWidth: "auto",
+              p: 0,
+            }}
+          >
+            {item.driverName || "-"}
+          </Button>
+        </TableCell>
+
         <TableCell align="center">
           <Rating value={Number(item.rating) || 0} precision={0.5} readOnly />
         </TableCell>
@@ -305,11 +360,85 @@ const MyReviewInform = () => {
               삭제
             </Button>
           </Stack>
+
         </TableCell>
       </TableRow>
     ));
   };
+  const selectedDriverProfileInfo = {
+    id: selectedDriverDetail?.profile?.driverId || "",
+    name: selectedDriverDetail?.profile?.driverName || "운전기사",
+    avatarUrl: selectedDriverDetail?.profile?.driverProfileImage || null,
+  };
 
+  const selectedDriverSummary = {
+    avgRating: Number(selectedDriverDetail?.profile?.avgRating || 0),
+    reviewCount: Number(selectedDriverDetail?.profile?.reviewCount || 0),
+  };
+
+  const selectedDriverVerification = {
+    isVerified: Boolean(selectedDriverDetail?.profile?.isVerified),
+  };
+  const selectedDriverReviewStats = useMemo(() => {
+    const reviews = Array.isArray(selectedDriverDetail?.reviews)
+      ? selectedDriverDetail.reviews
+      : [];
+
+    const stats = {
+      total: reviews.length,
+      five: 0,
+      four: 0,
+      three: 0,
+      two: 0,
+      one: 0,
+    };
+
+    reviews.forEach((item) => {
+      const rating = Number(item.rating) || 0;
+
+      if (rating >= 5) stats.five += 1;
+      else if (rating >= 4) stats.four += 1;
+      else if (rating >= 3) stats.three += 1;
+      else if (rating >= 2) stats.two += 1;
+      else stats.one += 1;
+    });
+
+    return stats;
+  }, [selectedDriverDetail]);
+
+  const sortedDriverReviews = useMemo(() => {
+    const reviews = Array.isArray(selectedDriverDetail?.reviews)
+      ? [...selectedDriverDetail.reviews]
+      : [];
+
+    switch (driverReviewSortType) {
+      case "ratingDesc":
+        return reviews.sort((a, b) => (Number(b.rating) || 0) - (Number(a.rating) || 0));
+      case "ratingAsc":
+        return reviews.sort((a, b) => (Number(a.rating) || 0) - (Number(b.rating) || 0));
+      case "oldest":
+        return reviews.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      case "latest":
+      default:
+        return reviews.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
+  }, [selectedDriverDetail, driverReviewSortType]);
+  const driverReviewTotalPage = Math.max(
+    1,
+    Math.ceil(sortedDriverReviews.length / DRIVER_REVIEW_PAGE_SIZE)
+  );
+
+  const pagedDriverReviews = useMemo(() => {
+    const startIndex = (driverReviewPage - 1) * DRIVER_REVIEW_PAGE_SIZE;
+    const endIndex = startIndex + DRIVER_REVIEW_PAGE_SIZE;
+    return sortedDriverReviews.slice(startIndex, endIndex);
+  }, [sortedDriverReviews, driverReviewPage]);
+
+  useEffect(() => {
+    if (driverReviewPage > driverReviewTotalPage) {
+      setDriverReviewPage(driverReviewTotalPage);
+    }
+  }, [driverReviewPage, driverReviewTotalPage]);
   return (
     <Box sx={{ bgcolor: "#f7f9fc", minHeight: "100vh", py: 6 }}>
       <Container maxWidth="xl" disableGutters sx={{ px: { xs: 1, sm: 2 } }}>
@@ -333,6 +462,7 @@ const MyReviewInform = () => {
                 <TableRow>
                   <TableCell align="center">리뷰번호</TableCell>
                   <TableCell align="center">배송번호</TableCell>
+                  <TableCell align="center">운전기사</TableCell>
                   <TableCell align="center">별점</TableCell>
                   <TableCell align="center">리뷰 내용</TableCell>
                   <TableCell align="center">작성일</TableCell>
@@ -478,9 +608,153 @@ const MyReviewInform = () => {
         <DialogActions>
           <Button onClick={handleCloseDetailModal}>닫기</Button>
         </DialogActions>
+
+      </Dialog>
+      <Dialog
+        open={openDriverDetailModal}
+        onClose={handleCloseDriverDetailModal}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>운전기사 상세 정보</DialogTitle>
+
+        <DialogContent>
+          <DriverProfileCard
+            title="운전기사 프로필"
+            profileInfo={selectedDriverProfileInfo}
+            summary={selectedDriverSummary}
+            verification={selectedDriverVerification}
+            reviewStats={selectedDriverReviewStats}
+            showVerifyButton={false}
+          />
+
+          <Box sx={{ mt: 3 }}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mb: 2,
+                gap: 2,
+                flexWrap: "wrap",
+              }}
+            >
+              <Typography variant="h6" fontWeight="bold">
+                차주에게 작성된 리뷰 목록
+              </Typography>
+
+              <FormControl size="small" sx={{ minWidth: 180 }}>
+                <InputLabel>정렬</InputLabel>
+                <Select
+                  value={driverReviewSortType}
+                  label="정렬"
+                  onChange={(e) => {
+                    setDriverReviewSortType(e.target.value);
+                    setDriverReviewPage(1);
+                  }}
+                >
+                  <MenuItem value="latest">최신 순</MenuItem>
+                  <MenuItem value="oldest">오래된 순</MenuItem>
+                  <MenuItem value="ratingDesc">별점 높은 순</MenuItem>
+                  <MenuItem value="ratingAsc">별점 낮은 순</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+
+            {pagedDriverReviews.length ? (
+              <Stack spacing={2}>
+                {pagedDriverReviews.map((review) => (
+                  <Box
+                    key={review.reviewNo}
+                    sx={{
+                      border: "1px solid #e5e7eb",
+                      borderRadius: 2,
+                      p: 2,
+                      bgcolor: "#fafafa",
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        mb: 1,
+                      }}
+                    >
+                      <Typography variant="body2" fontWeight="bold">
+                        작성자: {review.writerId || "-"}
+                      </Typography>
+
+                      <Typography variant="body2" color="text.secondary">
+                        {formatDateTime(review.createdAt)}
+                      </Typography>
+                    </Box>
+
+                    <Rating
+                      value={Number(review.rating) || 0}
+                      precision={0.5}
+                      readOnly
+                      sx={{ mb: 1 }}
+                    />
+
+                    <Typography variant="body2" sx={{ mb: 1 }}>
+                      <strong>화물명:</strong> {review.cargoType || "-"}
+                    </Typography>
+
+                    <Typography variant="body2" sx={{ mb: 1 }}>
+                      <strong>리뷰 내용:</strong> {review.comment || "-"}
+                    </Typography>
+                  </Box>
+                ))}
+              </Stack>
+            ) : (
+              <Typography variant="body2" color="text.secondary">
+                등록된 리뷰가 없습니다.
+              </Typography>
+            )}
+            {pagedDriverReviews.length > 0 && (
+              <Box
+                sx={{
+                  mt: 2,
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  gap: 1,
+                }}
+              >
+                <Button
+                  size="small"
+                  variant="outlined"
+                  disabled={driverReviewPage <= 1}
+                  onClick={() => setDriverReviewPage((prev) => prev - 1)}
+                >
+                  이전
+                </Button>
+
+                <Typography variant="body2">
+                  {driverReviewPage} / {driverReviewTotalPage}
+                </Typography>
+
+                <Button
+                  size="small"
+                  variant="outlined"
+                  disabled={driverReviewPage >= driverReviewTotalPage}
+                  onClick={() => setDriverReviewPage((prev) => prev + 1)}
+                >
+                  다음
+                </Button>
+              </Box>
+            )}
+          </Box>
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={handleCloseDriverDetailModal}>닫기</Button>
+        </DialogActions>
       </Dialog>
 
     </Box>
+
   );
 };
 

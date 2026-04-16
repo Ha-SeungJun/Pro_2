@@ -33,7 +33,8 @@ import PageComponent from "../common/PageComponent";
 import { getReceivedReviews } from "../../../api/reviewApi/reviewApi";
 import { getMyReceivedReviewSummary } from "../../../api/reviewApi/reviewApi";
 import { getMyVerificationStatus, startVerification, confirmVerification } from "../../../api/verificationApi/verificationApi";
-import DriverProfileCard from "../common/DriverProfileCard";
+import DriverProfileCard from "../common/DriverProfileCard.js";
+console.log("DriverProfileCard =", DriverProfileCard);
 
 const API_BASE =
   process.env.REACT_APP_API_BASE ||

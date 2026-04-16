@@ -5,7 +5,7 @@ const prefix = `${API_SERVER_HOST}/g2i4/review`;
 
 export const createReview = async (reviewDTO) => {
   const token =
-  
+
     sessionStorage.getItem("accessToken");
   const res = await axios.post(`${prefix}/register`, reviewDTO, {
     headers: {
@@ -20,7 +20,7 @@ export const createReview = async (reviewDTO) => {
 };
 export const getReviewByDeliveryNo = async (deliveryNo) => {
   const token =
-sessionStorage.getItem("accessToken");
+    sessionStorage.getItem("accessToken");
 
   const res = await axios.get(`${prefix}/${deliveryNo}`, {
     headers: {
@@ -32,7 +32,7 @@ sessionStorage.getItem("accessToken");
 };
 export const getReviewExistsByDeliveryNo = async (deliveryNo) => {
   const token =
-sessionStorage.getItem("accessToken");
+    sessionStorage.getItem("accessToken");
 
   const res = await axios.get(`${prefix}/exists/${deliveryNo}`, {
     headers: {
@@ -79,10 +79,10 @@ export const deleteReview = async (reviewNo) => {
 
   return res.data;
 };
-export const getReceivedReviews =async()=>{
+export const getReceivedReviews = async () => {
   const token = sessionStorage.getItem("accessToken");
 
-  const res = await axios.get(`${prefix}/received`,{
+  const res = await axios.get(`${prefix}/received`, {
     headers: {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
@@ -100,5 +100,24 @@ export const getMyReceivedReviewSummary = async () => {
     },
   });
 
+  return res.data;
+};
+export const getMyReviewsWithDriverId = async () => {
+  const res = await axios.get(`${prefix}/my/with-driver-id`, {
+    withCredentials: true,
+  });
+  return res.data;
+};
+
+export const getDriverProfileCard = async (cargoId) => {
+  const res = await axios.get(`${prefix}/driver-profile/${cargoId}`, {
+    withCredentials: true,
+  });
+  return res.data;
+};
+export const getDriverDetail = async (cargoId) => {
+  const res = await axios.get(`${prefix}/driver-detail/${cargoId}`, {
+    withCredentials: true,
+  });
   return res.data;
 };

@@ -112,7 +112,7 @@ const HomePage = () => {
           return {
             name: c.cargoName || c.cargoCapacity, // 등록한 이름("다마스") 그대로 사용
             desc1: `${c.cargoCapacity}급 전문 운송 서비스입니다.`,
-            desc2: feeMatch ? `기본: ${Number(feeMatch.initialCharge).toLocaleString()}원 / km당: ${Number(feeMatch.ratePerKm).toLocaleString()}원` : "실시간 요금을 확인하세요.",
+            
             img: normalizeUrl(c.cargoImage) || DEFAULT_TRUCK_IMG
           };
         });

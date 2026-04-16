@@ -80,6 +80,7 @@ export default function ResponsiveAppBar() {
   const displayUserName = loginState?.memberId || loginState?.nickname || loginState?.email || '회원';
 
 
+
   // ✅ 1) 앱 로드 시: 토큰 리프레시 로직 (기존 엔진 유지)
   useEffect(() => {
     if (hasReduxLogin || accessToken) return;
@@ -196,7 +197,9 @@ export default function ResponsiveAppBar() {
           <div className="flex-1 flex justify-end items-center space-x-2 text-sm md:text-lg pb-2 md:pb-0">
             {isLogin ? (
               <>
+
                 <Link to={myPagePath} className="font-bold text-gray-700 hover:text-red-600 ml-2 md:ml-6">{displayUserName}</Link>
+
                 <span className="text-gray-300">|</span>
                 <button onClick={handleLogout} className="hover:text-red-600 font-bold">로그아웃</button>
               </>
@@ -208,6 +211,11 @@ export default function ResponsiveAppBar() {
               </>
             )}
           </div>
+
+          <div className="hidden lg:flex items-center">
+            <Link to="/login" className="text-red-500 font-bold">최대 30% 할인</Link>
+          </div>
+
         </div>
       </div>
     </header>

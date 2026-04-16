@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Box, Paper, Grid, Typography, Divider } from "@mui/material";
+import { Box, Paper, Grid, Typography, Divider, Button } from "@mui/material";
+import PrintIcon from "@mui/icons-material/Print";
 import { useLocation } from "react-router-dom";
 import { postOrderPome } from "../../../api/orderAPI/orderApi";
 
-// ===== 시안 맞춤 고정 폭 =====
 const LABEL_WIDTH = 120;
 const NAME_WIDTH = 110;
 
@@ -25,7 +25,11 @@ const serverInitState = {
   matchingNo: "",
 };
 
-// ===== 유틸 =====
+// ===== 인쇄 핸들러 =====
+const handlePrint = () => {
+  window.print();
+};
+
 const splitPhone = (raw) => {
   const d = (raw ?? "").replace(/\D/g, "");
   if (!d) return ["", "", ""];
@@ -44,8 +48,6 @@ const joinPhone = (raw) => {
   return [a, b, c].filter(Boolean).join("-") || "";
 };
 
-
-
 const toCurrency = (v) => {
   if (v === null || v === undefined || v === "") return "";
   const n = Number(v);
@@ -53,7 +55,6 @@ const toCurrency = (v) => {
   return n.toLocaleString("ko-KR");
 };
 
-// ===== 한 줄 표시 컴포넌트 (라벨/값) =====
 const FieldRow = ({ label, children, dense = false, className }) => (
   <Grid
     className={className}
@@ -88,7 +89,7 @@ const FieldRow = ({ label, children, dense = false, className }) => (
 );
 
 const SectionTitle = ({ children }) => (
-  <Box sx={{ borderRadius: 3, maxWidth: 800, mx: "auto" }}>
+  <Box sx={{ borderRadius: 3, maxWidth: 800, mx: "auto", mt: 10 }}>
     <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.25 }}>
       {children}
     </Typography>
@@ -98,46 +99,90 @@ const SectionTitle = ({ children }) => (
 const OrderSummaryReadOnly = () => {
   const { state } = useLocation();
   const matchingNo = state?.matchingNo;
-  // { addressee, phone, addresseeEmail, startRestAddress, endRestAddress }
   const passedOrderSheet = state?.orderSheet;
 
   const [serverData, setServerData] = useState(serverInitState);
+
+  // ===== 인쇄 CSS 한 번만 삽입 =====
+  useEffect(() => {
+    const id = "order-print-style";
+    if (document.getElementById(id)) return;
+
+    const style = document.createElement("style");
+    style.id = id;
+    style.innerHTML = `
+  /* 화면에서는 숨김 - 먼저 선언 */
+  .print-footer {
+    display: none;
+  }
+
+  @media print {
+    button,
+    .no-print,
+    header,
+    nav,
+    .MuiAppBar-root,
+    .MuiDrawer-root {
+      display: none !important;
+    }
+    body {
+      background-color: white !important;
+    }
+    .MuiPaper-root {
+      border: 1px solid #ccc !important;
+      box-shadow: none !important;
+    }
+    .print-footer {
+      display: flex !important;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid #ddd;
+    }
+    .print-footer img {
+      height: 60px;
+      width: auto;
+    }
+
+  }
+`;
+    document.head.appendChild(style);
+  }, []);
 
   useEffect(() => {
     if (!matchingNo) return;
     postOrderPome(matchingNo)
       .then((data) => {
-        console.log(data)
-        setServerData(data)})
-
+        console.log(data);
+        setServerData(data);
+      })
       .catch(console.error);
   }, [matchingNo]);
 
-  // ===== 주문자(출발지) 데이터 가공 =====
   const ordererPhone = useMemo(
     () => joinPhone(serverData.ordererPhone),
     [serverData.ordererPhone]
   );
 
-  // ===== 받는분(도착지) 데이터 가공 =====
   const receiverPhone = useMemo(() => {
     const src = serverData.receiverPhone ?? passedOrderSheet?.phone;
     return joinPhone(src);
   }, [serverData.receiverPhone, passedOrderSheet?.phone]);
 
-
-
   return (
     <Box
       sx={{
         px: 4,
-        pt: 10,        
+        pt: 10,
         pb: 10,
         bgcolor: "#fafafa",
         minHeight: "100vh",
       }}
     >
-      <Typography variant="h5" align="center" sx={{ fontWeight: 800, mt: 0, mb: 2 , pb:5}}>
+      <Typography variant="h5" align="center" sx={{ fontWeight: 800, mt: 4, mb: 2, pb: 3 }}>
         주문서 요약 (읽기 전용)
       </Typography>
 
@@ -145,15 +190,9 @@ const OrderSummaryReadOnly = () => {
       <SectionTitle>출발지 정보</SectionTitle>
       <Paper
         variant="outlined"
-        sx={{
-          p: 0,
-          mb: 3,
-          borderRadius: 3,
-          maxWidth: 800,
-          mx: "auto",
-          overflow: "hidden",
-        }}
-      ><Box sx={{ p: 2.5, "& .field-row:last-of-type": { borderBottom: "none", pb: 0 } }}>
+        sx={{ p: 0, mb: 5, borderRadius: 3, maxWidth: 800, mx: "auto", overflow: "hidden" }}
+      >
+        <Box sx={{ p: 2.5, "& .field-row:last-of-type": { borderBottom: "none", pb: 0 } }}>
           <FieldRow className="field-row" label="주문자">
             <Typography sx={{ width: NAME_WIDTH }}>{serverData.ordererName || ""}</Typography>
           </FieldRow>
@@ -176,16 +215,8 @@ const OrderSummaryReadOnly = () => {
       <SectionTitle>도착지 정보</SectionTitle>
       <Paper
         variant="outlined"
-        sx={{
-          p: 0,
-          mb: 3,
-          borderRadius: 3,
-          maxWidth: 800,
-          mx: "auto",
-          overflow: "hidden",
-        }}
+        sx={{ p: 0, mb: 5, borderRadius: 3, maxWidth: 800, mx: "auto", overflow: "hidden" }}
       >
-
         <Box sx={{ p: 2.5, "& .field-row:last-of-type": { borderBottom: "none", pb: 0 } }}>
           <FieldRow className="field-row" label="받는분">
             <Typography sx={{ width: NAME_WIDTH }}>
@@ -211,14 +242,7 @@ const OrderSummaryReadOnly = () => {
       <SectionTitle>결제 요약</SectionTitle>
       <Paper
         variant="outlined"
-        sx={{
-          p: 0,
-          mb: 3,
-          borderRadius: 3,
-          maxWidth: 800,
-          mx: "auto",
-          overflow: "hidden",
-        }}
+        sx={{ p: 0, mb: 5, borderRadius: 3, maxWidth: 800, mx: "auto", overflow: "hidden" }}
       >
         <Box sx={{ p: 2.5 }}>
           <FieldRow label="기본요금">
@@ -231,27 +255,20 @@ const OrderSummaryReadOnly = () => {
             <Typography>{toCurrency(serverData.specialOptionCost)} 원</Typography>
           </FieldRow>
 
-          {/*  쿠폰 할인 표시 (finalPaymentAmount와 totalCost 차이 계산) */}
-          {serverData.finalPaymentAmount !== undefined && serverData.totalCost > serverData.finalPaymentAmount && (
-            <FieldRow label="쿠폰할인">
-              <Typography sx={{ color: "error.main", fontWeight: 700 }}>
-                - {toCurrency(serverData.totalCost - serverData.finalPaymentAmount)} 원
-              </Typography>
-            </FieldRow>
-          )}
+          {serverData.finalPaymentAmount !== undefined &&
+            serverData.totalCost > serverData.finalPaymentAmount && (
+              <FieldRow label="쿠폰할인">
+                <Typography sx={{ color: "error.main", fontWeight: 700 }}>
+                  - {toCurrency(serverData.totalCost - serverData.finalPaymentAmount)} 원
+                </Typography>
+              </FieldRow>
+            )}
 
           <Divider sx={{ my: 2 }} />
 
-          <Grid
-            container
-            alignItems="center"
-            wrap="nowrap"
-            sx={{ py: 1.5 }}
-          >
+          <Grid container alignItems="center" wrap="nowrap" sx={{ py: 1.5 }}>
             <Grid item sx={{ width: LABEL_WIDTH, pr: 2 }}>
-              <Typography sx={{ fontWeight: 800, textAlign: "right" }}>
-                총 결제금액 :
-              </Typography>
+              <Typography sx={{ fontWeight: 800, textAlign: "right" }}>총 결제금액 :</Typography>
             </Grid>
             <Grid item sx={{ flex: 1, minWidth: 0 }}>
               <Box
@@ -262,16 +279,39 @@ const OrderSummaryReadOnly = () => {
                   minHeight: 32,
                   fontWeight: 800,
                   fontSize: 18,
-                  color: "#d32f2f", // 강조를 위해 붉은색 적용
+                  color: "#d32f2f",
                 }}
               >
-                {/* finalPaymentAmount가 0이어도 정상적으로 '0 원'이 출력되도록 처리 */}
                 {toCurrency(serverData.finalPaymentAmount ?? serverData.totalCost)} 원
               </Box>
             </Grid>
           </Grid>
         </Box>
       </Paper>
+      <Box className="print-footer">
+        <img 
+          src="/image/logo/main_logo.png" 
+          alt="로고" 
+          style={{ height: 60, width: "auto" }} 
+        />
+      </Box>
+      <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
+        <Button
+          variant="contained"
+          startIcon={<PrintIcon />}
+          onClick={handlePrint}
+          sx={{
+            borderRadius: 3,
+            px: 4,
+            py: 1.5,
+            fontWeight: 700,
+            boxShadow: 3,
+            "@media print": { display: "none" },
+          }}
+        >
+          인쇄, PDF 저장
+        </Button>
+      </Box>
     </Box>
   );
 };

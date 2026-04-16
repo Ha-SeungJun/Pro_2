@@ -9,7 +9,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import com.giproject.dto.review.DriverProfileCardDTO;
 import com.giproject.dto.review.MyReviewListDTO;
+import com.giproject.dto.review.MyReviewWithDriverIdDTO;
 import com.giproject.dto.review.ReviewSummaryDTO;
 import com.giproject.entity.review.Review;
 
@@ -146,4 +148,63 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 			ORDER BY r.createdAt DESC
 			""")
 	List<MyReviewListDTO> findReceivedReviewsByCargoId(@Param("cargoId") String cargoId);
+	
+	@Query("""
+		    SELECT new com.giproject.dto.review.MyReviewWithDriverIdDTO(
+		        r.reviewNo,
+		        r.deliveryNo,
+		        r.rating,
+		        r.comment,
+		        r.createdAt,
+		        e.cargoType,
+		        e.cargoWeight,
+		        e.startAddress,
+		        e.endAddress,
+		        d.completTime,
+		        m.cargoOwner.cargoId,
+		        m.cargoOwner.cargoName,
+		        d.status,
+		        e.member.memId
+		    )
+		    FROM Review r
+		    JOIN Delivery d ON r.deliveryNo = d.deliveryNo
+		    JOIN d.payment p
+		    JOIN p.orderSheet os
+		    JOIN os.matching m
+		    JOIN m.estimate e
+		    WHERE e.member.memId = :memId
+		    ORDER BY r.createdAt DESC
+		    """)
+		List<MyReviewWithDriverIdDTO> findMyReviewsWithDriverIdByWriterMemId(@Param("memId") String memId);
+
+	
+	@Query("""
+		    SELECT new com.giproject.dto.review.DriverProfileCardDTO(
+		        c.cargoId,
+		        c.cargoName,
+		        c.profileImage,
+		        (
+		            SELECT avg(r.rating)
+		            FROM Review r
+		            JOIN Delivery d ON r.deliveryNo = d.deliveryNo
+		            JOIN d.payment p
+		            JOIN p.orderSheet os
+		            JOIN os.matching m
+		            WHERE m.cargoOwner.cargoId = c.cargoId
+		        ),
+		        (
+		            SELECT count(r2)
+		            FROM Review r2
+		            JOIN Delivery d2 ON r2.deliveryNo = d2.deliveryNo
+		            JOIN d2.payment p2
+		            JOIN p2.orderSheet os2
+		            JOIN os2.matching m2
+		            WHERE m2.cargoOwner.cargoId = c.cargoId
+		        ),
+		        c.isVerified
+		    )
+		    FROM CargoOwner c
+		    WHERE c.cargoId = :cargoId
+		    """)
+		Optional<DriverProfileCardDTO> findDriverProfileCardByCargoId(@Param("cargoId") String cargoId);
 }

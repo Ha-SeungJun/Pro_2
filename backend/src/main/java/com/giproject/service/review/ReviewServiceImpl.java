@@ -9,7 +9,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.giproject.dto.review.DriverDetailDTO;
+import com.giproject.dto.review.DriverProfileCardDTO;
 import com.giproject.dto.review.MyReviewListDTO;
+import com.giproject.dto.review.MyReviewWithDriverIdDTO;
 import com.giproject.dto.review.ReviewDTO;
 import com.giproject.dto.review.ReviewSummaryDTO;
 import com.giproject.entity.delivery.Delivery;
@@ -199,7 +202,40 @@ public class ReviewServiceImpl implements ReviewService {
 	public List<MyReviewListDTO> getReceivedReviews(String cargoId) {
 	    return reviewRepository.findReceivedReviewsByCargoId(cargoId);
 	}
-	
+	@Override
+	public List<MyReviewWithDriverIdDTO> getMyReviewsWithDriverId(String memId) {
+	    return reviewRepository.findMyReviewsWithDriverIdByWriterMemId(memId);
+	}
+
+	@Override
+	public DriverProfileCardDTO getDriverProfileCard(String cargoId) {
+	    DriverProfileCardDTO dto = reviewRepository.findDriverProfileCardByCargoId(cargoId)
+	        .orElseThrow(() -> new IllegalArgumentException("차주 프로필을 찾을 수 없습니다. cargoId=" + cargoId));
+
+	    if (dto.getAvgRating() == null) {
+	        dto.setAvgRating(java.math.BigDecimal.ZERO);
+	    }
+
+	    if (dto.getReviewCount() == null) {
+	        dto.setReviewCount(0L);
+	    }
+
+	    if (dto.getIsVerified() == null) {
+	        dto.setIsVerified(false);
+	    }
+
+	    return dto;
+	}
+	@Override
+	public DriverDetailDTO getDriverDetail(String cargoId) {
+	    DriverProfileCardDTO profile = getDriverProfileCard(cargoId);
+	    List<MyReviewListDTO> reviews = reviewRepository.findReceivedReviewsByCargoId(cargoId);
+
+	    return DriverDetailDTO.builder()
+	            .profile(profile)
+	            .reviews(reviews)
+	            .build();
+	}
 
 
 }

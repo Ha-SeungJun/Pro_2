@@ -77,7 +77,7 @@ export default function ResponsiveAppBar() {
   // 4. 나머지 경로 및 이름 설정
   const myPagePath = isAdmin ? '/admin' : '/mypage';
   const myPageLabel = isAdmin ? '관리자페이지' : '마이페이지';
-  const displayUserName = loginState?.nickname || loginState?.email || loginState?.memberId || '회원';
+  const displayUserName = loginState?.memberId || loginState?.nickname || '회원';
 
 
   // ✅ 1) 앱 로드 시: 토큰 리프레시 로직 (기존 엔진 유지)
@@ -202,7 +202,8 @@ export default function ResponsiveAppBar() {
             {isLogin ? (
               <>
                 <Link to={myPagePath} className="font-bold text-gray-700 hover:text-red-600 ml-2 md:ml-6">{myPageLabel}</Link>
-                <span className="font-bold text-gray-700">{displayUserName}</span>
+                <span className="text-gray-300">|</span>
+                <span className="font-bold text-gray-700">{displayUserName}님</span>
                 <span className="text-gray-300">|</span>
                 <button onClick={handleLogout} className="hover:text-red-600 font-bold">로그아웃</button>
               </>
@@ -215,7 +216,6 @@ export default function ResponsiveAppBar() {
             )}
           </div>
           <div className="hidden lg:flex items-center">
-            <span className="text-gray-300 mx-2">|</span>
             <Link to="/login" className="text-red-500 font-bold">최대 30% 할인</Link>
           </div>
         </div>

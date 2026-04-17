@@ -211,11 +211,6 @@ export default function ResponsiveAppBar() {
               </>
             )}
           </div>
-
-          <div className="hidden lg:flex items-center">
-            <Link to="/login" className="text-red-500 font-bold">최대 30% 할인</Link>
-          </div>
-
         </div>
       </div>
     </header>

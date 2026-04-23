@@ -18,17 +18,10 @@ const Header = () => {
             <a href="#" className="text-2xl font-bold hover:text-red-600 transition-colors">
                 온라인 퀵 접수
             </a>
-            {/* ✅ 마이페이지 클릭 시 '/mypage' 라우트로 이동하도록 Link 적용 */}
-            <Link to="/mypage" className="text-2xl font-bold hover:text-red-600 transition-colors">
-              마이페이지
-            </Link>
           </nav>
           <div className="flex items-center space-x-4 text-lg">
             <a href="#" className="hover:text-red-600 font-bold">로그인</a>
             <span className="text-gray-300">|</span>
-            <a href="#" className="text-red-500 font-bold hover:text-red-700">
-              최대 <span className='text-xl'>30%</span> 적립
-            </a>
           </div>
         </div>
       </div>

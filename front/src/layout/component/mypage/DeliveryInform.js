@@ -200,6 +200,7 @@ const DeliveryInfoPage = () => {
   const [reviewContent, setReviewContent] = useState('');
   const [reviewScore, setReviewScore] = useState(0);
   const [reviewedMap, setReviewedMap] = useState({});
+  const [reviewImages, setReviewImages] = useState([]);
 
 
   //모달 열기 함수 추가
@@ -215,7 +216,19 @@ const DeliveryInfoPage = () => {
     setSelectedReviewItem(null);
     setReviewContent('');
     setReviewScore(0);
+    setReviewImages([]);
   };
+  const handleReviewImageChange = (e) => {
+    const files = Array.from(e.target.files || []);
+
+    if (files.length > 3) {
+      alert("이미지는 최대 3장까지 선택할 수 있습니다.");
+      return;
+    }
+
+    setReviewImages(files);
+  };
+
   //deliveryNo가 있으면 리뷰 조회 API 호출 함수
   const loadReviewedMap = async (completedList) => {
     const map = {};
@@ -573,73 +586,73 @@ const DeliveryInfoPage = () => {
 
   // 렌더러: 완료 (여기에 신고 버튼 추가)
   const renderCompletedRows = (list) => {
-  if (!list || list.length === 0) {
-    return (
-      <TableRow>
-        <TableCell colSpan={isMember ? 9 : 7} align="center">항목이 없습니다.</TableCell>
-      </TableRow>
-    );
-  }
-  return list.map((item) => {
-    const doneAt = item.deliveryCompletedAt ?? item.endTime ?? null;
-    const matchingNo = item?.matchingNo ?? item?.mno ?? item?.matching_no ?? null;
+    if (!list || list.length === 0) {
+      return (
+        <TableRow>
+          <TableCell colSpan={isMember ? 9 : 7} align="center">항목이 없습니다.</TableCell>
+        </TableRow>
+      );
+    }
+    return list.map((item) => {
+      const doneAt = item.deliveryCompletedAt ?? item.endTime ?? null;
+      const matchingNo = item?.matchingNo ?? item?.mno ?? item?.matching_no ?? null;
 
-    return (
-      <TableRow key={item.eno}>
-        <TableCell align="center">{item.cargoType}</TableCell>
-        <TableCell align="center">{item.cargoWeight}</TableCell>
-        <TableCell align="center">{item.startAddress}</TableCell>
-        <TableCell align="center">{item.endAddress}</TableCell>
-        <TableCell align="center" style={{ whiteSpace: 'nowrap' }}>{formatDateHour(doneAt)}</TableCell>
-        <TableCell align="center">{isOwner ? (item.memName || '-') : (item.driverName ?? '-')}</TableCell>
+      return (
+        <TableRow key={item.eno}>
+          <TableCell align="center">{item.cargoType}</TableCell>
+          <TableCell align="center">{item.cargoWeight}</TableCell>
+          <TableCell align="center">{item.startAddress}</TableCell>
+          <TableCell align="center">{item.endAddress}</TableCell>
+          <TableCell align="center" style={{ whiteSpace: 'nowrap' }}>{formatDateHour(doneAt)}</TableCell>
+          <TableCell align="center">{isOwner ? (item.memName || '-') : (item.driverName ?? '-')}</TableCell>
 
-        {/* 리뷰 (회원 전용) */}
-        {isMember && (
-          <TableCell align="center">
-            <Button
-              variant="contained"
-              size="small"
-              disabled={reviewedMap[item.deliveryNo]}
-              onClick={() => handleReviewClick(item)}
-              sx={{ minWidth: 80 }}
-            >
-              {reviewedMap[item.deliveryNo] ? '작성완료' : '리뷰'}
-            </Button>
-          </TableCell>
-        )}
+          {/* 리뷰 (회원 전용) */}
+          {isMember && (
+            <TableCell align="center">
+              <Button
+                variant="contained"
+                size="small"
+                disabled={reviewedMap[item.deliveryNo]}
+                onClick={() => handleReviewClick(item)}
+                sx={{ minWidth: 80 }}
+              >
+                {reviewedMap[item.deliveryNo] ? '작성완료' : '리뷰'}
+              </Button>
+            </TableCell>
+          )}
 
-        {/* 신고 (회원 전용) */}
-        {isMember && (
+          {/* 신고 (회원 전용) */}
+          {isMember && (
+            <TableCell align="center">
+              {matchingNo ? (
+                <Button
+                  size="small"
+                  color="error"
+                  variant="outlined"
+                  onClick={() => handleOpenReportModal(matchingNo)}
+                >
+                  신고
+                </Button>
+              ) : (
+                <Typography variant="body2" color="text.secondary">-</Typography>
+              )}
+            </TableCell>
+          )}
+
+          {/* 주문서 보기 */}
           <TableCell align="center">
             {matchingNo ? (
-              <Button
-                size="small"
-                color="error"
-                variant="outlined"
-                onClick={() => handleOpenReportModal(matchingNo)}
-              >
-                신고
+              <Button variant="outlined" size="small" onClick={() => handleViewOrderSummary(matchingNo)}>
+                주문서 보기
               </Button>
             ) : (
               <Typography variant="body2" color="text.secondary">-</Typography>
             )}
           </TableCell>
-        )}
-
-        {/* 주문서 보기 */}
-        <TableCell align="center">
-          {matchingNo ? (
-            <Button variant="outlined" size="small" onClick={() => handleViewOrderSummary(matchingNo)}>
-              주문서 보기
-            </Button>
-          ) : (
-            <Typography variant="body2" color="text.secondary">-</Typography>
-          )}
-        </TableCell>
-      </TableRow>
-    );
-  });
-};
+        </TableRow>
+      );
+    });
+  };
 
   if (!userType) return <Box sx={{ p: 6 }}>사용자 타입 확인 중…</Box>;
 
@@ -851,6 +864,18 @@ const DeliveryInfoPage = () => {
             onChange={(e) => setReviewContent(e.target.value)}
             sx={{ mt: 2 }}
           />
+          <Box sx={{ mt: 2 }}>
+            <Typography gutterBottom>리뷰 사진 첨부</Typography>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleReviewImageChange}
+            />
+            <Typography variant="caption" color="text.secondary">
+              최대 3장까지 업로드 가능합니다.
+            </Typography>
+          </Box>
         </DialogContent>
 
         <DialogActions>
@@ -868,16 +893,24 @@ const DeliveryInfoPage = () => {
                 return;
               }
 
-              const reviewDTO = {
-                deliveryNo: selectedDeliveryNoForReview,
-                rating: reviewScore,
-                comment: reviewContent.trim(),
-              };
+              const formData = new FormData();
+              formData.append("deliveryNo", selectedDeliveryNoForReview);
+              formData.append("rating", reviewScore);
+              formData.append("comment", reviewContent.trim());
+
+              reviewImages.forEach((file) => {
+                formData.append("images", file);
+              });
 
               try {
-                console.log("리뷰 전송 데이터:", reviewDTO);
+                console.log("리뷰 전송 데이터:", {
+                  deliveryNo: selectedDeliveryNoForReview,
+                  rating: reviewScore,
+                  comment: reviewContent.trim(),
+                  imageCount: reviewImages.length,
+                });
 
-                const result = await createReview(reviewDTO);
+                const result = await createReview(formData);
 
                 setReviewedMap(prev => ({
                   ...prev,

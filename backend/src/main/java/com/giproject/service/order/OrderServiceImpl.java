@@ -47,6 +47,9 @@ public class OrderServiceImpl implements OrderService {
                 .distanceCost(estimate.getDistanceCost())
                 .specialOptionCost(estimate.getSpecialOption())
                 
+                // 🚨 [추가된 필드] 리액트 OrderComponent의 serverData.distanceDiscount와 매칭됩니다.
+                .distanceDiscount(estimate.getDistanceDiscount())
+                
                 // 🚨 [핵심 수정] 
                 // 어떤 경우에도 '견적서(Estimate)'에 기록된 정가 136,320원을 원금으로 보냅니다.
                 // 이미 할인이 적용된 OrderSheet의 totalPrice를 참조하지 않도록 확정했습니다.

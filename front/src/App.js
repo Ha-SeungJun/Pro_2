@@ -23,20 +23,21 @@ function App() {
       <RouterProvider router={root} />
 
       {/* ✅ 하단 버튼 통합 컨테이너 (정렬 타워) */}
-      <div 
-        style={{ 
-          position: 'fixed', 
-          bottom: '24px', 
-          right: '24px', 
-          display: 'flex', 
-          flexDirection: 'column', 
-          alignItems: 'center', 
+      <div
+        className="no-print"
+        style={{
+          position: 'fixed',
+          bottom: '24px',
+          right: '24px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
           gap: '16px', // 버튼 사이 간격
-          zIndex: 9999 
+          zIndex: 9999
         }}
       >
         {/* 가이드 버튼 그룹 */}
-        <FloatingButtons /> 
+        <FloatingButtons />
 
         {/* 상담사 연결 버튼 */}
         <div style={{ position: 'relative' }}>

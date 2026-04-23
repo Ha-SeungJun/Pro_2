@@ -1,5 +1,4 @@
 /.metadata/
-README.md
 .DS_Store
 backend/.DS_Store
 backend/src/.DS_Store
@@ -36,7 +35,7 @@ node_modules/
 # Task files
 tasks.json
 tasks/ 
-*.md
+
 *.mdc
 # *.json
 *.example

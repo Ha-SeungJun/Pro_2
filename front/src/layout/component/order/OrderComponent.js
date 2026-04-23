@@ -41,7 +41,8 @@ const serverInitState = {
   distanceCost: '',
   specialOptionCost: '',
   totalCost: '',
-  matchingNo: ''
+  matchingNo: '',
+  distanceDiscount: 0 // [추가] 거리 할인 필드 초기값
 }
 
 const OrderComponent = () => {
@@ -328,7 +329,7 @@ const OrderComponent = () => {
           <Grid item sx={{ flex: 1, minWidth: 0, display: "flex", gap: 1 }}>
             <TextField size="small" value={emailLocal} sx={{ flex: 1 }}
               onChange={(e) => setEmailLocal(e.target.value.replace(/[^a-zA-Z0-9._-]/g, ""))}
-            />적용
+            />
             <Typography variant="h6">@</Typography>
             <TextField size="small"
               sx={{ flex: 1 }} value={emailDomain === "custom" ? customDomain : emailDomain}
@@ -351,7 +352,65 @@ const OrderComponent = () => {
         </Grid>
       </Paper>
 
-      {/*  [수정] 쿠폰 선택 섹션 - handleCouponChange 연결 */}
+      {/* 🚨 [추가 섹션] 운임 상세 내역 - 기존 코드 보존하며 삽입 */}
+      <Box display="flex" justifyContent="flex-start" sx={{ borderRadius: 3, maxWidth: 800, mx: "auto" }}>
+        <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
+          운임 상세 내역
+        </Typography>
+      </Box>
+      <Paper variant="outlined" sx={{ p: 3, mb: 3, borderRadius: 3, maxWidth: 800, mx: "auto", bgcolor: "#fff" }}>
+        <Grid container spacing={1.5}>
+          <Grid item xs={12} display="flex" justifyContent="space-between">
+            <Typography color="textSecondary">기본 운임 (거리 비례)</Typography>
+            <Typography fontWeight="500">
+              {(Number(serverData.baseCost) + Number(serverData.distanceCost)).toLocaleString()}원
+            </Typography>
+          </Grid>
+
+          {/* 거리 자동 할인 노출 */}
+          {Number(serverData.distanceDiscount) > 0 && (
+            <Grid item xs={12} display="flex" justifyContent="space-between" sx={{ color: "#d32f2f" }}>
+              <Typography variant="body2">ㄴ 🚛 장거리 우대 자동 할인</Typography>
+              <Typography variant="body2">
+                -{Number(serverData.distanceDiscount).toLocaleString()}원
+              </Typography>
+            </Grid>
+          )}
+
+          {/* 추가 옵션 비용 */}
+          {Number(serverData.specialOptionCost) > 0 && (
+            <Grid item xs={12} display="flex" justifyContent="space-between" color="textSecondary">
+              <Typography variant="body2">ㄴ ➕ 특이사항 추가 비용</Typography>
+              <Typography variant="body2">
+                +{Number(serverData.specialOptionCost).toLocaleString()}원
+              </Typography>
+            </Grid>
+          )}
+
+          <Grid item xs={12} sx={{ my: 0.5 }}>
+            <Divider sx={{ borderStyle: 'dashed' }} />
+          </Grid>
+
+          {/* 실시간 쿠폰 할인 반영 */}
+          {discountAmount > 0 && (
+            <Grid item xs={12} display="flex" justifyContent="space-between" sx={{ color: "#1976d2" }}>
+              <Typography variant="body2" fontWeight="bold">ㄴ 🎫 추가 쿠폰 할인 적용</Typography>
+              <Typography variant="body2" fontWeight="bold">
+                -{discountAmount.toLocaleString()}원
+              </Typography>
+            </Grid>
+          )}
+
+          <Grid item xs={12} display="flex" justifyContent="space-between" alignItems="center" sx={{ mt: 1 }}>
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>최종 결제 예정 금액</Typography>
+            <Typography variant="h5" sx={{ fontWeight: 900, color: "primary.main" }}>
+              {(Number(serverData.totalCost) - discountAmount).toLocaleString()}원
+            </Typography>
+          </Grid>
+        </Grid>
+      </Paper>
+
+      {/* [수정] 쿠폰 선택 섹션 - handleCouponChange 연결 */}
       <Box display="flex" justifyContent="flex-start" sx={{ borderRadius: 3, maxWidth: 800, mx: "auto" }}>
         <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
           쿠폰 할인 적용
@@ -382,7 +441,7 @@ const OrderComponent = () => {
         </Grid>
       </Paper>
 
-      {/*  [수정] selectedMcno와 discountAmount를 자식에게 전달 */}
+      {/* [수정] selectedMcno와 discountAmount를 자식에게 전달 */}
       <OrderPaymentSelect 
         serverData={serverData} 
         orderSheet={orderSheet} 

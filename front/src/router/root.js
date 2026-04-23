@@ -11,6 +11,8 @@ import PostView from "../layout/component/noboard/NoboardPostView";
 import RequireAuth from "../layout/component/auth/RequireAuth";
 import WritePost from "../layout/component/noboard/NoboardWritePost";
 
+
+
 // ✅ lazy 에러를 막기 위해 간편조회와 가이드는 일반 import로 변경했습니다!
 import GuidePage from "../pages/GuidePage";
 import QuickSearchPage from "../pages/QuickSearchPage";
@@ -37,6 +39,8 @@ const FindPasswordPage = lazy(() => import("../pages/FindPasswordPage"));
 const NaverRedirectPage = lazy(() => import("../pages/NaverRedirectPage"));
 const GoogleRedirectPage = lazy(() => import("../pages/GoogleRedirectPage"));
 const KakaoRedirectPage = lazy(() => import("../pages/KakaoRedirectPage"));
+
+const AdminCargoApproval = lazy(() => import("../layout/component/admin/AdminCargoApproval"));
 
 // test 
 const EstimateMain = lazy(() => import("../pages/EstimatePage"));
@@ -128,7 +132,9 @@ const root = createBrowserRouter([
             {
                 path: "signup",
                 element: <SignUpPage />
-            }
+            },
+            
+
         ]
     },
     {

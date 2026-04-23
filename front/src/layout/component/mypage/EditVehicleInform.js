@@ -1,9 +1,8 @@
-// src/pages/mypage/EditVehicleInform.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
   Box, Grid, Paper, Typography, Button, Modal, TextField,
-  IconButton, Select, MenuItem, InputLabel, FormControl
+  IconButton, Select, MenuItem, InputLabel, FormControl, Chip
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -11,15 +10,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 // ===== 공통 API 베이스/인스턴스 =====
 const API_BASE =
   process.env.REACT_APP_API_BASE ||
-  process.env.REACT_APP_API_BASE ||
   'http://localhost:8080';
 
 const api = axios.create({ baseURL: API_BASE });
 api.interceptors.request.use((config) => {
   const token =
     sessionStorage.getItem('accessToken') ||
-    sessionStorage.getItem('accessToken') ||
-    sessionStorage.getItem('ACCESS_TOKEN') ||
     sessionStorage.getItem('ACCESS_TOKEN');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
@@ -31,8 +27,8 @@ const toPreviewUrl = (p) => {
   const s = String(p);
   if (s.startsWith('http')) return s;
   if (s.startsWith('/g2i4/uploads/')) return `${API_BASE}${s}`;
-  if (s.startsWith('/uploads/')) return `${API_BASE}/g2i4${s}`; // 구버전 보정
-  return `${API_BASE}/g2i4/uploads/cargo/${encodeURIComponent(s)}`; // 파일명만 있는 경우
+  if (s.startsWith('/uploads/')) return `${API_BASE}/g2i4${s}`; 
+  return `${API_BASE}/g2i4/uploads/cargo/${encodeURIComponent(s)}`; 
 };
 
 const EditVehicleInform = () => {
@@ -42,11 +38,13 @@ const EditVehicleInform = () => {
   const [vehicles, setVehicles] = useState([]);
   const [open, setOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState(null);
-  const [weightOptions, setWeightOptions] = useState(['0.5톤','1톤','2톤','3톤','4톤','5톤이상']); // 폴백
+  const [weightOptions, setWeightOptions] = useState(['0.5톤','1톤','2톤','3톤','4톤','5톤이상']); 
+  
   const [formData, setFormData] = useState({
     no: null,
     name: '',
     weight: '',
+    cargoNumber: '', 
     image: null,
     preview: null
   });
@@ -58,26 +56,28 @@ const EditVehicleInform = () => {
     }
   }, [cargoId, navigate]);
 
+  // 🚨 [핵심 수정] 요금표(feesData)로 빈 카드를 만들던 로직을 지우고, 내가 등록한 차량(cargoList)만 보여줍니다.
   const fetchVehicles = async () => {
     if (!cargoId) return;
     try {
-      const res = await api.get(`/g2i4/cargo/list/${cargoId}`);
-      const data = (res.data || []).map(cargo => ({
-        no: cargo.cargoNo,
-        name: cargo.cargoName,
-        address: cargo.cargoType,
-        weight: cargo.cargoCapacity,
-        imagePath: cargo.cargoImage,
-        preview: toPreviewUrl(cargo.cargoImage)
+      // 1. 차주가 실제로 등록한 차량 목록만 가져옴
+      const cargoRes = await api.get(`/g2i4/cargo/list/${cargoId}`);
+      const cargoList = cargoRes.data || [];
+
+      // 2. 화면에 보여줄 데이터로 맵핑
+      const myVehicles = cargoList.map(c => ({
+        no: c.cargoNo,
+        name: c.cargoName || '',
+        weight: c.cargoCapacity || '',
+        imagePath: c.cargoImage,
+        preview: toPreviewUrl(c.cargoImage),
+        cargoNumber: c.cargoNumber || '',
+        status: c.status || 'PENDING'
       }));
-      setVehicles(data);
+
+      setVehicles(myVehicles);
     } catch (err) {
-      console.error('차량 목록 불러오기 실패:', err);
-      const status = err?.response?.status;
-      if (status === 401 || status === 403) {
-        alert('로그인 필요 또는 권한이 없습니다.');
-        navigate('/login', { replace: true });
-      }
+      console.error('데이터 불러오기 실패:', err);
     }
   };
 
@@ -87,7 +87,7 @@ const EditVehicleInform = () => {
       const uniq = Array.from(new Set(res.data || [])).filter(Boolean);
       if (uniq.length) setWeightOptions(uniq);
     } catch (err) {
-      console.warn('weight 옵션 불러오기 실패(폴백 사용):', err);
+      console.warn('weight 옵션 불러오기 실패:', err);
     }
   };
 
@@ -99,10 +99,10 @@ const EditVehicleInform = () => {
   const handleOpen = (index = null) => {
     setEditingIndex(index);
     if (index !== null) {
-      const { no, name, weight, preview } = vehicles[index];
-      setFormData({ no, name, weight: String(weight ?? ''), image: null, preview });
+      const { no, name, weight, preview, cargoNumber } = vehicles[index];
+      setFormData({ no, name, weight: String(weight ?? ''), cargoNumber: cargoNumber || '', image: null, preview });
     } else {
-      setFormData({ no: null, name: '', weight: '', image: null, preview: null });
+      setFormData({ no: null, name: '', weight: '', cargoNumber: '', image: null, preview: null });
     }
     setOpen(true);
   };
@@ -127,25 +127,22 @@ const EditVehicleInform = () => {
   };
 
   const handleSave = async () => {
-    const { no, name, weight, image } = formData;
+    const { no, name, weight, cargoNumber, image } = formData;
     if (!cargoId) { alert('접근 권한이 없습니다.'); return; }
-    if (!name || !weight) { alert('이름과 적재 무게를 입력/선택해주세요.'); return; }
+    if (!name || !weight || !cargoNumber) { alert('차량 이름, 적재 무게, 차량 번호를 모두 입력해주세요.'); return; }
 
     try {
       let cargoNo = no;
-      const payload = { name, weight };
+      const payload = { name, weight, cargoNumber };
 
-      // 수정
       if (no != null) {
         const res = await api.put(`/g2i4/cargo/update/${no}`, payload);
         cargoNo = res.data.cargoNo;
       } else {
-        // 등록
         const res = await api.post(`/g2i4/cargo/add/${cargoId}`, payload);
         cargoNo = res.data.cargoNo;
       }
 
-      // 이미지 업로드
       if (image) {
         const fd = new FormData();
         fd.append('image', image);
@@ -158,12 +155,6 @@ const EditVehicleInform = () => {
       handleClose();
     } catch (err) {
       console.error('차량 저장 실패:', err);
-      const status = err?.response?.status;
-      if (status === 401 || status === 403) {
-        alert('로그인 필요 또는 권한이 없습니다.');
-        navigate('/login', { replace: true });
-        return;
-      }
       alert('차량 저장에 실패했습니다.');
     }
   };
@@ -177,12 +168,6 @@ const EditVehicleInform = () => {
       await fetchVehicles();
     } catch (err) {
       console.error('차량 삭제 실패:', err);
-      const status = err?.response?.status;
-      if (status === 401 || status === 403) {
-        alert('로그인 필요 또는 권한이 없습니다.');
-        navigate('/login', { replace: true });
-        return;
-      }
       alert('삭제 실패');
     }
   };
@@ -194,29 +179,44 @@ const EditVehicleInform = () => {
       <Grid container spacing={4}>
         {vehicles.map((vehicle, idx) => (
           <Grid item key={idx}>
-            <Paper sx={{ width: 400, height: 400, p: 2, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <Box sx={{ height: 250, bgcolor: '#e5e7eb', borderRadius: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Paper sx={{ 
+              width: 400, height: 400, p: 2, 
+              display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+              border: vehicle.status !== 'APPROVED' ? '2px dashed #ff000033' : 'none'
+            }}>
+              <Box sx={{ height: 200, bgcolor: '#e5e7eb', borderRadius: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <img
                   src={vehicle.preview || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="500" height="310"><rect width="100%" height="100%" fill="%23d1d5db"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%236b7280" font-size="24" font-family="sans-serif">No Image</text></svg>'}
                   alt="preview"
                   style={{ width: 'auto', height: 'auto', maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
                 />
               </Box>
-              <Box sx={{ textAlign: 'center' }}>
-                <Typography fontWeight="bold">{vehicle.name}</Typography>
-                <Typography>{vehicle.weight}</Typography>
+              
+              <Box sx={{ textAlign: 'center', mt: 2 }}>
+                <Box display="flex" justifyContent="center" alignItems="center" gap={1} mb={1}>
+                  <Typography fontWeight="bold" variant="h6">{vehicle.name}</Typography>
+                  {vehicle.status === 'PENDING' && <Chip label="승인 대기중" color="warning" size="small" />}
+                  {vehicle.status === 'APPROVED' && <Chip label="승인 완료" color="success" size="small" />}
+                  {vehicle.status === 'REJECTED' && <Chip label="승인 거절" color="error" size="small" />}
+                </Box>
+                <Typography color="textSecondary">{vehicle.weight}</Typography>
+                <Typography variant="body2" color="primary" mt={0.5}>차량번호: {vehicle.cargoNumber}</Typography>
               </Box>
+
               <Box mt={2} display="flex" gap={1}>
-                <Button fullWidth variant="contained" onClick={() => handleOpen(idx)}>수정</Button>
+                {vehicle.status !== 'APPROVED' && (
+                  <Button fullWidth variant="contained" onClick={() => handleOpen(idx)}>수정</Button>
+                )}
                 <Button fullWidth variant="contained" color="error" onClick={() => handleDelete(idx)}>삭제</Button>
               </Box>
             </Paper>
           </Grid>
         ))}
 
+        {/* 🚨 [핵심] 신규 차량 추가는 오직 이 버튼을 통해서만 가능합니다. */}
         <Grid item>
           <Paper onClick={() => handleOpen()} sx={{ width: 400, height: 400, border: '2px dashed #ccc', borderRadius: 2, display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer' }}>
-            <Typography variant="h4">＋</Typography>
+            <Typography variant="h4">＋ 신규 차량 추가</Typography>
           </Paper>
         </Grid>
       </Grid>
@@ -236,7 +236,15 @@ const EditVehicleInform = () => {
               />
             </Box>
             <Box flex={1} display="flex" flexDirection="column" gap={2}>
-              <TextField label="차량 이름" value={formData.name} onChange={handleChange('name')} fullWidth />
+              <TextField label="차량 이름 (예: 다마스)" value={formData.name} onChange={handleChange('name')} fullWidth />
+              
+              <TextField 
+                label="차량 번호 (예: 12가 3456)" 
+                value={formData.cargoNumber} 
+                onChange={handleChange('cargoNumber')} 
+                fullWidth 
+              />
+
               <FormControl fullWidth>
                 <InputLabel id="weight-label">적재 무게</InputLabel>
                 <Select
@@ -251,13 +259,13 @@ const EditVehicleInform = () => {
                 </Select>
               </FormControl>
               <Button variant="outlined" component="label">
-                이미지 업로드
+                차량 이미지 업로드
                 <input hidden accept="image/*" type="file" onChange={handleImageChange} />
               </Button>
             </Box>
           </Box>
           <Box mt={4} display="flex" gap={2}>
-            <Button fullWidth variant="contained" onClick={handleSave}>저장</Button>
+            <Button fullWidth variant="contained" onClick={handleSave}>저장 (관리자 승인 대기)</Button>
           </Box>
         </Box>
       </Modal>

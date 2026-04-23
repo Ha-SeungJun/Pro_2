@@ -9,4 +9,10 @@ public interface CargoRepository extends JpaRepository<Cargo, Integer> {
 
     // 특정 소유자의 차량 리스트 가져오기
     List<Cargo> findByCargoOwner_CargoId(String cargoId);
+
+	List<Cargo> findByStatus(String string);
+	
+	boolean existsByCargoOwner_CargoIdAndStatus(String cargoId, String status);
+	
+	List<Cargo> findByCargoOwner_CargoIdAndStatus(String cargoId, String status);
 }

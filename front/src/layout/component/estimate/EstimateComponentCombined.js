@@ -57,33 +57,33 @@ const EstimateComponentCombined = () => {
     const isAdmin = isCurrentUserAdmin();
     const mapRef = useRef(null);
 
- useEffect(() => {
-    if (authChecked.current) return;
+    useEffect(() => {
+        if (authChecked.current) return;
 
-    const token = sessionStorage.getItem('accessToken');
+        const token = sessionStorage.getItem('accessToken');
 
-    if (!token) {
+        if (!token) {
+            authChecked.current = true;
+            alert("로그인이 필요합니다.");
+            navigate("/", { replace: true });
+            return;
+        }
+
+        // ✅ roles 로드 안 됐으면 무조건 대기 (email 조건 제거)
+        if (roles.length === 0) return;
+
         authChecked.current = true;
-        alert("로그인이 필요합니다.");
-        navigate("/", { replace: true });
-        return;
-    }
 
-    // ✅ roles 로드 안 됐으면 무조건 대기 (email 조건 제거)
-    if (roles.length === 0) return;
+        const isShipper = roles.includes("ROLE_SHIPPER");
+        if (!isShipper && !isAdmin) {
+            alert("일반회원만 주문이 가능합니다.");
+            navigate("/", { replace: true });
+            return;
+        }
 
-    authChecked.current = true;
-
-    const isShipper = roles.includes("ROLE_SHIPPER");
-    if (!isShipper && !isAdmin) {
-        alert("일반회원만 주문이 가능합니다.");
-        navigate("/", { replace: true });
-        return;
-    }
-
-    postSearchFeesBasic().then(setFees).catch(() => {});
-    postSearchFeesExtra().then(setExtra).catch(() => {});
-}, [roles, email, navigate]);
+        postSearchFeesBasic().then(setFees).catch(() => { });
+        postSearchFeesExtra().then(setExtra).catch(() => { });
+    }, [roles, email, navigate]);
 
     useEffect(() => {
         const fee = fees.find((f) => f.weight === estimate.cargoWeight) || null;
@@ -105,7 +105,7 @@ const EstimateComponentCombined = () => {
     const handleSpecialNoteChange = (e) => {
         const selected = extra.filter((n) => e.target.value.includes(n.extraChargeTitle));
         setSpecialMenuOpen(false);
-        setSpecialNotes(selected);  
+        setSpecialNotes(selected);
     };
 
     const handleAddressSearch = (setter) => {
@@ -135,56 +135,71 @@ const EstimateComponentCombined = () => {
 
     return (
         <Box sx={{ px: 2, py: 4 }}>
-            <Typography variant="h5" fontWeight="bold" align="center" mb={4}>
-                견적서 작성 (통합 보기)
-            </Typography>
 
-            {/* 주소 입력 — 상단 전체 너비 */}
-            <Stack direction={isMobile ? "column" : "row"} spacing={2} sx={{ mb: 4 }}>
-                <TextField
-                    placeholder="출발지 주소"
-                    value={estimate.startAddress}
-                    fullWidth
-                    InputProps={{
-                        readOnly: true,
-                        endAdornment: (
-                            <InputAdornment position="end">
-                                <IconButton onClick={() => handleAddressSearch((addr) => setEstimate((prev) => ({ ...prev, startAddress: addr })))}>
-                                    <SearchIcon />
-                                </IconButton>
-                            </InputAdornment>
-                        ),
-                    }}
-                />
-                <TextField
-                    placeholder="도착지 주소"
-                    value={estimate.endAddress}
-                    fullWidth
-                    InputProps={{
-                        readOnly: true,
-                        endAdornment: (
-                            <InputAdornment position="end">
-                                <IconButton onClick={() => handleAddressSearch((addr) => setEstimate((prev) => ({ ...prev, endAddress: addr })))}>
-                                    <SearchIcon />
-                                </IconButton>
-                            </InputAdornment>
-                        ),
-                    }}
-                />
-            </Stack>
+
 
             {/* 본문: 좌측 입력 / 우측 금액+지도 */}
             <Box sx={{ display: "flex", flexDirection: isMobile ? "column" : "row", gap: 3, alignItems: "flex-start" }}>
 
                 {/* 좌측 입력 — 고정 너비 */}
-                <Box sx={{ width: isMobile ? "100%" : 480, flexShrink: 0 }}>
+                <Box sx={{ width: isMobile ? "100%" : 480, flexShrink: 0, border: "1px solid #ccc", borderRadius: 2, p: 3, bgcolor: "#ffffff" }}>
+                    <Typography variant="h5" fontWeight="bold" align="center" mb={2}>
+                        견적서 작성
+                    </Typography>
                     <Stack spacing={2}>
                         <TextField
-                            label="예상 거리(km)"
-                            value={estimate.distanceKm}
-                            InputProps={{ readOnly: true }}
+                            placeholder="출발지 주소"
+                            label="출발지 주소"
+                            value={estimate.startAddress}
                             fullWidth
+                            InputProps={{
+                                readOnly: true,
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        <IconButton onClick={() => handleAddressSearch((addr) => setEstimate((prev) => ({ ...prev, startAddress: addr })))}>
+                                            <SearchIcon />
+                                        </IconButton>
+                                    </InputAdornment>
+                                ),
+                            }}
                         />
+                        <TextField
+                            placeholder="도착지 주소"
+                            label="도착지 주소"
+                            value={estimate.endAddress}
+                            fullWidth
+                            InputProps={{
+                                readOnly: true,
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        <IconButton onClick={() => handleAddressSearch((addr) => setEstimate((prev) => ({ ...prev, endAddress: addr })))}>
+                                            <SearchIcon />
+                                        </IconButton>
+                                    </InputAdornment>
+                                ),
+                            }}
+                        />
+                        <Stack direction="row" spacing={1} alignItems="flex-start">
+                            <TextField
+                                label="예상 거리(km)"
+                                value={estimate.distanceKm}
+                                InputProps={{ readOnly: true }}
+                                fullWidth
+                            />
+                            <Button
+                                variant="contained"
+                                sx={{
+                                    maxWidth: 180,
+                                    height: '56px', // TextField 높이와 맞춤
+                                    whiteSpace: 'nowrap' // 글자 줄바꿈 방지
+                                }}
+                                onClick={calculateDistance}
+                            >
+                                거리 계산
+                            </Button>
+                        </Stack>
+
+
                         <TextField
                             label="화물 종류"
                             name="cargoType"
@@ -247,17 +262,25 @@ const EstimateComponentCombined = () => {
                                 ))}
                             </Box>
                         )}
-                        <Button variant="contained" sx={{ maxWidth: 200 }} onClick={calculateDistance}>
-                            거리 계산
-                        </Button>
+                        <Stack direction="row" spacing={2} mt={5}>
+                            <Button variant="contained" sx={{ maxWidth: 200 }} onClick={() => setOpenEstimateSend(true)}
+                                disabled={isAdmin === true}
+                            >
+                                견적서 제출
+                            </Button>
+                            <Button variant="contained" sx={{ maxWidth: 200 }} onClick={() => setOpenCancelDialog(true)}>
+                                취소
+                            </Button>
+                        </Stack>
                     </Stack>
+
                 </Box>
 
                 {/* 우측: 금액 + 지도 — 나머지 너비 전부 */}
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Stack spacing={3}>
+                    <Stack spacing={2}>
                         {/* 금액 산정 */}
-                        <Box sx={{ border: "1px solid #ccc", borderRadius: 2, p: 3, bgcolor: "#ffffff" }}>
+                        <Box sx={{ border: "1px solid #ccc", borderRadius: 2, p: 2, bgcolor: "#ffffff" }}>
                             <Typography variant="subtitle1" fontWeight="bold" mb={2}>금액 산정</Typography>
                             <Stack direction="row" spacing={4} alignItems="center" flexWrap="wrap">
                                 <Typography>기본 요금: {baseCost.toLocaleString()}원</Typography>
@@ -304,17 +327,6 @@ const EstimateComponentCombined = () => {
 
             </Box>
 
-            {/* 버튼 */}
-            <Stack direction="row" spacing={2} mt={5} justifyContent="center">
-                <Button variant="contained" sx={{ minWidth: 100 }} onClick={() => setOpenEstimateSend(true)}
-                    disabled={isAdmin === true}
-                >
-                    견적서 제출
-                </Button>
-                <Button variant="contained" sx={{ minWidth: 100 }} onClick={() => setOpenCancelDialog(true)}>
-                    취소
-                </Button>
-            </Stack>
 
             {/* 취소 다이얼로그 */}
             <Dialog open={openCancelDialog} onClose={() => setOpenCancelDialog(false)}

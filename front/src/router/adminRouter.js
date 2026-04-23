@@ -15,6 +15,7 @@ const AdminLayout = lazy(() => import("../layout/component/admin/AdminLayout"));
 const AdminPage = lazy(() => import("../layout/component/admin/AdminPage"));
 const DeliveryPage = lazy(() => import("../layout/component/admin/DeliveryPage"));
 const MemberAll = lazy(() => import("../layout/component/admin/MemberAll"));
+const AdminCargoApproval = lazy(() => import("../layout/component/admin/AdminCargoApproval"));
 
 const loading = <div>로딩중입니다.....</div>
 
@@ -37,6 +38,10 @@ const adminRouter = () => {
         {
             index: true,
             element: <AdminRouteWrapper><Suspense fallback={loading}><AdminPage /></Suspense></AdminRouteWrapper>,
+        },
+        {
+            path: "AdminCargoApproval",
+            element: <Suspense fallback={loading}><AdminCargoApproval /></Suspense>,
         },
         {
             path: "delivery",

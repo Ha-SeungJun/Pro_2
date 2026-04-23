@@ -84,41 +84,53 @@ const HomePage = () => {
     return `${base}/g2i4/uploads/cargo/${encodeURIComponent(s)}`;
   };
 
-  // ✅ [수정] 모든 차주가 등록한 데이터를 중복 허용하여 10개까지 노출
+  // 🚨 [핵심 로직] 요금표(껍데기) 기준이 아니라, "실제 등록된 차량" 기준으로 화면을 그립니다.
   const fetchUnifiedVehicles = async () => {
     try {
-      // 1. 차주들이 마이페이지에서 등록한 실제 차량 리스트 가져오기 (test2 기준 전역 공유)
-      const res = await axios.get(`${API_SERVER_HOST}/g2i4/cargo/list/test2`); 
-      let cargoList = Array.isArray(res.data) ? res.data : [];
-
-      // 2. 공통 요금표 가져오기 (기본 설명 문구용)
+      // 1. 요금표 데이터 가져오기 (설명글/가격 매칭용으로만 씀)
       const feesRes = await postSearchFeesBasic();
       const feesData = Array.isArray(feesRes) ? feesRes : [];
+      setFees(feesData);
 
-      // 🚨 [핵심 로직] 10개 제한 및 중복 허용 데이터 구성
-      // cargoList 자체가 중복(다마스 2개 등)을 포함하므로 이를 기반으로 맵핑합니다.
+      // 2. 승인된 차량 목록 가져오기 (안전장치 추가)
+      let cargoList = [];
+      try {
+        // 우선 전체 승인 차량 API 호출 시도
+        const res = await axios.get(`${API_SERVER_HOST}/g2i4/cargo/all/approved`);
+        cargoList = res.data || [];
+      } catch (e) {
+        // 만약 위 API가 백엔드에 없어서 에러가 나면, 기존 API에서 APPROVED만 직접 걸러냄
+        const res = await axios.get(`${API_SERVER_HOST}/g2i4/cargo/list/test2`);
+        cargoList = (res.data || []).filter(c => c.status === 'APPROVED');
+      }
+
+      // 3. FIFO 제한 (10개 초과 시 오래된 것 삭제)
+      if (cargoList.length > 10) {
+        cargoList = cargoList.slice(cargoList.length - 10);
+      }
+
+      // 4. 화면에 그리기 (cargoList가 있을 때만!)
       if (cargoList.length > 0) {
-        // 데이터 비대화 방지: 10개 이상이면 FIFO (앞에서부터 삭제)
-        if (cargoList.length > 10) {
-          cargoList = cargoList.slice(cargoList.length - 10);
-        }
-
         const combined = cargoList.map(c => {
-          // 요금표에서 해당 차량 무게의 기본 설명 찾기
+          const cleanCapacity = String(c.cargoCapacity || "").replace(/[^0-9.]/g, "").trim();
+          
+          // 내 차량의 무게와 요금표의 무게가 같으면 가격을 가져옴
           const feeMatch = feesData.find(f => 
-            String(f.weight || "").replace(/[^0-9.]/g, "").trim() === String(c.cargoCapacity || "").replace(/[^0-9.]/g, "").trim()
+            String(f.weight || "").replace(/[^0-9.]/g, "").trim() === cleanCapacity
           );
 
           return {
-            name: c.cargoName || c.cargoCapacity, // 등록한 이름("다마스") 그대로 사용
+            name: c.cargoName || c.cargoCapacity, // 등록한 이름 그대로 (다마스)
             desc1: `${c.cargoCapacity}급 전문 운송 서비스입니다.`,
-            
+            desc2: feeMatch 
+              ? `기본요금: ${Number(feeMatch.initialCharge).toLocaleString()}원 / km당: ${Number(feeMatch.ratePerKm).toLocaleString()}원` 
+              : "최적의 거리별 요금을 실시간으로 제공해드립니다.",
             img: normalizeUrl(c.cargoImage) || DEFAULT_TRUCK_IMG
           };
         });
         setDisplayVehicles(combined);
       } else {
-        // 등록된 차량이 하나도 없을 때만 정적 리스트 출력
+        // 등록/승인된 차량이 아예 하나도 없을 때만 기본(오토바이, 다마스) 출력
         setDisplayVehicles(vehicleStaticList);
       }
     } catch (error) {

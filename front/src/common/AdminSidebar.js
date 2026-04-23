@@ -40,6 +40,7 @@ const AdminSidebar = () => {
       icon: <PeopleIcon />,
       id: "members",
       items: [
+        { label: "차량 승인 관리", path: "/admin/AdminCargoApproval" },
         { label: "전체 회원", path: "/admin/memberAll" },
         { label: "물주", path: "/admin/memberOwner" },
         { label: "차주", path: "/admin/memberCowner" },

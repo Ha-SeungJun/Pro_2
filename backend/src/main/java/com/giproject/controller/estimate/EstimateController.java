@@ -74,15 +74,31 @@ public class EstimateController {
 	}
 
 	@PostMapping("/subpath/accepted")
-	public ResponseEntity<Map<String, String>> accepted(@RequestBody Map<String, Long> eno,@RequestHeader("Authorization") String authHeader) {
-		Long estimateNo = eno.get("estimateNo");
-		String token = authHeader.replace("Bearer ","");
-		String cargoId = jwtService.getUsername(token);
-		CargoOwner cargoOwner = cargoOwnerRepository.findById(cargoId).get();
-		System.out.println(cargoId+"--------------------------------------------------");
-		Long mcno=matchingService.acceptMatching(estimateNo, cargoOwner);
-		mailService.acceptedMail(mcno);
-		return ResponseEntity.ok().body(Map.of("result", "accepted"));
+	public ResponseEntity<?> accepted(@RequestBody Map<String, Object> eno, @RequestHeader("Authorization") String authHeader) {
+	    try {
+	        //  Map에서 꺼낼 때 키값을 명시하고, 숫자 형변환 에러 방지를 위해 처리
+	        Object rawEno = eno.get("estimateNo");
+	        if (rawEno == null) return ResponseEntity.badRequest().body("견적 번호가 누락되었습니다.");
+	        
+	        Long estimateNo = Long.parseLong(String.valueOf(rawEno));
+	        
+	        String token = authHeader.replace("Bearer ","");
+	        String cargoId = jwtService.getUsername(token);
+	        
+	        //  .get() 호출 전 존재 여부 확인 (Optional 처리)
+	        CargoOwner cargoOwner = cargoOwnerRepository.findById(cargoId)
+	                .orElseThrow(() -> new RuntimeException("차주 정보를 찾을 수 없습니다."));
+	        
+	        Long mcno = matchingService.acceptMatching(estimateNo, cargoOwner);
+	        mailService.acceptedMail(mcno);
+	        
+	        return ResponseEntity.ok().body(Map.of("result", "accepted"));
+	    } catch (RuntimeException e) {
+	        // 전에 만든 '무게 불일치' 에러 메시지가 여기서 프론트로 전달됩니다.
+	        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+	    } catch (Exception e) {
+	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("서버 내부 오류가 발생했습니다.");
+	    }
 	}
 
 	@GetMapping("/subpath/savelist")

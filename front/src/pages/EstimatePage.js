@@ -31,7 +31,7 @@ const EstimatePage = () => {
       {/* 탭 버튼 */}
       <Box sx={{ width: "100%", maxWidth: 1200, px: 2, mb: 2 }}>
         <Tabs value={getTabValue()} onChange={handleTabChange}>
-          <Tab label="견적서 작성 (통합)" />
+          <Tab label="견적서 작성" />
           <Tab label="운송 접수 사항" />
         </Tabs>
       </Box>

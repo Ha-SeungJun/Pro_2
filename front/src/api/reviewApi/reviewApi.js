@@ -3,19 +3,15 @@ import { API_SERVER_HOST } from "../serverConfig";
 
 const prefix = `${API_SERVER_HOST}/g2i4/review`;
 
-export const createReview = async (reviewDTO) => {
-  const token =
+export const createReview = async (formData) => {
+  const token = sessionStorage.getItem("accessToken");
 
-    sessionStorage.getItem("accessToken");
-  const res = await axios.post(`${prefix}/register`, reviewDTO, {
+  const res = await axios.post(`${prefix}/register`, formData, {
     headers: {
-      "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
   });
 
-
-  /** */
   return res.data;
 };
 export const getReviewByDeliveryNo = async (deliveryNo) => {
@@ -55,12 +51,11 @@ export const getMyReviews = async () => {
   return res.data;
 };
 
-export const modifyReview = async (reviewNo, reviewDTO) => {
+export const modifyReview = async (reviewNo, formData) => {
   const token = sessionStorage.getItem("accessToken");
 
-  const res = await axios.put(`${prefix}/${reviewNo}`, reviewDTO, {
+  const res = await axios.put(`${prefix}/${reviewNo}`, formData, {
     headers: {
-      "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
   });
@@ -119,5 +114,16 @@ export const getDriverDetail = async (cargoId) => {
   const res = await axios.get(`${prefix}/driver-detail/${cargoId}`, {
     withCredentials: true,
   });
+  return res.data;
+};
+export const getReviewByReviewNo = async (reviewNo) => {
+  const token = sessionStorage.getItem("accessToken");
+
+  const res = await axios.get(`${prefix}/detail/${reviewNo}`, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+
   return res.data;
 };

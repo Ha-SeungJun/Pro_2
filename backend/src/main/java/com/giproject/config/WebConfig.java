@@ -22,6 +22,9 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addResourceHandler("/g2i4/uploads/**")
                 .addResourceLocations("classpath:/static/uploads/")
                 .addResourceLocations("file:../uploads/");
+     // 리뷰 이미지 제공
+        registry.addResourceHandler("/review/**")
+                .addResourceLocations("file:///C:/upload/review/");
     }
     
 }

@@ -164,7 +164,7 @@ export default function ResponsiveAppBar() {
           <div className="flex-1 flex justify-start items-center">
             <Link to="/" className="mt-0 md:mt-4">
               <img
-                className="w-48 md:w-80 h-auto object-contain" 
+                className="w-48 md:w-80 h-auto object-contain"
                 src={logo}
                 alt="퍼스트로드 로고"
               />
@@ -174,23 +174,23 @@ export default function ResponsiveAppBar() {
           <nav className="flex flex-wrap justify-center items-center gap-x-6 gap-y-1 
                 md:gap-x-10 md:absolute md:left-1/2 md:-translate-x-1/2 
                 -mt-6 md:mt-0">
-            <Link to="/quick-search" className="text-base md:text-xl font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
-              간편조회
-            </Link>
-            <Link to="/noboard" className="text-base md:text-xl font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
-              공지사항
-            </Link>
-            <Link to="/qaboard" className="text-base md:text-xl font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
-              문의사항
-            </Link>
             <Link to="/guide" className="text-base md:text-xl font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
               이용가이드
+            </Link>
+            <Link to="/quick-search" className="text-base md:text-xl font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
+              간편조회
             </Link>
             <Link to="/estimatepage" className="text-base md:text-xl font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
               온라인 퀵 접수
             </Link>
             <Link to="/estimatepage/list" className="text-base md:text-xl font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
               운송 접수 목록
+            </Link>
+            <Link to="/noboard" className="text-base md:text-xl font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
+              공지사항
+            </Link>
+            <Link to="/qaboard" className="text-base md:text-xl font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
+              문의사항
             </Link>
           </nav>
 

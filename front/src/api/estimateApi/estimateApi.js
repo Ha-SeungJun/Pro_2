@@ -42,17 +42,27 @@ export const postRejected = async (estimateParam) => {
   return res.data;
 }
 export const postAccepted = async (estimateParam) => {
-
   const accessToken = sessionStorage.getItem("accessToken");
-  const res = await axios.post(`${prefix}/subpath/accepted`, { estimateNo: estimateParam },
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
+  
+  try {
+    const res = await axios.post(`${prefix}/subpath/accepted`, 
+      { estimateNo: estimateParam }, // 🚨 이 객체 형태가 백엔드 Map.get("estimateNo")와 일치해야 함
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        }
       }
+    );
+    return res.data;
+  } catch (error) {
+    // 🚨 [핵심] 400 에러 시 백엔드가 보낸 상세 메시지(무게 불일치 등)를 낚아챕니다.
+    if (error.response && error.response.data) {
+      // 에러 메시지 자체를 throw 해서 컴포넌트의 catch 문으로 보냅니다.
+      throw error; 
     }
-  )
-  return res.data;
+    throw error;
+  }
 }
 
 export const postSaveEs = async (estimateDTO) => {

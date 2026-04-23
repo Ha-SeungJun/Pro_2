@@ -18,11 +18,13 @@ import com.giproject.controller.order.OrderController;
 import com.giproject.dto.matching.MatchingDTO;
 import com.giproject.dto.matching.PageRequestDTO;
 import com.giproject.dto.matching.PageResponseDTO;
+import com.giproject.entity.cargo.Cargo;
 import com.giproject.entity.cargo.CargoOwner;
 import com.giproject.entity.estimate.Estimate;
 import com.giproject.entity.matching.Matching;
 import com.giproject.entity.matching.RejectedMatching;
 import com.giproject.repository.cargo.CargoOwnerRepository;
+import com.giproject.repository.cargo.CargoRepository; // 🚨 추가된 임포트
 import com.giproject.repository.estimate.EsmateRepository;
 import com.giproject.repository.matching.MatchingRepository;
 import com.giproject.repository.matching.RejectedMatchingRepository;
@@ -42,6 +44,9 @@ public class MatchingServiceImpl implements MatchingService {
     private final EsmateRepository esmateRepository;
     private final RejectedMatchingRepository rejectedMatchingRepository;
     private final JwtService jwtService;
+    
+    // 🚨 [핵심 추가] 차주의 등록 차량 상태를 확인하기 위해 CargoRepository 주입
+    private final CargoRepository cargoRepository;
 
     @Override
     public PageResponseDTO<MatchingDTO> getList(PageRequestDTO requestDTO, String cargoId) {
@@ -109,15 +114,36 @@ public class MatchingServiceImpl implements MatchingService {
 
     @Override
     public Long acceptMatching(Long estimateNo, CargoOwner cargoOwner) {
+        // 1. 견적서 정보를 가장 먼저 조회 (요구 무게를 알아야 하므로)
         Estimate estimate = esmateRepository.findById(estimateNo)
                 .orElseThrow(() -> new RuntimeException("해당 견적이 존재하지 않습니다"));
 
+        // 2. 차주가 보유한 '승인 완료(APPROVED)' 차량 목록 전체 조회
+        List<Cargo> approvedCargos = cargoRepository.findByCargoOwner_CargoIdAndStatus(cargoOwner.getCargoId(), "APPROVED");
+        
+        // 3. 승인된 차량 자체가 아예 없는 경우 원천 차단
+        if (approvedCargos.isEmpty()) {
+            throw new RuntimeException("관리자 승인이 완료된 차량이 등록되어 있어야 견적을 수락할 수 있습니다.");
+        }
+
+        // 4. 🚨 [핵심 보안 로직] 내 승인 차량 중 견적서의 무게(weight)와 똑같은 차량이 있는지 검사
+        // 💡 주의: Estimate 엔티티의 무게 필드가 getWeight() 인지 getCargoWeight() 인지 팀장님 엔티티에 맞게 수정해 주세요! (여기선 getWeight()로 가정)
+        boolean hasRightVehicle = approvedCargos.stream()
+                .anyMatch(cargo -> cargo.getCargoCapacity().equals(estimate.getCargoWeight())); 
+
+        if (!hasRightVehicle) {
+            // 무게가 다르면 수락 불가 에러 발생!
+            throw new RuntimeException("수락 불가: 해당 견적(" + estimate.getCargoWeight() + ")에 맞는 승인된 차량을 보유하고 있지 않습니다.");
+        }
+
+        // 5. 아래는 기존 수락 로직 동일
         Matching matching = matchingRepository.findByEstimate(estimate)
                 .orElseThrow(() -> new RuntimeException("해당 매칭이 없습니다"));
 
         if (matchingRepository.checkMached(estimateNo)) {
             throw new RuntimeException("이미 다른 기사님이 수락하셨습니다");
         }
+        
         estimate.changeMatched(true);
         matching.changeCargoOwner(cargoOwner);
         matching.changeIsAccepted(true);

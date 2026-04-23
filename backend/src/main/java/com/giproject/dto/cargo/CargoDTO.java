@@ -11,4 +11,5 @@ public class CargoDTO {
     private String address; // 차량 종류
     private String weight;  // 적재 무게 
     private String image; // 이미지 경로
+    private String cargoNumber;
 }

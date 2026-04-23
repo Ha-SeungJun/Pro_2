@@ -112,9 +112,14 @@ useEffect(() => {
       setSelectedEno(null);
       setRefresh(!refresh);
     } catch (e) {
-      alert("수락 처리 중 오류가 발생했습니다.");
+      if (e.response && e.response.data && typeof e.response.data === 'string') {
+        alert(e.response.data); 
+      } else {
+        alert("수락 처리 중 오류가 발생했습니다."); 
+      }
     } finally {
       setAccepting(false);
+      setOpenEstimateListAccept(false);
     }
   };
 

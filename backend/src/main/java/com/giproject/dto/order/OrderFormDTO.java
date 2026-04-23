@@ -45,4 +45,5 @@ public class OrderFormDTO {
     
     // 기타
     private Long matchingNo; 
+    private int distanceDiscount;
 }

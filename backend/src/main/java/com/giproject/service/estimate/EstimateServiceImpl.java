@@ -3,6 +3,7 @@ package com.giproject.service.estimate;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 
@@ -19,7 +20,6 @@ import com.giproject.repository.fees.FeesBasicRepository;
 import com.giproject.repository.fees.FeesExtraRepository;
 import com.giproject.repository.matching.MatchingRepository;
 import com.giproject.repository.payment.PaymentRepository;
-import com.giproject.service.estimate.matching.MatchingService;
 import com.giproject.service.fees.FeesBasicService;
 import com.giproject.service.fees.FeesExtraService;
 
@@ -30,42 +30,48 @@ import lombok.extern.log4j.Log4j2;
 @Service
 @RequiredArgsConstructor
 @Log4j2
-
-public class EstimateServiceImpl implements EstimateService{
-	private final EsmateRepository esmateRepository;
-	private final MatchingRepository matchingRepository;
-	private final FeesBasicRepository basicRepository;
-	private final FeesBasicService basicService;
-	private final FeesExtraRepository extraRepository;
-	private final FeesExtraService extraService;
-
+public class EstimateServiceImpl implements EstimateService {
+    private final EsmateRepository esmateRepository;
+    private final MatchingRepository matchingRepository;
+    private final FeesBasicRepository basicRepository;
+    private final FeesBasicService basicService;
+    private final FeesExtraRepository extraRepository;
+    private final FeesExtraService extraService;
     private final PaymentRepository paymentRepository;
     private final DeliveryRepository deliveryRepository;
-	
-    @Override
-    @Transactional // 📍 데이터 일관성을 위해 트랜잭션 보장
-    public Long sendEstimate(EstimateDTO dto) {
-        log.info("견적서 제출 시작 - 회원: {}, 무게: {}", dto.getMemberId(), dto.getCargoWeight());
 
-        // 1. [어드민 설정 조회] DB에서 관리자가 설정한 요금 정책을 가져옵니다.
+    @Override
+    @Transactional
+    public Long sendEstimate(EstimateDTO dto) {
+        log.info("견적서 제출 시작 - 회원: {}, 거리: {}km", dto.getMemberId(), dto.getDistanceKm());
+
+        // 1. [어드민 정책 조회]
         FeesBasic feeConfig = basicRepository.findByWeight(dto.getCargoWeight())
                 .orElseThrow(() -> new RuntimeException("해당 화물 무게에 대한 요금 정책이 없습니다."));
 
-        // 2. [서버 사이드 요금 계산] 프론트 값 대신 어드민 설정값으로 금액을 확정합니다.
-        int baseCost = feeConfig.getInitialCharge().intValue(); // 어드민이 설정한 기본료
-        int distanceCost = (int) (dto.getDistanceKm() * feeConfig.getRatePerKm().intValue()); // 어드민 설정 단가 적용
-        int totalCost = baseCost + distanceCost + dto.getSpecialOption();
-
-        // 3. [DTO 데이터 갱신] 계산된 '진짜' 금액들을 DTO에 주입합니다.
+        // 2. [원가 계산]
+        int baseCost = feeConfig.getInitialCharge().intValue();
+        int distanceCost = (int) (dto.getDistanceKm() * feeConfig.getRatePerKm().intValue());
+        
+        // 🚨 [할인 시스템 가동]
+        // 인터페이스에 만든 calculateDistanceDiscount를 호출해 자동 할인액을 구합니다.
+        int autoDiscount = calculateDistanceDiscount(dto.getDistanceKm(), baseCost + distanceCost);
+        
+        // 3. [금액 확정 및 DTO 주입]
         dto.setBaseCost(baseCost);
         dto.setDistanceCost(distanceCost);
-        dto.setTotalCost(totalCost);
+        dto.setDistanceDiscount(autoDiscount);
+        
+        // 최종 결제 금액 = (기본료 + 거리료 + 옵션) - 자동할인 - 수동쿠폰(프론트에서 온 값)
+        int totalCost = (baseCost + distanceCost + dto.getSpecialOption()) - autoDiscount - dto.getCouponDiscount();
+        dto.setTotalCost(Math.max(totalCost, 0)); // 마이너스 금액 방지
         dto.setTemp(false);
 
-        // 4. [DB 저장] Entity로 변환하여 저장 (이때 위경도 좌표도 DTOToEntity를 통해 함께 들어갑니다)
-        Member member = esmateRepository.getMemId(dto.getMemberId()).orElseThrow();
-        Estimate estimate = DTOToEntity(dto, member);
+        // 4. [DB 저장]
+        Member member = esmateRepository.getMemId(dto.getMemberId())
+                .orElseThrow(() -> new RuntimeException("회원 정보가 없습니다."));
         
+        Estimate estimate = DTOToEntity(dto, member);
         esmateRepository.save(estimate);
         
         // 5. [매칭 생성]
@@ -75,157 +81,118 @@ public class EstimateServiceImpl implements EstimateService{
                 .build();
         matchingRepository.save(matching);
 
-        log.info("견적 확정 완료! 최종 금액: {}원", totalCost);
+        log.info("견적 확정! 원가: {}, 자동할인: {}, 쿠폰할인: {}, 최종금액: {}", 
+                 (baseCost + distanceCost), autoDiscount, dto.getCouponDiscount(), dto.getTotalCost());
+        
         return estimate.getEno();
     }
 
     @Override
     @Transactional
     public Long saveDraft(EstimateDTO estimateDTO) {
-        Member member = esmateRepository.getMemId(estimateDTO.getMemberId()).orElseThrow();
-        int count = esmateRepository.estimateCount(member.getMemId());
+        Member member = esmateRepository.getMemId(estimateDTO.getMemberId())
+                .orElseThrow(() -> new RuntimeException("회원 정보가 없습니다."));
         
+        int count = esmateRepository.estimateCount(member.getMemId());
         if(count >= 3) {
             throw new IllegalStateException("임시저장은 최대 3개까지 가능합니다.");
         }
 
-        // 임시저장 시에도 어드민 요금표를 미리 반영해주면 사용자가 혼란을 겪지 않습니다.
+        // 임시저장 시에도 할인 로직 미리 계산 (사용자 미리보기용)
         basicRepository.findByWeight(estimateDTO.getCargoWeight()).ifPresent(config -> {
             int base = config.getInitialCharge().intValue();
             int dist = (int) (estimateDTO.getDistanceKm() * config.getRatePerKm().intValue());
+            int autoDisc = calculateDistanceDiscount(estimateDTO.getDistanceKm(), base + dist);
+            
             estimateDTO.setBaseCost(base);
             estimateDTO.setDistanceCost(dist);
-            estimateDTO.setTotalCost(base + dist + estimateDTO.getSpecialOption());
+            estimateDTO.setDistanceDiscount(autoDisc);
+            int total = (base + dist + estimateDTO.getSpecialOption()) - autoDisc - estimateDTO.getCouponDiscount();
+            estimateDTO.setTotalCost(Math.max(total, 0));
         });
 
         estimateDTO.setTemp(true);
         Estimate estimate = DTOToEntity(estimateDTO, member);
-        
         esmateRepository.save(estimate);
         return estimate.getEno();
     }
 
+    // ... 아래 목록 조회(myEstimateList 등)는 기존 로직 그대로 유지 (entityToDTO에서 할인 필드 자동 매핑됨) ...
 
-	@Override
-	public List<EstimateDTO> getSaveEstimate(String memberId) {
-		List<Estimate> tempEstimate = esmateRepository.saveEstimateList(memberId);
-		
-		return tempEstimate.stream()
-				.map(this::entityToDTO)
-				.collect(Collectors.toList());
-	}
+    @Override
+    public List<EstimateDTO> getSaveEstimate(String memberId) {
+        return esmateRepository.saveEstimateList(memberId).stream()
+                .map(this::entityToDTO).collect(Collectors.toList());
+    }
 
-	@Override
-	public EstimateDTO exportEstimate(String mameberId, Long eno) {
-		Estimate estimate = esmateRepository.exportEs(mameberId, eno);
-		EstimateDTO dto = entityToDTO(estimate);
-		return dto;
-		
-	}
+    @Override
+    public EstimateDTO exportEstimate(String mameberId, Long eno) {
+        Estimate estimate = esmateRepository.exportEs(mameberId, eno);
+        return entityToDTO(estimate);
+    }
 
-	@Override
-	public List<EstimateDTO> myEstimateList(String memberId) {
-	    List<Estimate> esList = esmateRepository.getMyEstimate(memberId);
-	    log.info("myEstimateList() 진입 - 조회 결과 수: {}", esList.size());
-
-	    return esList.stream().map(estimate -> {
-	        if (estimate.getMember() == null) {
-	            log.warn("estimate {} 의 member가 null입니다", estimate.getEno());
-	        }
-
-	        EstimateDTO dto = entityToDTO(estimate);
-
-	        // matching 여부 조회
-	        Optional<Boolean> isAcceptedOpt = matchingRepository.findIsAcceptedByEstimateNo(estimate.getEno());
-	        dto.setAccepted(isAcceptedOpt.orElse(false)); // null이면 false 처리
-
-	        log.info("DTO 변환 성공: {} (isAccepted: {})", dto.getEno(), dto.isAccepted());
-	        Optional<Long> matchingNoOpt = matchingRepository.findMatchingNoByEstimateNo(estimate.getEno());
-	        dto.setMatchingNo(matchingNoOpt.orElse(null));
-	        
-	        return dto;
-	    }).collect(Collectors.toList());
-	}
-	@Override
-	public List<FeesBasicDTO> searchFees() {
-		return basicRepository.findAllAsc()
-				.stream()
-				.map(list -> basicService.entityToDTO(list))
-				.collect(Collectors.toList());
-	}
-	@Override
-	public List<FeesExtraDTO> searchExtra() {
-		return extraRepository.findAll()
-				.stream()
-				.map(list -> extraService.entityToDTO(list))
-				.collect(Collectors.toList());
-	}
-	
-	@Override
-	public List<EstimateDTO> findMyEstimatesWithoutPayment(String memberId) {
-	    List<Estimate> esList = esmateRepository.findMyEstimatesWithoutPayment(memberId);
-	    log.info("myEstimateList() 진입 - (결제 없는) 조회 결과 수: {}", esList.size());
-
-	    return esList.stream() .filter(e -> !e.isTemp())   .map(e -> {
-            EstimateDTO dto = entityToDTO(e);
-            dto.setAccepted(matchingRepository.findIsAcceptedByEstimateNo(e.getEno()).orElse(false));
-            Long matchingNo = matchingRepository.findMatchingNoByEstimateNo(e.getEno()).orElse(null);
-            dto.setMatchingNo(matchingNo);
-
-            // (선택) 운전기사 이름: 매칭에서 바로
-            if (matchingNo != null) {
-                matchingRepository.findById(matchingNo).ifPresent(m -> {
-                    if (m.getCargoOwner() != null) {
-                        dto.setDriverName(m.getCargoOwner().getCargoName());
-                    }
-                });
-            }
+    @Override
+    public List<EstimateDTO> myEstimateList(String memberId) {
+        List<Estimate> esList = esmateRepository.getMyEstimate(memberId);
+        return esList.stream().map(estimate -> {
+            EstimateDTO dto = entityToDTO(estimate);
+            dto.setAccepted(matchingRepository.findIsAcceptedByEstimateNo(estimate.getEno()).orElse(false));
+            dto.setMatchingNo(matchingRepository.findMatchingNoByEstimateNo(estimate.getEno()).orElse(null));
             return dto;
-	    }).collect(Collectors.toList());
-	}
+        }).collect(Collectors.toList());
+    }
 
-	@Override
-	public List<EstimateDTO> findMyPaidEstimates(String memberId) {
-	    List<Estimate> list = esmateRepository.findMyPaidEstimates(memberId);
+    @Override
+    public List<FeesBasicDTO> searchFees() {
+        return basicRepository.findAllAsc().stream()
+                .map(basicService::entityToDTO).collect(Collectors.toList());
+    }
 
-	    return list.stream()
-	        .filter(e -> !e.isTemp())
-	        .map(e -> {
-	            EstimateDTO dto = entityToDTO(e);
+    @Override
+    public List<FeesExtraDTO> searchExtra() {
+        return extraRepository.findAll().stream()
+                .map(extraService::entityToDTO).collect(Collectors.toList());
+    }
+    
+    @Override
+    public List<EstimateDTO> findMyEstimatesWithoutPayment(String memberId) {
+        return esmateRepository.findMyEstimatesWithoutPayment(memberId).stream()
+                .filter(e -> !e.isTemp()).map(e -> {
+                    EstimateDTO dto = entityToDTO(e);
+                    dto.setAccepted(matchingRepository.findIsAcceptedByEstimateNo(e.getEno()).orElse(false));
+                    Long matchingNo = matchingRepository.findMatchingNoByEstimateNo(e.getEno()).orElse(null);
+                    dto.setMatchingNo(matchingNo);
+                    if (matchingNo != null) {
+                        matchingRepository.findById(matchingNo).ifPresent(m -> {
+                            if (m.getCargoOwner() != null) dto.setDriverName(m.getCargoOwner().getCargoName());
+                        });
+                    }
+                    return dto;
+                }).collect(Collectors.toList());
+    }
 
-	            dto.setAccepted(
-	                matchingRepository.findIsAcceptedByEstimateNo(e.getEno()).orElse(false)
-	            );
-
-	            Long matchingNo = matchingRepository.findMatchingNoByEstimateNo(e.getEno()).orElse(null);
-	            dto.setMatchingNo(matchingNo);
-
-	            if (matchingNo != null) {
-	                paymentRepository.findByOrderSheet_Matching_MatchingNo(matchingNo)
-	                    .ifPresent(p -> {
-	                        dto.setPaymentNo(p.getPaymentNo());
-
-	                        // 운전기사 이름
-	                        String driverName = null;
-	                        if (p.getOrderSheet() != null &&
-	                            p.getOrderSheet().getMatching() != null &&
-	                            p.getOrderSheet().getMatching().getCargoOwner() != null) {
-	                            driverName = p.getOrderSheet().getMatching().getCargoOwner().getCargoName();
-	                        }
-	                        dto.setDriverName(driverName);
-
-	                        // 배송 상태
-	                        deliveryRepository.findByPayment_PaymentNo(p.getPaymentNo())
-	                        .ifPresent(d -> {
-	                            dto.setDeliveryStatus(d.getStatus());
-	                            dto.setDeliveryCompletedAt(d.getCompletTime());
-	                            dto.setDeliveryNo(d.getDeliveryNo());
-	                        });
-	                    });
-	            }
-
-	            return dto;
-	        })
-	        .toList();
-	}
+    @Override
+    public List<EstimateDTO> findMyPaidEstimates(String memberId) {
+        return esmateRepository.findMyPaidEstimates(memberId).stream()
+                .filter(e -> !e.isTemp()).map(e -> {
+                    EstimateDTO dto = entityToDTO(e);
+                    dto.setAccepted(matchingRepository.findIsAcceptedByEstimateNo(e.getEno()).orElse(false));
+                    Long matchingNo = matchingRepository.findMatchingNoByEstimateNo(e.getEno()).orElse(null);
+                    dto.setMatchingNo(matchingNo);
+                    if (matchingNo != null) {
+                        paymentRepository.findByOrderSheet_Matching_MatchingNo(matchingNo).ifPresent(p -> {
+                            dto.setPaymentNo(p.getPaymentNo());
+                            if (p.getOrderSheet() != null && p.getOrderSheet().getMatching() != null && p.getOrderSheet().getMatching().getCargoOwner() != null) {
+                                dto.setDriverName(p.getOrderSheet().getMatching().getCargoOwner().getCargoName());
+                            }
+                            deliveryRepository.findByPayment_PaymentNo(p.getPaymentNo()).ifPresent(d -> {
+                                dto.setDeliveryStatus(d.getStatus());
+                                dto.setDeliveryCompletedAt(d.getCompletTime());
+                                dto.setDeliveryNo(d.getDeliveryNo());
+                            });
+                        });
+                    }
+                    return dto;
+                }).toList();
+    }
 }

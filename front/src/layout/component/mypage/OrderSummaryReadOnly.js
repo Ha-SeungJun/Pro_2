@@ -1,5 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Box, Paper, Grid, Typography, Divider, Button } from "@mui/material";
+import {
+  Box,
+  Paper,
+  Grid,
+  Typography,
+  Divider,
+  Button,
+} from "@mui/material";
 import PrintIcon from "@mui/icons-material/Print";
 import { useLocation } from "react-router-dom";
 import { postOrderPome } from "../../../api/orderAPI/orderApi";
@@ -22,6 +29,7 @@ const serverInitState = {
   distanceCost: "",
   specialOptionCost: "",
   totalCost: "",
+  distanceDiscount: 0, // [추가] 거리 할인 필드 초기값
   matchingNo: "",
 };
 
@@ -251,10 +259,21 @@ const OrderSummaryReadOnly = () => {
           <FieldRow label="거리요금">
             <Typography>{toCurrency(serverData.distanceCost)} 원</Typography>
           </FieldRow>
+
+          {/* 🚨 [추가 섹션] 거리 자동 할인 내역 - 기존 코드 보존하며 삽입 */}
+          {Number(serverData.distanceDiscount) > 0 && (
+            <FieldRow label="거리할인">
+              <Typography sx={{ color: "#d32f2f", fontWeight: 700 }}>
+                - {toCurrency(serverData.distanceDiscount)} 원
+              </Typography>
+            </FieldRow>
+          )}
+
           <FieldRow label="옵션요금">
             <Typography>{toCurrency(serverData.specialOptionCost)} 원</Typography>
           </FieldRow>
 
+          {/* 쿠폰 할인 내역 */}
           {serverData.finalPaymentAmount !== undefined &&
             serverData.totalCost > serverData.finalPaymentAmount && (
               <FieldRow label="쿠폰할인">
@@ -282,6 +301,7 @@ const OrderSummaryReadOnly = () => {
                   color: "#d32f2f",
                 }}
               >
+                {/* 💡 최종 결제 금액 출력 로직 */}
                 {toCurrency(serverData.finalPaymentAmount ?? serverData.totalCost)} 원
               </Box>
             </Grid>

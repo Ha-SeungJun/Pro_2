@@ -1,4 +1,3 @@
-// src/main/java/com/giproject/controller/CargoController.java
 package com.giproject.controller;
 
 import com.giproject.dto.cargo.CargoDTO;
@@ -49,6 +48,12 @@ public class CargoController {
             cargo.setCargoName(dto.getName());
             cargo.setCargoType(dto.getAddress());   // 네이밍 정리 전 호환 유지
             cargo.setCargoCapacity(dto.getWeight());
+            
+            //  프론트에서 넘어온 차량 번호 셋팅
+            cargo.setCargoNumber(dto.getCargoNumber()); 
+            //  신규 등록 시 무조건 '대기중' 상태로 고정
+            cargo.setStatus("PENDING"); 
+            
             cargo.setCargoOwner(owner);
 
             Cargo saved = cargoRepository.save(cargo);
@@ -71,6 +76,11 @@ public class CargoController {
             cargo.setCargoName(dto.getName());
             cargo.setCargoType(dto.getAddress());
             cargo.setCargoCapacity(dto.getWeight());
+            
+            // 🚨 [핵심 추가] 수정 시 차량 번호도 업데이트
+            cargo.setCargoNumber(dto.getCargoNumber());
+            // 🚨 [핵심 추가] 정보가 수정되면 관리자가 다시 승인하도록 '대기중' 상태로 변경
+            cargo.setStatus("PENDING"); 
 
             Cargo updated = cargoRepository.save(cargo);
             return ResponseEntity.ok(updated);

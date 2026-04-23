@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -13,7 +14,9 @@ import com.giproject.dto.review.DriverDetailDTO;
 import com.giproject.dto.review.DriverProfileCardDTO;
 import com.giproject.dto.review.MyReviewListDTO;
 import com.giproject.dto.review.MyReviewWithDriverIdDTO;
+import com.giproject.dto.review.ReviewCreateRequest;
 import com.giproject.dto.review.ReviewDTO;
+import com.giproject.dto.review.ReviewModifyRequest;
 import com.giproject.dto.review.ReviewSummaryDTO;
 import com.giproject.service.review.ReviewService;
 
@@ -28,13 +31,16 @@ public class ReviewController {
 
     private final ReviewService reviewService;
 
-    @PostMapping("/register")
-    public ResponseEntity<Long> register(@RequestBody ReviewDTO reviewDTO) {
-        log.info("리뷰 등록 : "+ reviewDTO);
+    @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Long> register(@ModelAttribute ReviewCreateRequest request) {
+        log.info("리뷰 등록 요청 deliveryNo={}, rating={}, imageCount={}",
+                request.getDeliveryNo(),
+                request.getRating(),
+                request.getImages() == null ? 0 : request.getImages().size());
 
-        Long reviewNo = reviewService.register(reviewDTO);
+        Long reviewNo = reviewService.register(request);
 
-        log.info("등록된 reviewNo : "+ reviewNo);
+        log.info("등록된 reviewNo : {}", reviewNo);
 
         return ResponseEntity.ok(reviewNo);
     }
@@ -42,6 +48,11 @@ public class ReviewController {
     @GetMapping("/{deliveryNo}")
     public ResponseEntity<ReviewDTO> getByDeliveryNo(@PathVariable Long deliveryNo) {
         return ResponseEntity.ok(reviewService.getByDeliveryNo(deliveryNo));
+    }
+    @GetMapping("/detail/{reviewNo}")
+    public ResponseEntity<ReviewDTO> getByReviewNo(
+            @PathVariable(name = "reviewNo") Long reviewNo) {
+        return ResponseEntity.ok(reviewService.getByReviewNo(reviewNo));
     }
     
     @GetMapping("/exists/{deliveryNo}")
@@ -66,15 +77,14 @@ public class ReviewController {
         reviewService.remove(reviewNo, loginId, isAdmin);
         return ResponseEntity.ok("리뷰가 삭제되었습니다.");
     }
-    @PutMapping("/{reviewNo}")
+    @PutMapping(value = "/{reviewNo}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<String> modify(
             @PathVariable(name = "reviewNo") Long reviewNo,
-            @RequestBody ReviewDTO reviewDTO,
-            Authentication authentication){
+            @ModelAttribute ReviewModifyRequest request,
+            Authentication authentication) {
 
         String loginId = authentication.getName();
-
-        reviewService.modify(reviewNo, reviewDTO, loginId);
+        reviewService.modify(reviewNo, request, loginId);
         return ResponseEntity.ok("리뷰가 수정되었습니다.");
     }
  

@@ -30,6 +30,7 @@ import {
   getDriverDetail,
   deleteReview,
   modifyReview,
+  getReviewByReviewNo,
 } from "../../../api/reviewApi/reviewApi";
 
 const initState = {
@@ -103,11 +104,15 @@ const MyReviewInform = () => {
   const [editReviewContent, setEditReviewContent] = useState("");
   const [openDetailModal, setOpenDetailModal] = useState(false);
   const [selectedDetailReview, setSelectedDetailReview] = useState(null);
+  const [selectedImage, setSelectedImage] = useState(null);
   const [openDriverDetailModal, setOpenDriverDetailModal] = useState(false);
   const [selectedDriverDetail, setSelectedDriverDetail] = useState(null);
   const [driverReviewSortType, setDriverReviewSortType] = useState("latest");
   const [driverReviewPage, setDriverReviewPage] = useState(1);
   const DRIVER_REVIEW_PAGE_SIZE = 3;
+  const [editReviewImages, setEditReviewImages] = useState([]);
+  const [deleteImageIds, setDeleteImageIds] = useState([]);
+  const [newEditImages, setNewEditImages] = useState([]);
 
   const handleOpenDriverDetailModal = async (item) => {
     if (!item?.driverId) {
@@ -127,17 +132,38 @@ const MyReviewInform = () => {
       alert("차주 상세 정보를 불러오지 못했습니다.");
     }
   };
-
   const handleCloseDriverDetailModal = () => {
     setOpenDriverDetailModal(false);
     setSelectedDriverDetail(null);
     setDriverReviewPage(1);
   };
 
-  const handleOpenDetailModal = (item) => {
-    console.log("상세 리뷰 데이터:", item)
-    setSelectedDetailReview(item);
-    setOpenDetailModal(true);
+  const handleOpenDetailModal = async (item) => {
+    console.log("상세 버튼 item 전체:", item);
+    console.log("item.reviewNo:", item?.reviewNo);
+    console.log("item.deliveryNo:", item?.deliveryNo);
+
+    if (!item?.deliveryNo) {
+      alert("deliveryNo 값이 없습니다.");
+      return;
+    }
+
+    try {
+      const detail = await getReviewByReviewNo(item.reviewNo);
+
+      console.log("상세 review detail:", detail);
+
+      setSelectedDetailReview({
+        ...item,
+        ...detail,
+      });
+      setOpenDetailModal(true);
+    } catch (error) {
+      console.error("리뷰 상세 조회 실패:", error);
+      console.error("응답 데이터:", error?.response?.data);
+      console.error("응답 상태:", error?.response?.status);
+      alert("리뷰 상세 정보를 불러오지 못했습니다.");
+    }
   };
 
   const handleCloseDetailModal = () => {
@@ -165,10 +191,16 @@ const MyReviewInform = () => {
     applyPagedData(list);
   };
 
-  const handleOpenEditModal = (item) => {
-    setSelectedReview(item);
-    setEditReviewScore(Number(item.rating) || 0);
-    setEditReviewContent(item.comment || "");
+  const handleOpenEditModal = async (item) => {
+    const detail = await getReviewByReviewNo(item.reviewNo);
+    const merged = { ...item, ...detail };
+
+    setSelectedReview(merged);
+    setEditReviewScore(Number(merged.rating) || 0);
+    setEditReviewContent(merged.comment || "");
+    setEditReviewImages(merged.images || []);
+    setDeleteImageIds([]);
+    setNewEditImages([]);
     setOpenEditModal(true);
   };
 
@@ -177,6 +209,9 @@ const MyReviewInform = () => {
     setSelectedReview(null);
     setEditReviewScore(0);
     setEditReviewContent("");
+    setEditReviewImages([]);
+    setDeleteImageIds([]);
+    setNewEditImages([]);
   };
 
   const handleDelete = async (reviewNo) => {
@@ -206,11 +241,19 @@ const MyReviewInform = () => {
     }
 
     try {
-      await modifyReview(selectedReview.reviewNo, {
-        deliveryNo: selectedReview.deliveryNo,
-        rating: editReviewScore,
-        comment: editReviewContent.trim(),
+      const formData = new FormData();
+      formData.append("rating", editReviewScore);
+      formData.append("comment", editReviewContent.trim());
+
+      deleteImageIds.forEach((id) => {
+        formData.append("deleteImageIds", id);
       });
+
+      newEditImages.forEach((file) => {
+        formData.append("newImages", file);
+      });
+
+      await modifyReview(selectedReview.reviewNo, formData);
 
       alert("수정 완료");
       handleCloseEditModal();
@@ -262,12 +305,13 @@ const MyReviewInform = () => {
   const tableColgroup = useMemo(
     () => (
       <colgroup>
-        <col style={{ width: "9%" }} />
+        <col style={{ width: "8%" }} />
+        <col style={{ width: "10%" }} />
+        <col style={{ width: "12%" }} />
+        <col style={{ width: "12%" }} />
+        <col style={{ width: "10%" }} />   {/* 썸네일 */}
+        <col style={{ width: "22%" }} />
         <col style={{ width: "11%" }} />
-        <col style={{ width: "14%" }} />
-        <col style={{ width: "14%" }} />
-        <col style={{ width: "24%" }} />
-        <col style={{ width: "13%" }} />
         <col style={{ width: "15%" }} />
       </colgroup>
     ),
@@ -278,7 +322,7 @@ const MyReviewInform = () => {
     if (loading) {
       return (
         <TableRow>
-          <TableCell colSpan={7} align="center">
+          <TableCell colSpan={8} align="center">
             불러오는 중...
           </TableCell>
         </TableRow>
@@ -288,7 +332,7 @@ const MyReviewInform = () => {
     if (!serverData.dtoList || serverData.dtoList.length === 0) {
       return (
         <TableRow>
-          <TableCell colSpan={7} align="center">
+          <TableCell colSpan={8} align="center">
             작성한 리뷰가 없습니다.
           </TableCell>
         </TableRow>
@@ -318,6 +362,23 @@ const MyReviewInform = () => {
 
         <TableCell align="center">
           <Rating value={Number(item.rating) || 0} precision={0.5} readOnly />
+        </TableCell>
+        <TableCell align="center">
+          {item.images?.length > 0 ? (
+            <img
+              src={`http://localhost:8080/${item.images[0].imagePath}`}
+              alt="thumbnail"
+              style={{
+                width: 50,
+                height: 50,
+                objectFit: "cover",
+                borderRadius: 6,
+                border: "1px solid #ddd",
+              }}
+            />
+          ) : (
+            "-"
+          )}
         </TableCell>
         <TableCell align="left">
           <Box
@@ -464,6 +525,7 @@ const MyReviewInform = () => {
                   <TableCell align="center">배송번호</TableCell>
                   <TableCell align="center">운전기사</TableCell>
                   <TableCell align="center">별점</TableCell>
+                  <TableCell align="center">사진</TableCell>
                   <TableCell align="center">리뷰 내용</TableCell>
                   <TableCell align="center">작성일</TableCell>
                   <TableCell align="center">관리</TableCell>
@@ -522,6 +584,65 @@ const MyReviewInform = () => {
             onChange={(e) => setEditReviewContent(e.target.value)}
             sx={{ mt: 2 }}
           />
+          <Box sx={{ mt: 3 }}>
+            <Typography variant="subtitle2" sx={{ mb: 1 }}>
+              기존 이미지
+            </Typography>
+
+            <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+              {editReviewImages.map((img) => {
+                const imageId = img.reviewImageNo;
+                const checked = deleteImageIds.includes(imageId);
+
+                return (
+                  <Box key={imageId} sx={{ textAlign: "center" }}>
+                    <img
+                      src={`http://localhost:8080/${img.imagePath}`}
+                      alt={`review-${imageId}`}
+                      style={{
+                        width: 100,
+                        height: 100,
+                        objectFit: "cover",
+                        borderRadius: 8,
+                        border: checked ? "2px solid red" : "1px solid #ddd",
+                        opacity: checked ? 0.5 : 1,
+                      }}
+                    />
+
+                    <Button
+                      size="small"
+                      color={checked ? "success" : "error"}
+                      onClick={() => {
+                        setDeleteImageIds((prev) =>
+                          checked
+                            ? prev.filter((id) => id !== imageId)
+                            : [...prev, imageId]
+                        );
+                      }}
+                    >
+                      {checked ? "복원" : "삭제"}
+                    </Button>
+                  </Box>
+                );
+              })}
+            </Box>
+          </Box>
+
+          <Box sx={{ mt: 3 }}>
+            <Typography variant="subtitle2" sx={{ mb: 1 }}>
+              새 이미지 추가
+            </Typography>
+
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={(e) => {
+                const files = Array.from(e.target.files || []);
+                setNewEditImages(files);
+              }}
+            />
+          </Box>
         </DialogContent>
 
         <DialogActions>
@@ -603,8 +724,34 @@ const MyReviewInform = () => {
             InputProps={{ readOnly: true }}
             sx={{ mt: 2 }}
           />
-        </DialogContent>
+          {selectedDetailReview?.images?.length > 0 && (
+            <Box sx={{ mt: 3 }}>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                첨부 사진
+              </Typography>
 
+              <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                {selectedDetailReview.images.map((img) => (
+                  <img
+                    key={img.reviewImageNo}
+                    src={`http://localhost:8080/${img.imagePath}`}
+                    alt={`review-${img.reviewImageNo}`}
+                    onClick={() => setSelectedImage(img.imagePath)}
+                    style={{
+                      width: 120,
+                      height: 120,
+                      objectFit: "cover",
+                      borderRadius: 8,
+                      border: "1px solid #ddd",
+                      cursor: "pointer",
+                    }}
+                  />
+                ))}
+              </Box>
+            </Box>
+
+          )}
+        </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDetailModal}>닫기</Button>
         </DialogActions>
@@ -752,7 +899,30 @@ const MyReviewInform = () => {
           <Button onClick={handleCloseDriverDetailModal}>닫기</Button>
         </DialogActions>
       </Dialog>
-
+      <Dialog
+        open={!!selectedImage}
+        onClose={() => setSelectedImage(null)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>이미지 보기</DialogTitle>
+        <DialogContent sx={{ textAlign: "center" }}>
+          {selectedImage && (
+            <img
+              src={`http://localhost:8080/${selectedImage}`}
+              alt="preview"
+              style={{
+                maxWidth: "100%",
+                maxHeight: "70vh",
+                objectFit: "contain",
+              }}
+            />
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSelectedImage(null)}>닫기</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
 
   );

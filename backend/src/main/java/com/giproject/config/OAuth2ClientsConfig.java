@@ -21,8 +21,8 @@ public class OAuth2ClientsConfig {
                 .build();
         
         ClientRegistration naver = ClientRegistration.withRegistrationId("naver")
-                .clientId("neoUA3EdRmckzWTiDCOh")
-                .clientSecret("9TAyhJRbgv")
+                .clientId("ownQqvKZV5WZ9ZNbEKIS")
+                .clientSecret("bph6p9Eo_4")
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .redirectUri("{baseUrl}/login/oauth2/code/naver")

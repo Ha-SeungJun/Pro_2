@@ -10,14 +10,18 @@ import com.giproject.dto.review.DriverDetailDTO;
 import com.giproject.dto.review.DriverProfileCardDTO;
 import com.giproject.dto.review.MyReviewListDTO;
 import com.giproject.dto.review.MyReviewWithDriverIdDTO;
+import com.giproject.dto.review.ReviewCreateRequest;
 import com.giproject.dto.review.ReviewDTO;
+import com.giproject.dto.review.ReviewModifyRequest;
 import com.giproject.dto.review.ReviewSummaryDTO;
 
 
 public interface ReviewService {
-	//등록(create)
-	Long register(ReviewDTO reviewDTO);
+	//등록(create) + 다중 사진 첨부
+	Long register(ReviewCreateRequest request);
 	
+	//리뷰 상세+사진
+	ReviewDTO getByReviewNo(Long reviewNo);
 	
 	ReviewDTO getByDeliveryNo(Long deliveryNo);
 	
@@ -28,8 +32,9 @@ public interface ReviewService {
 	void remove(Long reviewNo, String loginId, boolean isAdmin);
 	
 	//수정(update)
-	void modify(Long reviewNo, ReviewDTO reviewDTO, String loginId);
-	
+	//void modify(Long reviewNo, ReviewDTO reviewDTO, String loginId);
+	//수정(update) + 이미지
+	void modify(Long reviewNo, ReviewModifyRequest request, String loginId);
 	//조회 api
 	ReviewSummaryDTO getSummaryByCargoId(String cargoId);
 	

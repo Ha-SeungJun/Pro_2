@@ -76,23 +76,46 @@ public class DataLoader implements CommandLineRunner {
     }
 
     private void createFeeData() {
+        // [FeesBasic] 톤수 기준 표준 요금 체계
         if (feesBasicRepository.count() == 0) {
-            Object[][] data = {
-                {"다마스", "0.5톤", 5L, "/uploads/cargo/damas.jpg"},
-                {"라보", "1톤", 10L, "/uploads/cargo/labo.jpg"},
-                {"1톤카고", "2톤", 20L, "/uploads/cargo/1ton_cargo.jpg"},
+            Object[][] basicData = {
+                // {명칭, 중량구간, km당단가, 기본료}
+                {"0.5톤 차량", "0.5톤", 800L, 25000L},
+                {"1톤 차량", "1톤", 1000L, 45000L},
+                {"2톤 차량", "2톤", 1400L, 80000L},
+                {"3톤 차량", "3톤", 1800L, 110000L},
+                {"4톤 차량", "4톤", 2200L, 150000L},
+                {"5톤 차량", "5톤", 2800L, 200000L},
+                {"5톤 초과(대형)", "5톤 이상", 3500L, 300000L}
             };
-            for (Object[] row : data) {
-                feesBasicRepository.save(FeesBasic.builder().cargoName((String) row[0]).weight((String) row[1]).ratePerKm(BigDecimal.valueOf((Long) row[2])).initialCharge(BigDecimal.ZERO).cargoImage((String) row[3]).updatedAt(LocalDateTime.now()).build());
+            
+            for (Object[] row : basicData) {
+                feesBasicRepository.save(FeesBasic.builder()
+                    .cargoName((String) row[0])
+                    .weight((String) row[1])
+                    .ratePerKm(BigDecimal.valueOf((Long) row[2]))
+                    .initialCharge(BigDecimal.valueOf((Long) row[3])) // 설정한 기본료 주입
+                    .updatedAt(LocalDateTime.now())
+                    .build());
             }
         }
         if (feesExtraRepository.count() == 0) {
-            String[] extras = {"야간 할증", "휴일 할증", "긴급 배송", "상하차료", "대기료"};
-            for (String title : extras) {
-                feesExtraRepository.save(FeesExtra.builder().extraChargeTitle(title).extraCharge(BigDecimal.ZERO).updatedAt(LocalDateTime.now()).build());
-            }
+            // 1. 기본 상하차 도움
+            feesExtraRepository.save(FeesExtra.builder()
+                .extraChargeTitle("상하차 도움")
+                .extraCharge(BigDecimal.valueOf(50000))
+                .updatedAt(LocalDateTime.now())
+                .build());
+
+            // 2. 상하차 + 인부 1명 추가
+            feesExtraRepository.save(FeesExtra.builder()
+                .extraChargeTitle("상하차 + 인부 1명")
+                .extraCharge(BigDecimal.valueOf(85000))
+                .updatedAt(LocalDateTime.now())
+                .build());
         }
     }
+   
 
     private void createQAPostDummyData() {
         QACategory[] categories = QACategory.values();

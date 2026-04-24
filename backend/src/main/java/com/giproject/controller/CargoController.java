@@ -6,13 +6,16 @@ import com.giproject.entity.cargo.CargoOwner;
 import com.giproject.repository.cargo.CargoOwnerRepository;
 import com.giproject.repository.cargo.CargoRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.*;
 import java.util.*;
 
+@Slf4j
 @CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 @RestController
 @RequestMapping("/g2i4/cargo")
@@ -22,12 +25,12 @@ public class CargoController {
     private final CargoRepository cargoRepository;
     private final CargoOwnerRepository cargoOwnerRepository;
 
-    // userinfo와 동일한 방식으로 '절대경로' 고정
+    // 절대경로 설정
     private static final Path UPLOAD_ROOT = Paths.get("../uploads").toAbsolutePath().normalize();
     private static final Path CARGO_DIR   = UPLOAD_ROOT.resolve("cargo");
 
     /**
-     * 차량 목록 조회 (소유자 ID 기준)
+     * 차량 목록 조회
      */
     @GetMapping("/list/{cargoId}")
     public ResponseEntity<List<Cargo>> getCargoList(@PathVariable("cargoId") String cargoId) {
@@ -36,30 +39,53 @@ public class CargoController {
     }
 
     /**
-     * 차량 등록
+     * 차량 등록 (통합 버전)
+     * 🚨 중요: 프론트엔드에서 'dto'와 'image'라는 키로 FormData를 보내야 합니다.
      */
     @PostMapping("/add/{cargoId}")
-    public ResponseEntity<?> registerCargo(@PathVariable("cargoId") String cargoId, @RequestBody CargoDTO dto) {
+    @Transactional
+    public ResponseEntity<?> registerCargo(
+            @PathVariable("cargoId") String cargoId, 
+            @RequestPart("dto") CargoDTO dto,              
+            @RequestPart("image") MultipartFile file       
+    ) {
         try {
+            // 1. 필수 입력 검증 (전산직 무결성 원칙)
+            if (file == null || file.isEmpty()) return ResponseEntity.badRequest().body("차량 사진 등록은 필수입니다.");
+            if (dto.getName() == null || dto.getName().isBlank() ||
+                dto.getAddress() == null || dto.getAddress().isBlank() ||
+                dto.getWeight() == null || dto.getWeight().isBlank() ||
+                dto.getCargoNumber() == null || dto.getCargoNumber().isBlank()) {
+                return ResponseEntity.badRequest().body("모든 차량 정보를 입력해야 합니다.");
+            }
+
             CargoOwner owner = cargoOwnerRepository.findById(cargoId)
                     .orElseThrow(() -> new RuntimeException("소유자 없음"));
 
+            // 2. 이미지 파일 저장 처리
+            Files.createDirectories(CARGO_DIR);
+            String original = file.getOriginalFilename();
+            String ext = (original != null && original.lastIndexOf('.') != -1)
+                    ? original.substring(original.lastIndexOf('.')).toLowerCase() : "";
+            String savedFilename = UUID.randomUUID() + ext;
+            Path savePath = CARGO_DIR.resolve(savedFilename).normalize();
+            file.transferTo(savePath.toFile());
+            String webPath = "/g2i4/uploads/cargo/" + savedFilename;
+
+            // 3. 엔티티 생성 및 필드 셋팅
             Cargo cargo = new Cargo();
             cargo.setCargoName(dto.getName());
-            cargo.setCargoType(dto.getAddress());   // 네이밍 정리 전 호환 유지
+            cargo.setCargoType(dto.getAddress());   
             cargo.setCargoCapacity(dto.getWeight());
-            
-            //  프론트에서 넘어온 차량 번호 셋팅
             cargo.setCargoNumber(dto.getCargoNumber()); 
-            //  신규 등록 시 무조건 '대기중' 상태로 고정
-            cargo.setStatus("PENDING"); 
-            
+            cargo.setCargoImage(webPath);           // 이미지 경로 강제 주입
+            cargo.setStatus("PENDING");             // 무조건 승인대기 상태
             cargo.setCargoOwner(owner);
 
             Cargo saved = cargoRepository.save(cargo);
             return ResponseEntity.ok(saved);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("등록 에러: ", e);
             return ResponseEntity.status(400).body("등록 실패: " + e.getMessage());
         }
     }
@@ -68,6 +94,7 @@ public class CargoController {
      * 차량 수정
      */
     @PutMapping("/update/{cargoNo}")
+    @Transactional
     public ResponseEntity<?> updateCargo(@PathVariable("cargoNo") Integer cargoNo, @RequestBody CargoDTO dto) {
         try {
             Cargo cargo = cargoRepository.findById(cargoNo)
@@ -76,16 +103,15 @@ public class CargoController {
             cargo.setCargoName(dto.getName());
             cargo.setCargoType(dto.getAddress());
             cargo.setCargoCapacity(dto.getWeight());
-            
-            // 🚨 [핵심 추가] 수정 시 차량 번호도 업데이트
             cargo.setCargoNumber(dto.getCargoNumber());
-            // 🚨 [핵심 추가] 정보가 수정되면 관리자가 다시 승인하도록 '대기중' 상태로 변경
+            
+            // 정보 수정 시 다시 검증받도록 대기중으로 변경
             cargo.setStatus("PENDING"); 
 
             Cargo updated = cargoRepository.save(cargo);
             return ResponseEntity.ok(updated);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("차량 수정 실패: " + e.getMessage());
+            return ResponseEntity.badRequest().body("수정 실패: " + e.getMessage());
         }
     }
 
@@ -95,7 +121,6 @@ public class CargoController {
     @DeleteMapping("/delete/{cargoNo}")
     public ResponseEntity<?> deleteCargo(@PathVariable("cargoNo") Integer cargoNo) {
         try {
-            // 물리 파일까지 지우고 싶으면 여기서 cargoImage 읽어서 파일 삭제 로직 추가 가능
             cargoRepository.deleteById(cargoNo);
             return ResponseEntity.ok("삭제 성공");
         } catch (Exception e) {
@@ -104,7 +129,7 @@ public class CargoController {
     }
 
     /**
-     * 이미지 업로드
+     * 이미지 단독 업로드 및 교체 (기존 호환성 및 개별 수정을 위해 유지)
      */
     @PostMapping("/upload/{cargoNo}")
     public ResponseEntity<?> uploadImage(
@@ -115,47 +140,31 @@ public class CargoController {
                     .orElseThrow(() -> new RuntimeException("차량 없음: " + cargoNo));
 
             if (file.isEmpty()) return ResponseEntity.badRequest().body("파일이 없습니다.");
-            String ct = Optional.ofNullable(file.getContentType()).orElse("").toLowerCase();
-            if (!ct.startsWith("image/")) {
-                return ResponseEntity.badRequest().body("이미지 파일만 업로드 가능합니다.");
-            }
-
+            
             Files.createDirectories(CARGO_DIR);
 
-            // 기존 이미지 삭제
-            String prevWeb = cargo.getCargoImage(); // 예: /g2i4/uploads/cargo/xxx.jpg
-            if (prevWeb != null && !prevWeb.isBlank()) {
-                String prevName = prevWeb.replace('\\','/');
-                int i = prevName.lastIndexOf('/');
-                if (i != -1) {
-                    prevName = prevName.substring(i + 1);
-                    Files.deleteIfExists(CARGO_DIR.resolve(prevName));
-                }
+            // 기존 파일 삭제
+            if (cargo.getCargoImage() != null && !cargo.getCargoImage().isBlank()) {
+                String prevName = cargo.getCargoImage().substring(cargo.getCargoImage().lastIndexOf("/") + 1);
+                Files.deleteIfExists(CARGO_DIR.resolve(prevName));
             }
 
-            // 새 파일 저장
             String original = file.getOriginalFilename();
             String ext = (original != null && original.lastIndexOf('.') != -1)
-                    ? original.substring(original.lastIndexOf('.')).toLowerCase()
-                    : "";
+                    ? original.substring(original.lastIndexOf('.')).toLowerCase() : "";
             String savedFilename = UUID.randomUUID() + ext;
-
             Path savePath = CARGO_DIR.resolve(savedFilename).normalize();
             file.transferTo(savePath.toFile());
 
-            // DB엔 정적매핑과 일치하는 "웹 경로" 저장
             String webPath = "/g2i4/uploads/cargo/" + savedFilename;
             cargo.setCargoImage(webPath);
             cargoRepository.save(cargo);
 
-            // 프론트에서 곧바로 미리보기 가능하도록 webPath 반환
             Map<String, Object> res = new HashMap<>();
             res.put("webPath", webPath);
-            res.put("filename", savedFilename);
             return ResponseEntity.ok(res);
         } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500).body("이미지 업로드 실패: " + e.getMessage());
+            return ResponseEntity.status(500).body("업로드 실패: " + e.getMessage());
         }
     }
 }

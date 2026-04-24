@@ -21,14 +21,13 @@ const FeesBasic = () => {
           <CircularProgress />
         </Box>
       ) : (
-        /* 1. [수정] 자식에게 setLoading 함수를 props로 전달합니다 */
+        /* 자식에게 setLoading 함수를 props로 전달 */
         <FeesBasicTable setLoading={setLoading} />
       )}
     </Box>
   );
 };
 
-/* 2. [수정] 자식 컴포넌트 매개변수에서 { setLoading }을 구조 분해 할당으로 받습니다 */
 const FeesBasicTable = ({ setLoading }) => {
   const [columns, setColumns] = useState(["거리별 요금", "기본 요금"]);
   const [rows, setRows] = useState([]);
@@ -41,6 +40,10 @@ const FeesBasicTable = ({ setLoading }) => {
     try {
       const res = await fetchFeesBasicFull();
       const data = res?.data || {};
+      
+      // 🚨 [추가] 새로운 데이터를 받기 전 기존 grid 메모리를 비워서 잔상 데이터 방지
+      setGrid([]); 
+      
       setRows(Array.isArray(data.rows) ? data.rows : []);
       setColumns(Array.isArray(data.columns) ? data.columns : ["거리별 요금", "기본 요금"]);
       setGrid(Array.isArray(data.grid) ? data.grid : []);
@@ -69,16 +72,15 @@ const FeesBasicTable = ({ setLoading }) => {
 
     try {
       for (let i = 0; i < rows.length; i++) {
-        // 7급 전산직 실무: 백엔드 FeesBasicDTO 구조와 완벽 일치시킴
+        // 백엔드 FeesBasicDTO 구조와 완벽 일치
         const payload = {
-          weight: String(rows[i] || "").trim(),    // DTO: String weight
-          ratePerKm: Number(grid[i]?.[0]) || 0,    // DTO: BigDecimal ratePerKm (K 대문자!)
-          initialCharge: Number(grid[i]?.[1]) || 0, // DTO: BigDecimal initialCharge (C 대문자!)
-          cargoName: "미지정"                       // DTO: String cargoName
+          weight: String(rows[i] || "").trim(),
+          ratePerKm: Number(grid[i]?.[0]) || 0,
+          initialCharge: Number(grid[i]?.[1]) || 0,
+          cargoName: "미지정"
         };
 
         console.log(`[전송 데이터 확인]:`, payload);
-
         await saveFeeBasicCell(payload);
       }
 
@@ -86,7 +88,7 @@ const FeesBasicTable = ({ setLoading }) => {
       alert("전체 요금표 저장 성공!");
     } catch (e) {
       console.error(" 400 에러 상세 내용:", e.response?.data);
-      alert(`저장 실패 (400): 서버가 데이터를 거절했습니다.\n콘솔(F12)의 'Network' 탭 응답을 확인해주세요.`);
+      alert(`저장 실패 (400): 서버가 데이터를 거절했습니다.`);
     } finally {
       setLoading(false);
     }
@@ -106,10 +108,23 @@ const FeesBasicTable = ({ setLoading }) => {
     const key = (name || "").trim();
     if (!key) return;
     if (!window.confirm(`'${key}' 행을 삭제하시겠습니까?`)) return;
+    
+    // 🚨 [추가] 삭제 작업 시작 시 로딩 표시
+    setLoading(true);
+
     try {
       await deleteBasicRow(key);
+      
+      // 🚨 [추가] 삭제 후 잔상이 남지 않도록 grid 초기화 후 리로드
+      setGrid([]); 
       await fetchFull();
-    } catch (e) { alert("행 삭제 실패"); }
+      
+    } catch (e) { 
+      alert("행 삭제 실패"); 
+    } finally {
+      // 🚨 [추가] 작업 종료 후 로딩 해제
+      setLoading(false);
+    }
   };
 
   return (

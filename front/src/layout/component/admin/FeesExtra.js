@@ -40,6 +40,10 @@ const FeesExtraTable = ({ setLoading }) => {
     try {
       const res = await fetchFeesExtraFull();
       const data = res?.data || {};
+      
+      // 🚨 [추가] 데이터 로드 전 기존 grid 메모리를 비워서 잔상 데이터 방지
+      setGrid([]); 
+      
       setRows(Array.isArray(data.rows) ? data.rows : []);
       setColumns(Array.isArray(data.columns) ? data.columns : ["추가요금"]);
       setGrid(Array.isArray(data.grid) ? data.grid : []);
@@ -68,10 +72,9 @@ const FeesExtraTable = ({ setLoading }) => {
 
     try {
       for (let i = 0; i < rows.length; i++) {
-        // [7급 전산직 실무 정석] DTO 필드명과 100% 동기화
         const payload = {
-          extraChargeTitle: String(rows[i] || "").trim(), // FeesExtraDTO의 extraChargeTitle
-          extraCharge: Number(grid[i]?.[0]) || 0,        // FeesExtraDTO의 extraCharge
+          extraChargeTitle: String(rows[i] || "").trim(),
+          extraCharge: Number(grid[i]?.[0]) || 0,
         };
 
         console.log(`[전송 데이터 확인]:`, payload);
@@ -102,10 +105,23 @@ const FeesExtraTable = ({ setLoading }) => {
     const key = (name || "").trim();
     if (!key) return;
     if (!window.confirm(`'${key}' 행을 삭제하시겠습니까?`)) return;
+    
+    // 🚨 [추가] 삭제 시작 시 로딩 처리
+    setLoading(true); 
+
     try {
       await deleteExtraRow(key);
+      
+      // 🚨 [추가] 삭제 후 메모리 상태 초기화 후 다시 서버 데이터 로드
+      setGrid([]); 
       await fetchFull();
-    } catch (e) { alert("행 삭제 실패"); }
+      
+    } catch (e) { 
+      alert("행 삭제 실패"); 
+    } finally {
+      // 🚨 [추가] 작업 완료 후 로딩 해제
+      setLoading(false); 
+    }
   };
 
   return (

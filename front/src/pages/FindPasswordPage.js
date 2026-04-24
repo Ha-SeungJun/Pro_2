@@ -3,11 +3,11 @@ import FindPasswordComponent from '../layout/component/users/FindPasswordCompone
 
 const FindPasswordPage = () => {
     return (
-        <div className="fixed top-0 left-0 z-[1055] flex flex-col h-full w-full">
-            <div className="flex flex-wrap w-full h-full justify-center items-center border-2">
-                <FindPasswordComponent />
-            </div>
-        </div>
+        // 수정: fixed/z-index 제거
+        // 수정: Header/Footer와 겹치지 않도록 일반 문서 흐름으로 배치
+        <main className="w-full min-h-[calc(100vh-420px)] flex justify-center items-start bg-white py-16 px-4">
+            <FindPasswordComponent />
+        </main>
     );
 };
 

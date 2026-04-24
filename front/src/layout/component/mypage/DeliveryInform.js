@@ -657,8 +657,12 @@ const DeliveryInfoPage = () => {
   if (!userType) return <Box sx={{ p: 6 }}>사용자 타입 확인 중…</Box>;
 
   return (
-    <Box sx={{ bgcolor: '#f7f9fc', minHeight: '100vh', py: 6 }}>
-      <Container maxWidth="xl" disableGutters sx={{ px: { xs: 1, sm: 2 } }}>
+    <Box sx={{ bgcolor: '#f7f9fc', minHeight: '100vh', py: 6, pb: { xs: '80px', md: 6 },overflow: 'hidden', }}>
+      <Container maxWidth="xl" disableGutters     sx={{
+      px: { xs: 1, sm: 2 },
+      maxWidth: '100vw',
+      boxSizing: 'border-box',
+    }}>
         <Typography variant="h5" fontWeight="bold" gutterBottom textAlign="center">
           {isMember ? '배송 정보 관리' : '차주 배송 관리'}
         </Typography>
@@ -668,8 +672,8 @@ const DeliveryInfoPage = () => {
           <Typography variant="h6" fontWeight="bold" gutterBottom>
             {isMember ? '견적 의뢰 진행 상황 (미결제)' : '미결제 배송 요청'}
           </Typography>
-          <TableContainer component={Paper} elevation={1} sx={{ height: 470, position: 'relative', pb: 0 }}>
-            <Table sx={{ '& .MuiTableCell-root': { height: 60, py: 0 } }}>
+          <TableContainer component={Paper} elevation={1} sx={{ height: 470, position: 'relative', pb: 0, overflowX: 'auto' }}>
+            <Table sx={{ '& .MuiTableCell-root': { height: 60, py: 0 }, minWidth: 650 }}>
               {tableColgroup}
               <TableHead>
                 <TableRow>
@@ -697,8 +701,8 @@ const DeliveryInfoPage = () => {
           <Typography variant="h6" fontWeight="bold" gutterBottom>
             {isMember ? '견적 의뢰 진행 상황 (결제됨)' : '진행 중 배송 (결제됨)'}
           </Typography>
-          <TableContainer component={Paper} elevation={1} sx={{ height: 470, position: 'relative', pb: 0 }}>
-            <Table sx={{ '& .MuiTableCell-root': { height: 60, py: 0 } }}>
+          <TableContainer component={Paper} elevation={1} sx={{ height: 470, position: 'relative', pb: 0, overflowX: 'auto' }}>
+            <Table sx={{ '& .MuiTableCell-root': { height: 60, py: 0 }, minWidth: 750 }}>
               {paidColgroup}
               <TableHead>
                 <TableRow>
@@ -726,8 +730,8 @@ const DeliveryInfoPage = () => {
           <Typography variant="h6" fontWeight="bold" gutterBottom>
             {isMember ? '배송 완료 된 화물' : '완료된 배송'}
           </Typography>
-          <TableContainer component={Paper} elevation={1}>
-            <Table sx={{ '& .MuiTableCell-root': { height: 60, py: 0 } }}>
+          <TableContainer component={Paper} elevation={1} sx={{ overflowX: 'auto' }}>
+            <Table sx={{ '& .MuiTableCell-root': { height: 60, py: 0 }, minWidth: 750 }}>
               {completedColgroup}
               <TableHead>
                 <TableRow>

@@ -11,7 +11,7 @@ import jakarta.transaction.Transactional;
 @Transactional
 public interface EstimateService {
 
-    //  Entity -> DTO 변환 시 할인 필드 추가
+    // 🔄 Entity -> DTO 변환
     default EstimateDTO entityToDTO(Estimate estimate) {
         return EstimateDTO.builder()
                 .eno(estimate.getEno())
@@ -24,12 +24,9 @@ public interface EstimateService {
                 .baseCost(estimate.getBaseCost())
                 .specialOption(estimate.getSpecialOption())
                 .distanceCost(estimate.getDistanceCost())
-                
-                // 🚨 [추가] 할인 관련 데이터 매핑
-                .distanceDiscount(estimate.getDistanceDiscount())
+                .distanceDiscount(estimate.getDistanceDiscount()) // 🚨 할인 데이터 유지
                 .couponNo(estimate.getCouponNo())
                 .couponDiscount(estimate.getCouponDiscount())
-                
                 .totalCost(estimate.getTotalCost())
                 .isTemp(estimate.isTemp())
                 .matched(estimate.isMatched())
@@ -42,7 +39,7 @@ public interface EstimateService {
                 .build();
     }
     
-    // ✅ DTO -> Entity 변환 시 할인 필드 추가
+    // 🔄 DTO -> Entity 변환
     default Estimate DTOToEntity(EstimateDTO dto, Member member) {
         return Estimate.builder()
                 .startAddress(dto.getStartAddress())
@@ -54,12 +51,9 @@ public interface EstimateService {
                 .baseCost(dto.getBaseCost())
                 .distanceCost(dto.getDistanceCost())
                 .specialOption(dto.getSpecialOption())
-                
-                // 🚨 [추가] DB에 할인 정보 저장
-                .distanceDiscount(dto.getDistanceDiscount())
+                .distanceDiscount(dto.getDistanceDiscount()) // 🚨 DB 저장용 할인 데이터
                 .couponNo(dto.getCouponNo())
                 .couponDiscount(dto.getCouponDiscount())
-                
                 .totalCost(dto.getTotalCost())
                 .isTemp(dto.isTemp())
                 .matched(dto.isMatched())
@@ -72,15 +66,20 @@ public interface EstimateService {
                 .build();
     }
 
-    //  서비스단에서 공통으로 사용할 거리별 할인율 계산 로직
-    default int calculateDistanceDiscount(double distance, int baseCost) {
+    /**
+     * 💰 거리별 할인율 계산 로직 (100km/200km/300km/400km 단위)
+     * 100(5%), 200(10%), 300(15%), 400(20%)
+     */
+    default int calculateDistanceDiscount(double distance, int currentTotal) {
         double rate = 0;
-        if (distance >= 100) rate = 0.10;      // 100km+ : 10%
-        else if (distance >= 50) rate = 0.07;  // 50km+  : 7%
-        else if (distance >= 20) rate = 0.03;  // 20km+  : 3%
         
-        // 10원 단위 절사
-        return (int) (Math.floor((baseCost * rate) / 10) * 10);
+        if (distance >= 400) rate = 0.20;      // 400km+ : 20%
+        else if (distance >= 300) rate = 0.15; // 300km+ : 15%
+        else if (distance >= 200) rate = 0.10; // 200km+ : 10%
+        else if (distance >= 100) rate = 0.05; // 100km+ : 5%
+        
+        // 🚨 10원 단위 절사 (컴퓨터 공학적 정밀도 유지)
+        return (int) (Math.floor((currentTotal * rate) / 10) * 10);
     }
     
     Long sendEstimate(EstimateDTO dto);

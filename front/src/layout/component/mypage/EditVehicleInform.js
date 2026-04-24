@@ -8,15 +8,11 @@ import CloseIcon from '@mui/icons-material/Close';
 import { useParams, useNavigate } from 'react-router-dom';
 
 // ===== 공통 API 베이스/인스턴스 =====
-const API_BASE =
-  process.env.REACT_APP_API_BASE ||
-  'http://localhost:8080';
+const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:8080';
 
 const api = axios.create({ baseURL: API_BASE });
 api.interceptors.request.use((config) => {
-  const token =
-    sessionStorage.getItem('accessToken') ||
-    sessionStorage.getItem('ACCESS_TOKEN');
+  const token = sessionStorage.getItem('accessToken') || sessionStorage.getItem('ACCESS_TOKEN');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
@@ -39,6 +35,7 @@ const EditVehicleInform = () => {
   const [open, setOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState(null);
   const [weightOptions, setWeightOptions] = useState(['0.5톤','1톤','2톤','3톤','4톤','5톤이상']); 
+  const [loading, setLoading] = useState(false); 
   
   const [formData, setFormData] = useState({
     no: null,
@@ -56,15 +53,12 @@ const EditVehicleInform = () => {
     }
   }, [cargoId, navigate]);
 
-  // 🚨 [핵심 수정] 요금표(feesData)로 빈 카드를 만들던 로직을 지우고, 내가 등록한 차량(cargoList)만 보여줍니다.
   const fetchVehicles = async () => {
     if (!cargoId) return;
     try {
-      // 1. 차주가 실제로 등록한 차량 목록만 가져옴
       const cargoRes = await api.get(`/g2i4/cargo/list/${cargoId}`);
       const cargoList = cargoRes.data || [];
 
-      // 2. 화면에 보여줄 데이터로 맵핑
       const myVehicles = cargoList.map(c => ({
         no: c.cargoNo,
         name: c.cargoName || '',
@@ -129,33 +123,63 @@ const EditVehicleInform = () => {
   const handleSave = async () => {
     const { no, name, weight, cargoNumber, image } = formData;
     if (!cargoId) { alert('접근 권한이 없습니다.'); return; }
-    if (!name || !weight || !cargoNumber) { alert('차량 이름, 적재 무게, 차량 번호를 모두 입력해주세요.'); return; }
+    
+    // 신규 등록 시 이미지 필수 체크
+    if (no === null && !image) {
+      alert('차량 등록을 위해 차량 사진 업로드는 필수입니다.');
+      return;
+    }
+    
+    if (!name || !weight || !cargoNumber) {
+      alert('차량 이름, 적재 무게, 차량 번호를 모두 입력해주세요.');
+      return;
+    }
 
     try {
-      let cargoNo = no;
-      const payload = { name, weight, cargoNumber };
+      setLoading(true);
 
       if (no != null) {
-        const res = await api.put(`/g2i4/cargo/update/${no}`, payload);
-        cargoNo = res.data.cargoNo;
+        // [수정] 기존 데이터 수정
+        const payload = { name, address: weight, weight, cargoNumber };
+        await api.put(`/g2i4/cargo/update/${no}`, payload);
+        
+        if (image) {
+          const fd = new FormData();
+          fd.append('image', image);
+          await api.post(`/g2i4/cargo/upload/${no}`, fd, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+          });
+        }
       } else {
-        const res = await api.post(`/g2i4/cargo/add/${cargoId}`, payload);
-        cargoNo = res.data.cargoNo;
+        // [신규 등록] 통합 전송 (Multipart/Form-Data)
+        const formDataPayload = new FormData();
+        
+        const dto = {
+          name,
+          address: weight,
+          weight,
+          cargoNumber
+        };
+        
+        // 🚨 [에러 해결 핵심] Blob 생성 시 type을 명시적으로 'application/json'으로 지정
+        const jsonBlob = new Blob([JSON.stringify(dto)], { type: "application/json" });
+        formDataPayload.append('dto', jsonBlob);
+        
+        // 이미지 파일 추가
+        formDataPayload.append('image', image);
+
+        // 🚨 headers에 Content-Type을 명시적으로 적지 않아도 브라우저가 boundary를 자동으로 잡아줍니다.
+        await api.post(`/g2i4/cargo/add/${cargoId}`, formDataPayload);
       }
 
-      if (image) {
-        const fd = new FormData();
-        fd.append('image', image);
-        await api.post(`/g2i4/cargo/upload/${String(cargoNo).trim()}`, fd, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
-      }
-
+      alert('차량 정보가 성공적으로 저장되었습니다. 관리자 승인을 기다려주세요.');
       await fetchVehicles();
       handleClose();
     } catch (err) {
-      console.error('차량 저장 실패:', err);
-      alert('차량 저장에 실패했습니다.');
+      console.error('차량 저장 실패:', err.response?.data || err.message);
+      alert(err.response?.data || '차량 저장에 실패했습니다.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -213,7 +237,6 @@ const EditVehicleInform = () => {
           </Grid>
         ))}
 
-        {/* 🚨 [핵심] 신규 차량 추가는 오직 이 버튼을 통해서만 가능합니다. */}
         <Grid item>
           <Paper onClick={() => handleOpen()} sx={{ width: 400, height: 400, border: '2px dashed #ccc', borderRadius: 2, display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer' }}>
             <Typography variant="h4">＋ 신규 차량 추가</Typography>
@@ -265,7 +288,9 @@ const EditVehicleInform = () => {
             </Box>
           </Box>
           <Box mt={4} display="flex" gap={2}>
-            <Button fullWidth variant="contained" onClick={handleSave}>저장 (관리자 승인 대기)</Button>
+            <Button fullWidth variant="contained" onClick={handleSave} disabled={loading}>
+              {loading ? '저장 중...' : '저장 (관리자 승인 대기)'}
+            </Button>
           </Box>
         </Box>
       </Modal>

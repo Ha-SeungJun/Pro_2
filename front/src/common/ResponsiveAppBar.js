@@ -177,9 +177,9 @@ export default function ResponsiveAppBar() {
             <Link to="/guide" className="text-base md:text-xl font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
               이용가이드
             </Link>
-            <Link to="/quick-search" className="text-base md:text-xl font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
+            {/* <Link to="/quick-search" className="text-base md:text-xl font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
               간편조회
-            </Link>
+            </Link> */}
             <Link to="/estimatepage" className="text-base md:text-xl font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
               온라인 퀵 접수
             </Link>

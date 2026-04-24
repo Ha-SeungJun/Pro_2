@@ -171,6 +171,9 @@ const FindPasswordComponent = () => {
     return (
         <AppProvider theme={theme}>
             <Container maxWidth="sm" sx={{ mt: 6, mb: 8 }}>
+                <Box sx={{ width: '100%', maxWidth: 400, mb: 2 }}>
+                    <img src="/image/logo/main_logo.png" alt="로고" style={{ height: 60 }} />
+                </Box>
                 {/* STEP 1: 아이디 + 이메일 */}
                 {step === 'request' && (
                     <Box sx={{ p: 3, border: '1px solid #ddd', borderRadius: 2, bgcolor: 'white' }}>
@@ -302,7 +305,7 @@ const FindPasswordComponent = () => {
                             onFocus={() => setPw2Focused(true)}
                             onBlur={() => setPw2Focused(false)}
                             fullWidth
-                            sx={{mt: 2}}
+                            sx={{ mt: 2 }}
                             autoComplete="new-password"
                         />
                         {pw2Focused && (

@@ -79,6 +79,9 @@ const FindIdComponent = ({ onComplete }) => {
 
     return (
         <Container maxWidth="sm" sx={{ mt: 6, mb: 6 }}>
+            <Box sx={{width: '100%', maxWidth: 400, mb: 2 }}>
+                      <img src="/image/logo/main_logo.png" alt="로고" style={{ height: 60 }} />
+            </Box>
             <Paper elevation={3} sx={{ p: 3 }}>
                 <Typography variant="h5" sx={{ mb: 1.5, fontWeight: 700 }}>
                     아이디 찾기

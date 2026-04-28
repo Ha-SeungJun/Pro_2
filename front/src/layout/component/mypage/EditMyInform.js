@@ -255,42 +255,52 @@ const EditMyInform = () => {
 
   if (loading) return <Box sx={{ p: 7 }}>불러오는 중…</Box>;
 
-  return (
-    <Box sx={{ p: 7, pl: 50, pr: 50, bgcolor: '#f3f4f6', minHeight: '100vh' }}>
-      <Typography variant="h5" fontWeight="bold" mb={1}>회원 정보 수정</Typography>
-      <Typography variant="body2" sx={{ color: 'gray', mb: 4 }}>
-        로그인 유형: {userType === 'MEMBER' ? '일반 회원' : '화물(차량) 소유자'}
-      </Typography>
+return (
+  <Box sx={{ 
+    p: { xs: 2, sm: 4, md: 7 },        // ← 고정값 제거
+    pl: { xs: 2, sm: 4, md: 10, lg: 20 }, // ← 반응형으로
+    pr: { xs: 2, sm: 4, md: 10, lg: 20 }, // ← 반응형으로
+    bgcolor: '#f3f4f6', 
+    minHeight: '100vh' 
+  }}>
+    <Typography variant="h5" fontWeight="bold" mb={1}>회원 정보 수정</Typography>
+    <Typography variant="body2" sx={{ color: 'gray', mb: 4 }}>
+      로그인 유형: {userType === 'MEMBER' ? '일반 회원' : '화물(차량) 소유자'}
+    </Typography>
 
-      <Grid container spacing={4} alignItems="center">
-        <Grid item xs={12} md={6}>
-          <Box display="flex" alignItems="center" gap={2}>
-            <Avatar sx={{ width: 80, height: 80, bgcolor: 'grey.200' }} src={avatarUrl || DEFAULT_AVATAR} />
-            <Box display="flex" flexDirection="column" gap={1}>
-              <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleUploadImage} />
-              <Button variant="outlined" onClick={triggerFilePick} disabled={uploading} sx={{ minWidth: 160 }}>사진 업로드</Button>
-              <Button variant="text" color="error" onClick={handleDeleteImageServer} disabled={uploading}>사진 삭제</Button>
-            </Box>
+    <Grid container spacing={4} alignItems="center">
+      <Grid item xs={12} md={6}>
+        <Box display="flex" alignItems="center" gap={2} flexWrap="wrap">
+          <Avatar sx={{ width: 80, height: 80, bgcolor: 'grey.200' }} src={avatarUrl || DEFAULT_AVATAR} />
+          <Box display="flex" flexDirection="column" gap={1}>
+            <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleUploadImage} />
+            <Button variant="outlined" onClick={triggerFilePick} disabled={uploading} sx={{ minWidth: 160 }}>사진 업로드</Button>
+            <Button variant="text" color="error" onClick={handleDeleteImageServer} disabled={uploading}>사진 삭제</Button>
           </Box>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <Box sx={{ pl: { md: 4 }, borderLeft: { md: '1px solid #ddd' } }}>
-            <Typography fontWeight="bold" mb={1}>회원 정보</Typography>
-            <Typography>이 름 : {user.name}</Typography>
-            <Typography>아이디 : {user.id}</Typography>
-            <Typography>이메일 : {user.email}</Typography>
-          </Box>
-        </Grid>
+        </Box>
       </Grid>
+      <Grid item xs={12} md={6}>
+        <Box sx={{ 
+          pl: { xs: 0, md: 4 },               // ← 모바일에서 왼쪽 패딩 제거
+          borderLeft: { xs: 'none', md: '1px solid #ddd' },  // ← 모바일에서 선 제거
+          mt: { xs: 2, md: 0 }                // ← 모바일에서 위 여백 추가
+        }}>
+          <Typography fontWeight="bold" mb={1}>회원 정보</Typography>
+          <Typography>이 름 : {user.name}</Typography>
+          <Typography>아이디 : {user.id}</Typography>
+          <Typography>이메일 : {user.email}</Typography>
+        </Box>
+      </Grid>
+    </Grid>
 
-      <Divider sx={{ my: 4 }} />
+    <Divider sx={{ my: 4 }} />
 
-      <Typography fontWeight="bold" mb={2}>주소 변경</Typography>
-      <Box display="flex" gap={2} mb={4}>
-        <TextField label="주소" fullWidth value={user.address || ''} InputProps={{ readOnly: true }} />
-        <Button variant="outlined" onClick={openPostcode}>주소 찾기</Button>
-        <Button variant="contained" sx={{ bgcolor: '#6b46c1' }} onClick={handleSaveAddress}>변경하기</Button>
-      </Box>
+    <Typography fontWeight="bold" mb={2}>주소 변경</Typography>
+    <Box display="flex" gap={2} mb={4} flexDirection={{ xs: 'column', sm: 'row' }}>  {/* ← 모바일 세로 정렬 */}
+      <TextField label="주소" fullWidth value={user.address || ''} InputProps={{ readOnly: true }} />
+      <Button variant="outlined" onClick={openPostcode} sx={{ whiteSpace: 'nowrap' }}>주소 찾기</Button>
+      <Button variant="contained" sx={{ bgcolor: '#6b46c1', whiteSpace: 'nowrap' }} onClick={handleSaveAddress}>변경하기</Button>
+    </Box>
 
       {userType === 'MEMBER' && (
         <>
@@ -344,7 +354,7 @@ const EditMyInform = () => {
       <Divider sx={{ my: 4 }} />
 
       <Typography fontWeight="bold" mb={2}>비밀번호 변경</Typography>
-      <Box display="flex" flexDirection="column" gap={2}>
+      <Box display="flex" flexDirection="column" gap={2} sx={{mb:10}}>
         <TextField label="현재 비밀번호" fullWidth type={showPassword.current ? 'text' : 'password'} value={pwd.current} onChange={(e) => setPwd(p => ({ ...p, current: e.target.value }))}
           InputProps={{ endAdornment: <InputAdornment position="end"><IconButton onClick={() => togglePasswordVisibility('current')}>{showPassword.current ? <Visibility /> : <VisibilityOff />}</IconButton></InputAdornment> }} />
         <TextField label="새로운 비밀번호" fullWidth type={showPassword.new ? 'text' : 'password'} value={pwd.next} onChange={(e) => setPwd(p => ({ ...p, next: e.target.value }))}

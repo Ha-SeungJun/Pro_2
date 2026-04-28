@@ -12,6 +12,8 @@ import PersonIcon from '@mui/icons-material/Person';
 import BuildIcon from '@mui/icons-material/Build';
 import { useSelector } from 'react-redux';
 import axios from 'axios';
+import { useMediaQuery, useTheme } from '@mui/material';
+import BottomNav from './BottomNav';
 
 const drawerWidth = 240;
 const APPBAR_HEIGHT_MOBILE = 56;
@@ -86,6 +88,8 @@ function normalizeRoles(raw) {
 }
 
 const Sidebar = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const loginState = useSelector((state) => state?.login) || {};
   const token = typeof window !== 'undefined' ? pickToken() : null;
   const payload = token ? decodeJwt(token) : null;
@@ -165,94 +169,95 @@ const Sidebar = () => {
   // console.log('[Sidebar] isOwner?', { roles, isOwnerFromTokenOrRedux, fetchedUserType, isOwner, cargoId });
 
   return (
-    <Drawer
-      variant="permanent"
-      sx={{
-        width: drawerWidth,
-        flexShrink: 0,
-        [`& .MuiDrawer-paper`]: {
-          width: drawerWidth,
-          boxSizing: 'border-box',
-          position: 'sticky',
-          top: { xs: APPBAR_HEIGHT_MOBILE, md: APPBAR_HEIGHT_DESKTOP },
-          alignSelf: 'flex-start',
-        },
-      }}
-    >
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', p: 2 }}>
-        <Typography variant="h6" fontWeight="bold" gutterBottom>
-          마이페이지
-        </Typography>
-
-        <Avatar
-          sx={{ width: 56, height: 56, bgcolor: 'grey.200', color: 'grey.500' }}
-          src={avatarUrl}
-          imgProps={{
-            referrerPolicy: 'no-referrer',
-            crossOrigin: 'anonymous',
-            loading: 'lazy',
-            onError: (e) => { e.currentTarget.src = DEFAULT_AVATAR; },
+    <>
+      {!isMobile && (
+        <Drawer
+          variant="permanent"
+          sx={{
+            width: drawerWidth,
+            flexShrink: 0,
+            [`& .MuiDrawer-paper`]: {
+              width: drawerWidth,
+              boxSizing: 'border-box',
+              position: 'sticky',
+              top: APPBAR_HEIGHT_DESKTOP,
+              alignSelf: 'flex-start',
+            },
           }}
-          alt="프로필"
         >
-          <PersonIcon />
-        </Avatar>
-      </Box>
+          {/* ↓ 이 내용들이 Drawer 안에 있어야 함 */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', p: 2 }}>
+            <Typography variant="h6" fontWeight="bold" gutterBottom>
+              마이페이지
+            </Typography>
+            <Avatar
+              sx={{ width: 56, height: 56, bgcolor: 'grey.200', color: 'grey.500' }}
+              src={avatarUrl}
+              imgProps={{
+                referrerPolicy: 'no-referrer',
+                crossOrigin: 'anonymous',
+                loading: 'lazy',
+                onError: (e) => { e.currentTarget.src = DEFAULT_AVATAR; },
+              }}
+              alt="프로필"
+            >
+              <PersonIcon />
+            </Avatar>
+          </Box>
 
-      <Divider />
+          <Divider />
 
-      <List>
-        <NavLink to="/mypage" end style={navStyle}>
-          {({ isActive }) => (
-            <ListItemButton sx={isActive ? activeStyle : null}>
-              <ListItemIcon><HomeIcon /></ListItemIcon>
-              <ListItemText primary="내 정보" />
-            </ListItemButton>
-          )}
-        </NavLink>
-
-        <NavLink to="/mypage/delivery" style={navStyle}>
-          {({ isActive }) => (
-            <ListItemButton sx={isActive ? activeStyle : null}>
-              <ListItemIcon><DescriptionIcon /></ListItemIcon>
-              <ListItemText primary="배송 정보 관리" />
-            </ListItemButton>
-          )}
-        </NavLink>
-
-        <NavLink to={isOwner ? "/mypage/review/received" : "/mypage/review"} style={navStyle}>
-          {({ isActive }) => (
-            <ListItemButton sx={isActive ? activeStyle : null}>
-              <ListItemIcon><RateReviewIcon /></ListItemIcon>
-              <ListItemText primary={isOwner ? "내가 받은 리뷰 관리" : "내가 쓴 리뷰 관리"} />
-            </ListItemButton>
-          )}
-        </NavLink>
-
-        <NavLink to="/mypage/edit" style={navStyle}>
-          {({ isActive }) => (
-            <ListItemButton sx={isActive ? activeStyle : null}>
-              <ListItemIcon><PersonIcon /></ListItemIcon>
-              <ListItemText primary="회원 정보 수정" />
-            </ListItemButton>
-          )}
-        </NavLink>
-        {isOwner && cargoId && (
-          <NavLink to={`vehicle/${cargoId}`} style={navStyle}>
-            {({ isActive }) => (
-              <ListItemButton sx={isActive ? activeStyle : null}>
-                <ListItemIcon><BuildIcon /></ListItemIcon>
-                <ListItemText primary="내 차량 관리" />
-              </ListItemButton>
+          <List>
+            <NavLink to="/mypage" end style={navStyle}>
+              {({ isActive }) => (
+                <ListItemButton sx={isActive ? activeStyle : null}>
+                  <ListItemIcon><HomeIcon /></ListItemIcon>
+                  <ListItemText primary="내 정보" />
+                </ListItemButton>
+              )}
+            </NavLink>
+            <NavLink to="/mypage/delivery" style={navStyle}>
+              {({ isActive }) => (
+                <ListItemButton sx={isActive ? activeStyle : null}>
+                  <ListItemIcon><DescriptionIcon /></ListItemIcon>
+                  <ListItemText primary="배송 정보 관리" />
+                </ListItemButton>
+              )}
+            </NavLink>
+            <NavLink to={isOwner ? "/mypage/review/received" : "/mypage/review"} style={navStyle}>
+              {({ isActive }) => (
+                <ListItemButton sx={isActive ? activeStyle : null}>
+                  <ListItemIcon><RateReviewIcon /></ListItemIcon>
+                  <ListItemText primary={isOwner ? "내가 받은 리뷰 관리" : "내가 쓴 리뷰 관리"} />
+                </ListItemButton>
+              )}
+            </NavLink>
+            <NavLink to="/mypage/edit" style={navStyle}>
+              {({ isActive }) => (
+                <ListItemButton sx={isActive ? activeStyle : null}>
+                  <ListItemIcon><PersonIcon /></ListItemIcon>
+                  <ListItemText primary="회원 정보 수정" />
+                </ListItemButton>
+              )}
+            </NavLink>
+            {isOwner && cargoId && (
+              <NavLink to={`vehicle/${cargoId}`} style={navStyle}>
+                {({ isActive }) => (
+                  <ListItemButton sx={isActive ? activeStyle : null}>
+                    <ListItemIcon><BuildIcon /></ListItemIcon>
+                    <ListItemText primary="내 차량 관리" />
+                  </ListItemButton>
+                )}
+              </NavLink>
             )}
-          </NavLink>
-        )}
-      </List>
+          </List>
+        </Drawer>   
+)}
 
-
-
-    </Drawer>
+      {isMobile && (
+        <BottomNav isOwner={isOwner} cargoId={cargoId} />
+      )}
+    </>
   );
 };
-
 export default Sidebar;

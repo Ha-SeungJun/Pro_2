@@ -41,7 +41,7 @@ const AdminCargoApproval = () => {
     try {
       await api.put(`/g2i4/admin/cargo/approve/${cargoNo}`);
       alert('승인 완료되었습니다.');
-      fetchPendingCargos(); 
+      fetchPendingCargos();
     } catch (error) {
       alert('승인 처리 중 오류가 발생했습니다.');
     }
@@ -52,39 +52,39 @@ const AdminCargoApproval = () => {
     try {
       await api.put(`/g2i4/admin/cargo/reject/${cargoNo}`);
       alert('거절 처리되었습니다.');
-      fetchPendingCargos(); 
+      fetchPendingCargos();
     } catch (error) {
       alert('거절 처리 중 오류가 발생했습니다.');
     }
   };
 
   return (
-    // 🚨 [수정] 사이드바와 겹치지 않도록 전체 여백을 조절했습니다.
-    <Box sx={{ 
-      p: { xs: 2, md: 4 }, 
-      bgcolor: '#f8f9fb', 
+    <Box sx={{
+      p: { xs: 2, md: 4 },
+      bgcolor: '#f8f9fb',
       minHeight: '100vh',
-      width: '100%' // 레이아웃 내부에서 꽉 차게 설정
+      width: '100%'
     }}>
-      <Typography variant="h4" fontWeight="800" mb={4} color="#333">
+      <Typography variant="h4" fontWeight="800" mb={4} color="#333"
+        sx={{ fontSize: { xs: '1.5rem', md: '2.125rem' } }}
+      >
         차량 등록 승인 관리
       </Typography>
 
-      <Divider sx={{ mb: 4 }} /> {/* 💡 시각적 분리선을 추가했습니다. */}
+      <Divider sx={{ mb: 4 }} />
 
       {pendingList.length === 0 ? (
-        // 데이터가 없을 때의 UI를 조금 더 깔끔하게 보정
-        <Paper sx={{ p: 5, textAlign: 'center', borderRadius: 3, bgcolor: '#fff' }}>
+        <Paper sx={{ p: { xs: 3, md: 5 }, textAlign: 'center', borderRadius: 3, bgcolor: '#fff' }}>
           <Typography variant="h6" color="textSecondary">
             현재 승인 대기 중인 차량이 없습니다.
           </Typography>
         </Paper>
       ) : (
-        <Grid container spacing={3}>
+        <Grid container spacing={{ xs: 2, md: 3 }}>
           {pendingList.map((cargo) => (
-            <Grid item xs={12} sm={12} md={6} lg={4} key={cargo.cargoNo}>
-              <Card sx={{ 
-                boxShadow: '0 4px 20px rgba(0,0,0,0.08)', 
+            <Grid item xs={12} sm={6} md={6} lg={4} key={cargo.cargoNo}>
+              <Card sx={{
+                boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
                 borderRadius: 4,
                 overflow: 'hidden',
                 transition: 'transform 0.2s',
@@ -97,15 +97,29 @@ const AdminCargoApproval = () => {
                   alt={cargo.cargoName}
                   sx={{ objectFit: 'contain', bgcolor: '#f1f3f5', p: 1 }}
                 />
-                <CardContent sx={{ p: 3 }}>
-                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                    <Typography variant="h6" fontWeight="700">
+                <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+                  <Box
+                    display="flex"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    mb={2}
+                    gap={1}
+                  >
+                    <Typography variant="h6" fontWeight="700"
+                      sx={{ fontSize: { xs: '1rem', md: '1.25rem' }, wordBreak: 'break-word' }}
+                    >
                       {cargo.cargoName}
                     </Typography>
-                    <Chip label="승인 대기" color="warning" variant="filled" size="small" sx={{ fontWeight: 'bold' }} />
+                    <Chip
+                      label="승인 대기"
+                      color="warning"
+                      variant="filled"
+                      size="small"
+                      sx={{ fontWeight: 'bold', flexShrink: 0 }}
+                    />
                   </Box>
-                  
-                  <Stack spacing={1} mb={3}> {/* MUI Stack으로 간격을 일정하게 정렬 */}
+
+                  <Stack spacing={1} mb={3}>
                     <Typography variant="body2" color="textSecondary">
                       <strong>차량 번호:</strong> {cargo.cargoNumber || '미기재'}
                     </Typography>
@@ -117,20 +131,20 @@ const AdminCargoApproval = () => {
                     </Typography>
                   </Stack>
 
-                  <Box display="flex" gap={1.5}>
-                    <Button 
-                      variant="contained" 
-                      color="primary" 
-                      fullWidth 
+                  <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} gap={1.5}>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      fullWidth
                       sx={{ borderRadius: 2, fontWeight: 'bold' }}
                       onClick={() => handleApprove(cargo.cargoNo)}
                     >
                       승인
                     </Button>
-                    <Button 
-                      variant="outlined" 
-                      color="error" 
-                      fullWidth 
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      fullWidth
                       sx={{ borderRadius: 2, fontWeight: 'bold' }}
                       onClick={() => handleReject(cargo.cargoNo)}
                     >

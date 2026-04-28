@@ -135,6 +135,7 @@ export default function ResponsiveAppBar() {
 
   const [anchorElNav, setAnchorElNav] = React.useState(null);
   const [anchorElUser, setAnchorElUser] = React.useState(null);
+  const [menuOpen, setMenuOpen] = React.useState(false);
 
   const handleOpenNavMenu = (e) => setAnchorElNav(e.currentTarget);
   const handleOpenUserMenu = (e) => setAnchorElUser(e.currentTarget);
@@ -157,62 +158,79 @@ export default function ResponsiveAppBar() {
   };
 
   return (
-    <header className="relative z-50 bg-white shadow-md border-b border-gray-100 text-gray-800 font-sans w-full">
+    <header className="relative z-50 bg-white shadow-lg border-b border-gray-100 text-gray-800 font-sans w-full">
       <div className="w-full px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row justify-between items-center min-h-[5rem] md:h-28 py-2 md:py-0 relative gap-2 md:gap-4">
+        <div className="flex flex-row justify-between items-center h-16 lg:h-20 relative">
 
-          <div className="flex-1 flex justify-start items-center">
-            <Link to="/" className="mt-0 md:mt-4">
-              <img
-                className="w-48 md:w-80 h-auto object-contain"
-                src={logo}
-                alt="퍼스트로드 로고"
-              />
-            </Link>
-          </div>
 
-          <nav className="flex flex-wrap justify-center items-center gap-x-6 gap-y-1 
-                md:gap-x-10 md:absolute md:left-1/2 md:-translate-x-1/2 
-                -mt-6 md:mt-0">
-            <Link to="/guide" className="text-base md:text-xl font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
-              이용가이드
-            </Link>
-            {/* <Link to="/quick-search" className="text-base md:text-xl font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
-              간편조회
-            </Link> */}
-            <Link to="/estimatepage" className="text-base md:text-xl font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
-              온라인 퀵 접수
-            </Link>
-            <Link to="/estimatepage/list" className="text-base md:text-xl font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
-              운송 접수 목록
-            </Link>
-            <Link to="/noboard" className="text-base md:text-xl font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
-              공지사항
-            </Link>
-            <Link to="/qaboard" className="text-base md:text-xl font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">
-              문의사항
-            </Link>
+
+          <Link to="/" className="flex-shrink-0">
+            <img
+              className="w-36 lg:w-56 h-auto object-contain"
+              src={logo}
+              alt="퍼스트로드 로고"
+            />
+          </Link>
+
+          <nav className="hidden lg:flex items-center gap-x-8 absolute left-1/2 -translate-x-1/2">
+            <Link to="/guide" className="text-base font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">이용가이드</Link>
+            <Link to="/quick-search" className="text-base font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">간편조회</Link>
+            <Link to="/estimatepage" className="text-base font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">온라인 퀵 접수</Link>
+            <Link to="/estimatepage/list" className="text-base font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">운송 접수 목록</Link>
+            <Link to="/noboard" className="text-base font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">공지사항</Link>
+            <Link to="/qaboard" className="text-base font-bold text-gray-700 hover:text-red-600 transition-colors whitespace-nowrap">문의사항</Link>
+
           </nav>
 
-          <div className="flex-1 flex justify-end items-center space-x-2 text-sm md:text-lg pb-2 md:pb-0">
+          <div className="flex items-center gap-2 text-sm lg:text-base">
             {isLogin ? (
               <>
-
-                <Link to={myPagePath} className="font-bold text-gray-700 hover:text-red-600 ml-2 md:ml-6">{displayUserName}</Link>
-
+                <Link to={myPagePath} className="font-bold text-gray-700 hover:text-red-600">{displayUserName}</Link>
                 <span className="text-gray-300">|</span>
-                <button onClick={handleLogout} className="hover:text-red-600 font-bold">로그아웃</button>
+                <button onClick={handleLogout} className="font-bold hover:text-red-600">로그아웃</button>
               </>
             ) : (
               <>
-                <Link to="/login" className="hover:text-red-600 font-bold">로그인</Link>
+                <Link to="/login" className="font-bold hover:text-red-600">로그인</Link>
                 <span className="text-gray-300">|</span>
-                <Link to="/signup" className="hover:text-red-600 font-bold">회원가입</Link>
+                <Link to="/signup" className="font-bold hover:text-red-600">회원가입</Link>
               </>
             )}
+
+            <button
+              className="lg:hidden flex flex-col justify-center gap-[5px] ml-2 p-1"
+              onClick={() => setMenuOpen((prev) => !prev)}
+              aria-label="메뉴 열기"
+            >
+              <span className={`block w-[22px] h-[2px] bg-gray-700 rounded transition-all duration-300 ${menuOpen ? 'translate-y-[7px] rotate-45' : ''}`} />
+              <span className={`block w-[22px] h-[2px] bg-gray-700 rounded transition-all duration-300 ${menuOpen ? 'opacity-0' : ''}`} />
+              <span className={`block w-[22px] h-[2px] bg-gray-700 rounded transition-all duration-300 ${menuOpen ? '-translate-y-[7px] -rotate-45' : ''}`} />
+            </button>
           </div>
         </div>
       </div>
+
+      {menuOpen && (
+        <nav className="lg:hidden flex flex-col border-t border-gray-100 bg-white">
+          {[
+            { label: '이용가이드', path: '/guide' },
+            { label: '간편조회', path: '/quick-search' },
+            { label: '온라인 퀵 접수', path: '/estimatepage' },
+            { label: '운송 접수 목록', path: '/estimatepage/list' },
+            { label: '공지사항', path: '/noboard' },
+            { label: '문의사항', path: '/qaboard' },
+          ].map(({ label, path }) => (
+            <Link
+              key={path}
+              to={path}
+              onClick={() => setMenuOpen(false)}
+              className="px-6 py-4 text-base font-bold text-gray-700 hover:text-red-600 hover:bg-gray-50 border-b border-gray-100 transition-colors"
+            >
+              {label}
+            </Link>
+          ))}
+        </nav>
+      )}
     </header>
   );
 }

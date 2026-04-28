@@ -533,8 +533,12 @@ const MyReviewInform = () => {
     }
   }, [driverReviewPage, driverReviewTotalPage]);
   return (
-    <Box sx={{ bgcolor: "#f7f9fc", minHeight: "100vh", py: 6 }}>
-      <Container maxWidth="xl" disableGutters sx={{ px: { xs: 1, sm: 2 } }}>
+<Box sx={{ bgcolor: '#f7f9fc', minHeight: '100vh', py: 6, pb: { xs: '80px', md: 6 },overflow: 'hidden', }}>
+      <Container maxWidth="xl" disableGutters     sx={{
+      px: { xs: 1, sm: 2 },
+      maxWidth: '100vw',
+      boxSizing: 'border-box',
+    }}>
         <Typography variant="h5" fontWeight="bold" gutterBottom textAlign="center">
           내 리뷰 관리
         </Typography>

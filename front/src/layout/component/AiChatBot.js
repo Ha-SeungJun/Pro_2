@@ -11,6 +11,7 @@ const AiChatBot = () => {
     const [isOpen, setIsOpen] = useState(false);
 
     // 메시지 추가 시 자동 스크롤
+
     useEffect(() => {
         if (scrollRef.current) {
             scrollRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -84,6 +85,7 @@ const AiChatBot = () => {
                 </div>
             )}
         </div>
+
     );
 };
 

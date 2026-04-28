@@ -127,18 +127,20 @@ const Inquirie = () => {
                     </Tabs>
                 </Box>
 
-                <TextField
-                    size="small"
-                    value={searchKeyword}
-                    onChange={handleSearchChange}
-                    placeholder="검색"
-                    InputProps={{
-                        startAdornment: <SearchIcon sx={{ mr: 1 }} />
-                    }}
-                />
-            </Box>
 
-            <TableContainer component={Paper}>
+            </Box>
+        <TextField
+          variant="outlined"
+          placeholder="검색"
+          size="small"
+          value={searchKeyword}
+          onChange={handleSearchChange}
+          sx={{ width: { xs: '100%', md: 220 }, flexShrink: 0 }}
+          InputProps={{
+            startAdornment: <SearchIcon fontSize="small" sx={{ mr: 1, color: "grey.500" }} />,
+          }}
+        />
+            <TableContainer component={Paper} sx={{mt:2}}>
                 <Table>
                     <TableHead>
                         <TableRow>

@@ -218,11 +218,39 @@ const DeliveryInfoPage = () => {
     setReviewScore(0);
     setReviewImages([]);
   };
+  const validateImageFiles = (files) => {
+    if (files.length > 3) {
+      alert("이미지는 최대 3장까지 선택할 수 있습니다.");
+      return false;
+    }
+
+    const invalidFile = files.find((file) => {
+      const lower = file.name.toLowerCase();
+
+      const validExt =
+        lower.endsWith(".jpg") ||
+        lower.endsWith(".jpeg") ||
+        lower.endsWith(".png") ||
+        lower.endsWith(".webp");
+
+      const validSize = file.size <= 10 * 1024 * 1024;
+
+      return !validExt || !validSize;
+    });
+
+    if (invalidFile) {
+      alert("jpg, jpeg, png, webp 파일만 가능하며, 1개당 최대 10MB까지 업로드 가능합니다.");
+      return false;
+    }
+
+    return true;
+  };
   const handleReviewImageChange = (e) => {
     const files = Array.from(e.target.files || []);
 
-    if (files.length > 3) {
-      alert("이미지는 최대 3장까지 선택할 수 있습니다.");
+    if (!validateImageFiles(files)) {
+      e.target.value = "";
+      setReviewImages([]);
       return;
     }
 
@@ -873,7 +901,7 @@ const DeliveryInfoPage = () => {
               onChange={handleReviewImageChange}
             />
             <Typography variant="caption" color="text.secondary">
-              최대 3장까지 업로드 가능합니다.
+              최대 3장까지 업로드(각 이미지는 10MB이하)
             </Typography>
           </Box>
         </DialogContent>

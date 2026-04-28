@@ -99,7 +99,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/email/**").permitAll()
 
-                .requestMatchers("/uploads/**", "/h2-console/**").permitAll()
+                .requestMatchers("/uploads/**", "/review/**", "/h2-console/**").permitAll()
 
                 // ✅ [수정] "/g2i4/coupons/**" 경로를 추가하여 401 에러 해결
                 .requestMatchers("/g2i4/subpath/order/**","/g2i4/payment/**","/g2i4/delivery/**","/g2i4/address/**",

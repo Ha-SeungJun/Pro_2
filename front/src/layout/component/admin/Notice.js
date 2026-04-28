@@ -89,18 +89,20 @@ const Notice = () => {
                 <Tab label="문의사항" value="/admin/inquirie" component={NavLink} to="/admin/inquirie" />
             </Tabs>
         </Box>
-        <TextField
-            variant="outlined"
-            placeholder="Search"
-            size="small"
-            value={searchKeyword}
-            onChange={handleSearchChange}
-            InputProps={{
-                startAdornment: <SearchIcon fontSize="small" sx={{ mr: 1, color: "grey.500" }} />,
-            }}
-        />
+            
       </Box>
-      <TableContainer component={Paper}>
+              <TextField
+          variant="outlined"
+          placeholder="검색"
+          size="small"
+          value={searchKeyword}
+          onChange={handleSearchChange}
+          sx={{ width: { xs: '100%', md: 220 }, flexShrink: 0 }}
+          InputProps={{
+            startAdornment: <SearchIcon fontSize="small" sx={{ mr: 1, color: "grey.500" }} />,
+          }}
+        />
+      <TableContainer component={Paper} sx={{mt:2}}>
         <Table>
           <TableHead>
             <TableRow>

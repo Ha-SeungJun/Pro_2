@@ -12,6 +12,8 @@ const AiChatBot = () => {
     const [loading, setLoading] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
 
+    const isMobile = window.innerWidth <= 480;
+
     useEffect(() => {
         if (scrollRef.current) {
             scrollRef.current.scrollTo({
@@ -40,32 +42,37 @@ const AiChatBot = () => {
 
     return (
         <>
-            {/* 1. 플로팅 버튼 (fixed 제거, App.js의 flex 컨테이너 영향을 받음) */}
             {!isOpen && (
                 <div
                     onClick={() => setIsOpen(true)}
                     style={{
-                        /* ✅ 외부 fixed 제거, 크기만 유지 */
-                        width: '64px', height: '64px', borderRadius: '50%',
+                        width: '56px', height: '56px', borderRadius: '50%',
                         backgroundColor: '#0056b3', color: 'white', display: 'flex',
-                        justifyContent: 'center', alignItems: 'center', fontSize: '30px',
+                        justifyContent: 'center', alignItems: 'center',
+                        fontSize: isMobile ? '24px' : '30px',
                         cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-                        border: '2px solid white' // 다른 버튼과 통일감
+                        border: '2px solid white'
                     }}
                 >
                     🤖
                 </div>
             )}
 
-            {/* 2. 채팅창 (열렸을 때는 기존처럼 fixed로 화면 중앙 근처에 유지) */}
             {isOpen && (
                 <Draggable nodeRef={nodeRef} handle=".chat-header">
                     <div
                         ref={nodeRef}
                         style={{
-                            position: 'fixed', bottom: '100px', right: '40px',
-                            width: '350px', backgroundColor: 'white',
-                            boxShadow: '0 8px 24px rgba(0,0,0,0.2)', borderRadius: '15px',
+                            position: 'fixed',
+                            width: isMobile ? '80%' : '320px',
+                            right: isMobile ? '10%' : '40px',
+                            left: isMobile ? '10%' : 'auto',
+                            bottom: isMobile ? '20px' : '100px',
+
+                            maxHeight: isMobile ? '70vh' : 'none',
+                            backgroundColor: 'white',
+                            boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+                            borderRadius: isMobile ? '15px' : '15px',
                             display: 'flex', flexDirection: 'column', overflow: 'hidden',
                             border: '1px solid #ddd', zIndex: 10001
                         }}
@@ -74,15 +81,17 @@ const AiChatBot = () => {
                         <div
                             className="chat-header"
                             style={{
-                                backgroundColor: '#0056b3', color: 'white', padding: '15px',
-                                fontWeight: 'bold', display: 'flex', justifyContent: 'space-between',
-                                alignItems: 'center', cursor: 'move'
+                                backgroundColor: '#0056b3', color: 'white',
+                                padding: isMobile ? '12px 15px' : '15px',
+                                fontWeight: 'bold', display: 'flex',
+                                justifyContent: 'space-between', alignItems: 'center',
+                                cursor: 'move', fontSize: isMobile ? '13px' : '15px'
                             }}
                         >
                             <span>G2I4 AI 상담원</span>
                             <button
                                 onClick={() => setIsOpen(false)}
-                                style={{ background: 'none', border: 'none', color: 'white', fontSize: '20px', cursor: 'pointer' }}
+                                style={{ background: 'none', border: 'none', color: 'white', fontSize: '18px', cursor: 'pointer' }}
                             >
                                 ✕
                             </button>
@@ -91,15 +100,34 @@ const AiChatBot = () => {
                         {/* 메시지 영역 */}
                         <div
                             ref={scrollRef}
-                            style={{ height: '350px', overflowY: 'auto', padding: '15px', backgroundColor: '#f9f9f9', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            style={{
+                                height: isMobile ? '45vh' : '320px',
+                                overflowY: 'auto',
+                                padding: isMobile ? '10px' : '15px',
+                                backgroundColor: '#f9f9f9',
+                                display: 'flex', flexDirection: 'column', gap: '8px'
+                            }}
+                        >
                             {messages.map((m, i) => (
                                 <div key={i} style={{ alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '80%' }}>
-                                    <div style={{ padding: '10px', borderRadius: '10px', backgroundColor: m.role === 'user' ? '#0056b3' : '#e9ecef', color: m.role === 'user' ? 'white' : '#333', fontSize: '14px', lineHeight: '1.4', wordBreak: 'break-word' }}>
+                                    <div style={{
+                                        padding: isMobile ? '7px 10px' : '10px',
+                                        borderRadius: '10px',
+                                        backgroundColor: m.role === 'user' ? '#0056b3' : '#e9ecef',
+                                        color: m.role === 'user' ? 'white' : '#333',
+                                        fontSize: isMobile ? '12px' : '13px',
+                                        lineHeight: '1.4',
+                                        wordBreak: 'break-word'
+                                    }}>
                                         {m.text}
                                     </div>
                                 </div>
                             ))}
-                            {loading && <div style={{ fontSize: '12px', color: '#888', alignSelf: 'flex-start' }}>AI가 답변을 생각 중입니다...</div>}
+                            {loading && (
+                                <div style={{ fontSize: isMobile ? '11px' : '12px', color: '#888', alignSelf: 'flex-start' }}>
+                                    AI가 답변을 생각 중입니다...
+                                </div>
+                            )}
                         </div>
 
                         {/* 입력 영역 */}
@@ -109,9 +137,21 @@ const AiChatBot = () => {
                                 onChange={(e) => setInput(e.target.value)}
                                 onKeyPress={(e) => e.key === 'Enter' && handleSend()}
                                 placeholder="질문을 입력하세요..."
-                                style={{ flexGrow: 1, border: 'none', padding: '15px', outline: 'none' }}
+                                style={{
+                                    flexGrow: 1, border: 'none',
+                                    padding: isMobile ? '10px 12px' : '15px',
+                                    outline: 'none',
+                                    fontSize: isMobile ? '12px' : '14px'
+                                }}
                             />
-                            <button onClick={handleSend} style={{ backgroundColor: '#0056b3', color: 'white', border: 'none', padding: '0 20px', cursor: 'pointer', fontWeight: 'bold' }}>
+                            <button
+                                onClick={handleSend}
+                                style={{
+                                    backgroundColor: '#0056b3', color: 'white', border: 'none',
+                                    padding: '0 16px', cursor: 'pointer', fontWeight: 'bold',
+                                    fontSize: isMobile ? '12px' : '14px'
+                                }}
+                            >
                                 전송
                             </button>
                         </div>

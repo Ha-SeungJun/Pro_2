@@ -1,40 +1,56 @@
-// src/pages/admin/FeesBasic.jsx
 import React, { useEffect, useState, useCallback } from "react";
-import { Box, Typography, CircularProgress, Button, TextField, IconButton, Stack, Alert } from "@mui/material";
+import { Box, Typography, CircularProgress, Button, TextField, IconButton, Stack, Alert, Tabs, Tab } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { fetchFeesBasicFull, saveFeeBasicCell, addBasicRow, deleteBasicRow } from "../../../api/adminApi/adminApi";
+import { NavLink, useLocation } from "react-router-dom";
 
-const thStyle = { border: "1px solid #ccc", padding: "8px", textAlign: "center", backgroundColor: "#f5f5f5" };
+const thStyle = {
+  border: "1px solid #ccc",
+  padding: "8px",
+  textAlign: "center",
+  backgroundColor: "#f5f5f5",
+  whiteSpace: "nowrap",
+};
 const tdStyle = { border: "1px solid #ccc", padding: "4px", textAlign: "center" };
-const inputStyle = { width: "100px", textAlign: "center", padding: "4px", border: "1px solid #ddd", borderRadius: "4px" };
+const inputStyle = {
+  width: "90px",
+  textAlign: "center",
+  padding: "4px",
+  border: "1px solid #ddd",
+  borderRadius: "4px",
+  boxSizing: "border-box",
+};
 
 const FeesBasic = () => {
   const [loading, setLoading] = useState(false);
 
   return (
-    <Box flexGrow={1} p={4}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4" fontWeight="bold" gutterBottom>기본요금</Typography>
-      </Box>
+    <Box flexGrow={1} p={{ xs: 2, md: 4 }}>
+      <Typography variant="h4" fontWeight="bold" gutterBottom
+        sx={{ fontSize: { xs: '1.5rem', md: '2.125rem' }, mb: 3 }}
+      >
+        기본요금
+      </Typography>
       {loading ? (
         <Box display="flex" justifyContent="center" alignItems="center" height="300px">
           <CircularProgress />
         </Box>
       ) : (
-        /* 1. [수정] 자식에게 setLoading 함수를 props로 전달합니다 */
         <FeesBasicTable setLoading={setLoading} />
       )}
     </Box>
   );
 };
 
-/* 2. [수정] 자식 컴포넌트 매개변수에서 { setLoading }을 구조 분해 할당으로 받습니다 */
 const FeesBasicTable = ({ setLoading }) => {
   const [columns, setColumns] = useState(["거리별 요금", "기본 요금"]);
   const [rows, setRows] = useState([]);
   const [grid, setGrid] = useState([]);
   const [newRow, setNewRow] = useState("");
   const [error, setError] = useState("");
+  const location = useLocation();
+
+  const activeTab = location.pathname.includes("feesExtra") ? 1 : 0;
 
   const fetchFull = useCallback(async () => {
     setError("");
@@ -64,29 +80,22 @@ const FeesBasicTable = ({ setLoading }) => {
   const handleSaveAll = async () => {
     if (!rows || rows.length === 0) return;
     if (!window.confirm("입력한 모든 요금을 일괄 저장하시겠습니까?")) return;
-
     setLoading(true);
-
     try {
       for (let i = 0; i < rows.length; i++) {
-        // 7급 전산직 실무: 백엔드 FeesBasicDTO 구조와 완벽 일치시킴
         const payload = {
-          weight: String(rows[i] || "").trim(),    // DTO: String weight
-          ratePerKm: Number(grid[i]?.[0]) || 0,    // DTO: BigDecimal ratePerKm (K 대문자!)
-          initialCharge: Number(grid[i]?.[1]) || 0, // DTO: BigDecimal initialCharge (C 대문자!)
-          cargoName: "미지정"                       // DTO: String cargoName
+          weight: String(rows[i] || "").trim(),
+          ratePerKm: Number(grid[i]?.[0]) || 0,
+          initialCharge: Number(grid[i]?.[1]) || 0,
+          cargoName: "미지정"
         };
-
-        console.log(`[전송 데이터 확인]:`, payload);
-
         await saveFeeBasicCell(payload);
       }
-
       await fetchFull();
       alert("전체 요금표 저장 성공!");
     } catch (e) {
-      console.error(" 400 에러 상세 내용:", e.response?.data);
-      alert(`저장 실패 (400): 서버가 데이터를 거절했습니다.\n콘솔(F12)의 'Network' 탭 응답을 확인해주세요.`);
+      console.error("400 에러 상세 내용:", e.response?.data);
+      alert("저장 실패 (400): 서버가 데이터를 거절했습니다.");
     } finally {
       setLoading(false);
     }
@@ -113,58 +122,84 @@ const FeesBasicTable = ({ setLoading }) => {
   };
 
   return (
-    <div style={{ overflowX: "auto" }}>
+    <Box>
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-      <Stack direction="row" spacing={1} alignItems="center" mb={2}>
-        <TextField size="small" placeholder="새 중량 (예: 7톤)" value={newRow}
-          onChange={(e) => setNewRow(e.target.value)} sx={{ width: 200 }} />
-        <Button variant="contained" onClick={onAddRow}>행 추가</Button>
+
+      <Tabs
+        value={activeTab}
+        textColor="primary"
+        indicatorColor="primary"
+        variant="fullWidth"
+        sx={{ mb: 3 }}
+      >
+        <Tab value={0} label="기본요금" component={NavLink} to="/admin/feesBasic" />
+        <Tab value={1} label="추가요금" component={NavLink} to="/admin/feesExtra" />
+      </Tabs>
+
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        spacing={1}
+        alignItems={{ xs: 'stretch', sm: 'center' }}
+        mb={3}
+      >
+        <TextField
+          size="small"
+          placeholder="새 중량 (예: 7톤)"
+          value={newRow}
+          onChange={(e) => setNewRow(e.target.value)}
+          sx={{ width: { xs: '100%', sm: 200 } }}
+        />
+        <Button variant="contained" onClick={onAddRow} sx={{ width: { xs: '100%', sm: 'auto' } }}>
+          행 추가
+        </Button>
       </Stack>
 
-      <table style={{ borderCollapse: "collapse", width: "100%" }}>
-        <thead>
-          <tr>
-            <th style={thStyle}>중량(톤수)</th>
-            {columns.map((col, idx) => <th key={idx} style={thStyle}>{col}</th>)}
-            <th style={thStyle}>삭제</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((rowLabel, rowIdx) => (
-            <tr key={rowLabel}>
-              <th style={thStyle}>{rowLabel}</th>
-              {columns.map((_, colIdx) => (
-                <td key={`${rowLabel}-${colIdx}`} style={tdStyle}>
-                  <input
-                    type="text"
-                    value={grid[rowIdx]?.[colIdx] ?? ""}
-                    onChange={(e) => handleChange(rowIdx, colIdx, e.target.value)}
-                    style={inputStyle}
-                  />
-                </td>
-              ))}
-              <td style={tdStyle}>
-                <IconButton color="error" onClick={() => onDeleteRow(rowLabel)}>
-                  <DeleteIcon />
-                </IconButton>
-              </td>
+      <Box sx={{ overflowX: 'auto', width: '100%' }}>
+        <table style={{ borderCollapse: "collapse", width: "100%", minWidth: 360 }}>
+          <thead>
+            <tr>
+              <th style={thStyle}>중량(톤수)</th>
+              {columns.map((col, idx) => <th key={idx} style={thStyle}>{col}</th>)}
+              <th style={thStyle}>삭제</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.map((rowLabel, rowIdx) => (
+              <tr key={rowLabel}>
+                <th style={thStyle}>{rowLabel}</th>
+                {columns.map((_, colIdx) => (
+                  <td key={`${rowLabel}-${colIdx}`} style={tdStyle}>
+                    <input
+                      type="text"
+                      value={grid[rowIdx]?.[colIdx] ?? ""}
+                      onChange={(e) => handleChange(rowIdx, colIdx, e.target.value)}
+                      style={inputStyle}
+                    />
+                  </td>
+                ))}
+                <td style={tdStyle}>
+                  <IconButton color="error" onClick={() => onDeleteRow(rowLabel)}>
+                    <DeleteIcon />
+                  </IconButton>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Box>
 
-      <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+      <Box sx={{ display: "flex", justifyContent: "center", mt: 4, mb: 4 }}>
         <Button
           variant="contained"
           color="success"
           size="large"
           onClick={handleSaveAll}
-          sx={{ width: 300, fontWeight: 700, fontSize: "1.1rem" }}
+          sx={{ width: { xs: '100%', sm: 300 }, fontWeight: 700, fontSize: "1.1rem" }}
         >
           전체 요금 변경사항 저장하기
         </Button>
       </Box>
-    </div>
+    </Box>
   );
 };
 

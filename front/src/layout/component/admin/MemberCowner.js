@@ -2,7 +2,8 @@ import React, { useEffect, useState, useMemo } from "react";
 import {
   Box, Typography, Table, TableHead, TableRow, TableCell, TableBody,
   Chip, Pagination, CircularProgress, TextField, Tabs, Tab,
-  TableContainer, Paper
+  TableContainer, Paper,
+  Button
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import { useNavigate, useLocation, NavLink } from "react-router-dom";
@@ -13,7 +14,7 @@ const MemberCowner = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  
+
 
   const [activeTab, setActiveTab] = useState(2);
 
@@ -47,7 +48,7 @@ const MemberCowner = () => {
     else setActiveTab(0); // Default to "전체 회원"
   }, [location.pathname]);
 
-  
+
 
   const handleTabChange = (_e, v) => {
     setActiveTab(v);
@@ -85,14 +86,51 @@ const MemberCowner = () => {
     }
   };
 
-  useEffect(() => { load();}, [page, keyword, sort]);
+  useEffect(() => { load(); }, [page, keyword, sort]);
 
   return (
-    <Box flexGrow={1} p={4}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-        <Box>
-          <Typography variant="h5" fontWeight="bold" mb={1}>차주</Typography>
-          <Tabs value={activeTab} onChange={handleTabChange} textColor="primary" indicatorColor="primary">
+    <Box flexGrow={1} p={{ xs: 2, md: 4 }}>
+      <Box
+        display="flex"
+        flexDirection={{ xs: 'column', md: 'row' }}
+        justifyContent="space-between"
+        alignItems={{ xs: 'stretch', md: 'center' }}
+        gap={2}
+        mb={2}
+      >
+        <Box minWidth={0}>
+          <Box
+            display="flex"
+            justifyContent="space-between"
+            alignItems="center"
+            flexWrap="wrap"
+            mb={1}
+          >
+            <Typography variant="h5" fontWeight="bold">
+              차주
+            </Typography>
+
+            <Button
+              variant="contained"
+              color="secondary"
+              component={NavLink}
+              to="/admin/AdminCargoApproval"
+              sx={{ mt: { xs: 1, md: 0 },
+    display: { xs: "flex", md: "none" } }}
+            >
+              차량승인관리
+            </Button>
+          </Box>
+          <Tabs
+            value={activeTab}
+            onChange={handleTabChange}
+            textColor="primary"
+            indicatorColor="primary"
+            variant="scrollable"
+            scrollButtons="auto"
+            allowScrollButtonsMobile
+            sx={{ maxWidth: '100%' }}
+          >
             <Tab label="전체 회원" component={NavLink} to="/admin/memberAll" />
             <Tab label="물주" component={NavLink} to="/admin/memberOwner" />
             <Tab label="차주" component={NavLink} to="/admin/memberCowner" />
@@ -106,6 +144,7 @@ const MemberCowner = () => {
           size="small"
           value={keyword}
           onChange={handleSearchChange}
+          sx={{ width: { xs: '100%', md: 220 }, flexShrink: 0 }}
           InputProps={{
             startAdornment: <SearchIcon fontSize="small" sx={{ mr: 1, color: "grey.500" }} />,
           }}
@@ -117,8 +156,8 @@ const MemberCowner = () => {
       ) : error ? (
         <Typography color="error">{error}</Typography>
       ) : (
-        <TableContainer component={Paper}>
-          <Table sx={{ minWidth: 800 }}>
+        <TableContainer component={Paper} sx={{ overflowX: 'auto', width: '100%' }}>
+          <Table sx={{ minWidth: 600 }}>
             <TableHead>
               <TableRow>
                 <TableCell>이름</TableCell>
@@ -147,10 +186,9 @@ const MemberCowner = () => {
       )}
 
       <Box display="flex" justifyContent="center" mt={3}>
-        <Pagination count={totalPages} page={page} onChange={(_, v) => setPage(v)} color="primary" />
+        <Pagination count={totalPages} page={page} onChange={(_, v) => setPage(v)} color="primary" size="small" />
       </Box>
 
-      {/* Delivery Details Modal */}
       <DeliveryDetailsModal
         open={openModal}
         onClose={handleCloseModal}

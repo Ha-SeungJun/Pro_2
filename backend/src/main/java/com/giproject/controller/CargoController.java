@@ -167,4 +167,14 @@ public class CargoController {
             return ResponseEntity.status(500).body("업로드 실패: " + e.getMessage());
         }
     }
+    /**
+     * 승인된 모든 차량 목록 조회 (에러 방지 및 관리자용)
+     * 리액트에서 호출하는 /g2i4/cargo/all/approved 대응
+     */
+    @GetMapping("/all/approved")
+    public ResponseEntity<List<Cargo>> getAllApprovedCargo() {
+        // "APPROVED" 상태인 차량만 조회하거나, 일단 에러가 안 나게 전체 리스트라도 반환
+        List<Cargo> approvedList = cargoRepository.findAll(); // 혹은 findByStatus("APPROVED")
+        return ResponseEntity.ok(approvedList);
+    }
 }

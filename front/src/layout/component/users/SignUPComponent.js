@@ -396,7 +396,7 @@ const SignUpComponent = () => {
             <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 2 }}>
                 <img src="/image/logo/main_logo.png" alt="로고" style={{ height: 60 }} />
             </Box>
-            <Paper elevation={3} sx={{ p: 4, maxWidth: '80%', minWidth: '50%' }} component="form" onSubmit={onSubmit}>
+            <Paper elevation={3} sx={{ p: { xs: 2, sm: 4 }, width: '100%' }} component="form" onSubmit={onSubmit}>
                 <Typography variant="h5" align="center" gutterBottom sx={{ mb: 2 }}>회원가입</Typography>
 
                 <ToggleButtonGroup value={alignment} exclusive onChange={handleAlignment} fullWidth sx={{ mb: 2 }}>
@@ -434,13 +434,17 @@ const SignUpComponent = () => {
                                                     : '사용 가능한 ID입니다.')
                                 : ''
                         }
-                        sx={{ width: '99%' }}
+                        sx={{ flex: 1, minWidth: 0 }}
                     />
                     <Box sx={{ width: '30%', display: 'flex' }}>
                         <Button
                             variant="outlined"
-                            size="large"
-                            sx={{ height: '55px', flex: 1 }}
+                            sx={{
+                                height: '56px',
+                                whiteSpace: 'nowrap',  // ← 핵심
+                                flexShrink: 0,
+                                px: 2,
+                            }}
                             onClick={handleCheckId}
                             disabled={!id || !isIdValid || idStatus === 'checking'}
                         >
@@ -504,34 +508,34 @@ const SignUpComponent = () => {
                 </FormControl>
 
                 {/* 이메일 */}
-                <Box display="flex" gap={1} alignItems="center" sx={{ mb: 1.5 }}>
-                    <TextField
-                        label="Email"
-                        value={emailLocal}
-                        onChange={(e) => { if (!emailLocked) { setEmailLocal(e.target.value); setEmailVerified(false); } }}
-                        InputProps={{ readOnly: emailLocked }}
-                        sx={{ flex: '1 1 0', mr: 1.3 }}
-                    />
-                    <Typography sx={{ width: 32, height: 56, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>@</Typography>
-                    <Autocomplete
-                        freeSolo
-                        options={['gmail.com', 'naver.com', 'daum.net']}
-                        value={emailDomain}
-                        onInputChange={(_, v) => { if (!emailLocked) { setEmailDomain(v); setEmailVerified(false); } }}
-                        renderInput={(params) => (
-                            <TextField
-                                {...params}
-                                label="선택"
-                                InputProps={{ ...params.InputProps, readOnly: emailLocked }}
-                            />
-                        )}
-                        sx={{ flex: '1 1 0' }}
-                    />
+                <Box sx={{ mb: 1.5 }}>
+                    {/* 위 줄: 이메일 입력 */}
+                    <Box display="flex" gap={1} alignItems="center" sx={{ mb: 1 }}>
+                        <TextField
+                            label="Email"
+                            value={emailLocal}
+                            onChange={(e) => { if (!emailLocked) { setEmailLocal(e.target.value); setEmailVerified(false); } }}
+                            InputProps={{ readOnly: emailLocked }}
+                            sx={{ flex: 1, minWidth: 0 }}
+                        />
+                        <Typography sx={{ flexShrink: 0 }}>@</Typography>
+                        <Autocomplete
+                            freeSolo
+                            options={['gmail.com', 'naver.com', 'daum.net']}
+                            value={emailDomain}
+                            onInputChange={(_, v) => { if (!emailLocked) { setEmailDomain(v); setEmailVerified(false); } }}
+                            renderInput={(params) => (
+                                <TextField {...params} label="도메인" InputProps={{ ...params.InputProps, readOnly: emailLocked }} />
+                            )}
+                            sx={{ flex: 1, minWidth: 0 }}
+                        />
+                    </Box>
+                    {/* 아래 줄: 인증 버튼 full-width */}
                     <Button
                         variant={emailVerified ? 'contained' : 'outlined'}
                         color={emailVerified ? 'success' : 'primary'}
-                        size="large"
-                        sx={{ height: 56, whiteSpace: 'nowrap' }}
+                        fullWidth
+                        sx={{ height: 48 }}
                         onClick={onClickVerifyEmail}
                         disabled={emailLocked || !canOpenVerify}
                     >

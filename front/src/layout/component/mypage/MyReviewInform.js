@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { API_SERVER_HOST } from "../../../api/serverConfig";
 import {
   Box,
   Typography,
@@ -226,7 +227,33 @@ const MyReviewInform = () => {
       alert("삭제 실패");
     }
   };
+  const validateImageFiles = (files) => {
+    if (files.length > 3) {
+      alert("이미지는 최대 3장까지 선택할 수 있습니다.");
+      return false;
+    }
 
+    const invalidFile = files.find((file) => {
+      const lower = file.name.toLowerCase();
+
+      const validExt =
+        lower.endsWith(".jpg") ||
+        lower.endsWith(".jpeg") ||
+        lower.endsWith(".png") ||
+        lower.endsWith(".webp");
+
+      const validSize = file.size <= 10 * 1024 * 1024;
+
+      return !validExt || !validSize;
+    });
+
+    if (invalidFile) {
+      alert("jpg, jpeg, png, webp 파일만 가능하며, 1개당 최대 10MB까지 업로드할 수 있습니다.");
+      return false;
+    }
+
+    return true;
+  };
   const handleConfirmModify = async () => {
     if (!selectedReview) return;
 
@@ -339,92 +366,97 @@ const MyReviewInform = () => {
       );
     }
 
-    return serverData.dtoList.map((item) => (
-      <TableRow key={item.reviewNo}>
-        <TableCell align="center">{item.reviewNo}</TableCell>
-        <TableCell align="center">{item.deliveryNo}</TableCell>
+    return serverData.dtoList.map((item) => {
+      const firstImage = item.images?.[0];
+      const thumbnailPath = firstImage?.thumbnailPath || firstImage?.imagePath;
 
-        <TableCell align="center">
-          <Button
-            variant="text"
-            size="small"
-            onClick={() => handleOpenDriverDetailModal(item)}
-            sx={{
-              textTransform: "none",
-              fontWeight: 600,
-              minWidth: "auto",
-              p: 0,
-            }}
-          >
-            {item.driverName || "-"}
-          </Button>
-        </TableCell>
+      return (
+        <TableRow key={item.reviewNo}>
+          <TableCell align="center">{item.reviewNo}</TableCell>
+          <TableCell align="center">{item.deliveryNo}</TableCell>
 
-        <TableCell align="center">
-          <Rating value={Number(item.rating) || 0} precision={0.5} readOnly />
-        </TableCell>
-        <TableCell align="center">
-          {item.images?.length > 0 ? (
-            <img
-              src={`http://localhost:8080/${item.images[0].imagePath}`}
-              alt="thumbnail"
-              style={{
-                width: 50,
-                height: 50,
-                objectFit: "cover",
-                borderRadius: 6,
-                border: "1px solid #ddd",
+          <TableCell align="center">
+            <Button
+              variant="text"
+              size="small"
+              onClick={() => handleOpenDriverDetailModal(item)}
+              sx={{
+                textTransform: "none",
+                fontWeight: 600,
+                minWidth: "auto",
+                p: 0,
               }}
-            />
-          ) : (
-            "-"
-          )}
-        </TableCell>
-        <TableCell align="left">
-          <Box
-            sx={{
-              maxWidth: 420,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-            title={item.comment || ""}
-          >
-            {item.comment || "-"}
-          </Box>
-        </TableCell>
-        <TableCell align="center">{formatDateTime(item.createdAt)}</TableCell>
-        <TableCell align="center">
-          <Stack direction="row" spacing={1} justifyContent="center">
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={() => handleOpenDetailModal(item)}
             >
-              상세
+              {item.driverName || "-"}
             </Button>
+          </TableCell>
 
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={() => handleOpenEditModal(item)}
+          <TableCell align="center">
+            <Rating value={Number(item.rating) || 0} precision={0.5} readOnly />
+          </TableCell>
+          <TableCell align="center">
+            {item.images?.length > 0 ? (
+              <img
+                src={`${API_SERVER_HOST}/${thumbnailPath}`}
+                alt="thumbnail"
+                style={{
+                  width: 50,
+                  height: 50,
+                  objectFit: "cover",
+                  borderRadius: 6,
+                  border: "1px solid #ddd",
+                }}
+              />
+            ) : (
+              "-"
+            )}
+          </TableCell>
+          <TableCell align="left">
+            <Box
+              sx={{
+                maxWidth: 420,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+              title={item.comment || ""}
             >
-              수정
-            </Button>
+              {item.comment || "-"}
+            </Box>
+          </TableCell>
+          <TableCell align="center">{formatDateTime(item.createdAt)}</TableCell>
+          <TableCell align="center">
+            <Stack direction="row" spacing={1} justifyContent="center">
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => handleOpenDetailModal(item)}
+              >
+                상세
+              </Button>
 
-            <Button
-              variant="outlined"
-              color="error"
-              size="small"
-              onClick={() => handleDelete(item.reviewNo)}
-            >
-              삭제
-            </Button>
-          </Stack>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => handleOpenEditModal(item)}
+              >
+                수정
+              </Button>
 
-        </TableCell>
-      </TableRow>
-    ));
+              <Button
+                variant="outlined"
+                color="error"
+                size="small"
+                onClick={() => handleDelete(item.reviewNo)}
+              >
+                삭제
+              </Button>
+            </Stack>
+
+          </TableCell>
+        </TableRow>
+      );
+    });
   };
   const selectedDriverProfileInfo = {
     id: selectedDriverDetail?.profile?.driverId || "",
@@ -501,8 +533,12 @@ const MyReviewInform = () => {
     }
   }, [driverReviewPage, driverReviewTotalPage]);
   return (
-    <Box sx={{ bgcolor: "#f7f9fc", minHeight: "100vh", py: 6 }}>
-      <Container maxWidth="xl" disableGutters sx={{ px: { xs: 1, sm: 2 } }}>
+<Box sx={{ bgcolor: '#f7f9fc', minHeight: '100vh', py: 6, pb: { xs: '80px', md: 6 },overflow: 'hidden', }}>
+      <Container maxWidth="xl" disableGutters     sx={{
+      px: { xs: 1, sm: 2 },
+      maxWidth: '100vw',
+      boxSizing: 'border-box',
+    }}>
         <Typography variant="h5" fontWeight="bold" gutterBottom textAlign="center">
           내 리뷰 관리
         </Typography>
@@ -597,7 +633,7 @@ const MyReviewInform = () => {
                 return (
                   <Box key={imageId} sx={{ textAlign: "center" }}>
                     <img
-                      src={`http://localhost:8080/${img.imagePath}`}
+                      src={`${API_SERVER_HOST}/${img.imagePath}`}
                       alt={`review-${imageId}`}
                       style={{
                         width: 100,
@@ -639,6 +675,13 @@ const MyReviewInform = () => {
               accept="image/*"
               onChange={(e) => {
                 const files = Array.from(e.target.files || []);
+
+                if (!validateImageFiles(files)) {
+                  e.target.value = "";
+                  setNewEditImages([]);
+                  return;
+                }
+
                 setNewEditImages(files);
               }}
             />
@@ -734,7 +777,7 @@ const MyReviewInform = () => {
                 {selectedDetailReview.images.map((img) => (
                   <img
                     key={img.reviewImageNo}
-                    src={`http://localhost:8080/${img.imagePath}`}
+                    src={`${API_SERVER_HOST}/${img.imagePath}`}
                     alt={`review-${img.reviewImageNo}`}
                     onClick={() => setSelectedImage(img.imagePath)}
                     style={{
@@ -909,7 +952,7 @@ const MyReviewInform = () => {
         <DialogContent sx={{ textAlign: "center" }}>
           {selectedImage && (
             <img
-              src={`http://localhost:8080/${selectedImage}`}
+              src={`${API_SERVER_HOST}/${selectedImage}`}
               alt="preview"
               style={{
                 maxWidth: "100%",

@@ -7,6 +7,7 @@ import CounselorChat from './layout/component/CounselorChat';
 import FloatingButtons from './components/FloatingButtons';
 import { useDispatch } from 'react-redux';
 import { getUserInfoAsync } from './slice/loginSlice';
+import { Box } from '@mui/material';  // ← 추가
 
 function App() {
   const dispatch = useDispatch();
@@ -22,33 +23,27 @@ function App() {
     <>
       <RouterProvider router={root} />
 
-      {/* ✅ 하단 버튼 통합 컨테이너 (정렬 타워) */}
-      <div
+      <Box
         className="no-print"
-        style={{
+        sx={{
           position: 'fixed',
-          bottom: '24px',
+          bottom: { xs: '76px', md: '24px' },  // ← 모바일: 탭바(60)+여백(16)
           right: '24px',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: '16px', // 버튼 사이 간격
-          zIndex: 9999
+          gap: '16px',
+          zIndex: 9999,
         }}
       >
-        {/* 가이드 버튼 그룹 */}
         <FloatingButtons />
-
-        {/* 상담사 연결 버튼 */}
-        <div style={{ position: 'relative' }}>
+        <Box sx={{ position: 'relative' }}>
           <CounselorChat />
-        </div>
-
-        {/* AI 챗봇 버튼 */}
-        <div style={{ position: 'relative' }}>
+        </Box>
+        <Box sx={{ position: 'relative' }}>
           <AiChatBot />
-        </div>
-      </div>
+        </Box>
+      </Box>
     </>
   );
 }

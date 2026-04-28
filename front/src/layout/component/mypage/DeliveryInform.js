@@ -218,11 +218,39 @@ const DeliveryInfoPage = () => {
     setReviewScore(0);
     setReviewImages([]);
   };
+  const validateImageFiles = (files) => {
+    if (files.length > 3) {
+      alert("이미지는 최대 3장까지 선택할 수 있습니다.");
+      return false;
+    }
+
+    const invalidFile = files.find((file) => {
+      const lower = file.name.toLowerCase();
+
+      const validExt =
+        lower.endsWith(".jpg") ||
+        lower.endsWith(".jpeg") ||
+        lower.endsWith(".png") ||
+        lower.endsWith(".webp");
+
+      const validSize = file.size <= 10 * 1024 * 1024;
+
+      return !validExt || !validSize;
+    });
+
+    if (invalidFile) {
+      alert("jpg, jpeg, png, webp 파일만 가능하며, 1개당 최대 10MB까지 업로드 가능합니다.");
+      return false;
+    }
+
+    return true;
+  };
   const handleReviewImageChange = (e) => {
     const files = Array.from(e.target.files || []);
 
-    if (files.length > 3) {
-      alert("이미지는 최대 3장까지 선택할 수 있습니다.");
+    if (!validateImageFiles(files)) {
+      e.target.value = "";
+      setReviewImages([]);
       return;
     }
 
@@ -657,8 +685,12 @@ const DeliveryInfoPage = () => {
   if (!userType) return <Box sx={{ p: 6 }}>사용자 타입 확인 중…</Box>;
 
   return (
-    <Box sx={{ bgcolor: '#f7f9fc', minHeight: '100vh', py: 6 }}>
-      <Container maxWidth="xl" disableGutters sx={{ px: { xs: 1, sm: 2 } }}>
+    <Box sx={{ bgcolor: '#f7f9fc', minHeight: '100vh', py: 6, pb: { xs: '80px', md: 6 },overflow: 'hidden', }}>
+      <Container maxWidth="xl" disableGutters     sx={{
+      px: { xs: 1, sm: 2 },
+      maxWidth: '100vw',
+      boxSizing: 'border-box',
+    }}>
         <Typography variant="h5" fontWeight="bold" gutterBottom textAlign="center">
           {isMember ? '배송 정보 관리' : '차주 배송 관리'}
         </Typography>
@@ -668,8 +700,8 @@ const DeliveryInfoPage = () => {
           <Typography variant="h6" fontWeight="bold" gutterBottom>
             {isMember ? '견적 의뢰 진행 상황 (미결제)' : '미결제 배송 요청'}
           </Typography>
-          <TableContainer component={Paper} elevation={1} sx={{ height: 470, position: 'relative', pb: 0 }}>
-            <Table sx={{ '& .MuiTableCell-root': { height: 60, py: 0 } }}>
+          <TableContainer component={Paper} elevation={1} sx={{ height: 470, position: 'relative', pb: 0, overflowX: 'auto' }}>
+            <Table sx={{ '& .MuiTableCell-root': { height: 60, py: 0 }, minWidth: 650 }}>
               {tableColgroup}
               <TableHead>
                 <TableRow>
@@ -697,8 +729,8 @@ const DeliveryInfoPage = () => {
           <Typography variant="h6" fontWeight="bold" gutterBottom>
             {isMember ? '견적 의뢰 진행 상황 (결제됨)' : '진행 중 배송 (결제됨)'}
           </Typography>
-          <TableContainer component={Paper} elevation={1} sx={{ height: 470, position: 'relative', pb: 0 }}>
-            <Table sx={{ '& .MuiTableCell-root': { height: 60, py: 0 } }}>
+          <TableContainer component={Paper} elevation={1} sx={{ height: 470, position: 'relative', pb: 0, overflowX: 'auto' }}>
+            <Table sx={{ '& .MuiTableCell-root': { height: 60, py: 0 }, minWidth: 750 }}>
               {paidColgroup}
               <TableHead>
                 <TableRow>
@@ -726,8 +758,8 @@ const DeliveryInfoPage = () => {
           <Typography variant="h6" fontWeight="bold" gutterBottom>
             {isMember ? '배송 완료 된 화물' : '완료된 배송'}
           </Typography>
-          <TableContainer component={Paper} elevation={1}>
-            <Table sx={{ '& .MuiTableCell-root': { height: 60, py: 0 } }}>
+          <TableContainer component={Paper} elevation={1} sx={{ overflowX: 'auto' }}>
+            <Table sx={{ '& .MuiTableCell-root': { height: 60, py: 0 }, minWidth: 750 }}>
               {completedColgroup}
               <TableHead>
                 <TableRow>
@@ -873,7 +905,7 @@ const DeliveryInfoPage = () => {
               onChange={handleReviewImageChange}
             />
             <Typography variant="caption" color="text.secondary">
-              최대 3장까지 업로드 가능합니다.
+              최대 3장까지 업로드(각 이미지는 10MB이하)
             </Typography>
           </Box>
         </DialogContent>

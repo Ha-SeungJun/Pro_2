@@ -23,8 +23,8 @@ const toPreviewUrl = (p) => {
   const s = String(p);
   if (s.startsWith('http')) return s;
   if (s.startsWith('/g2i4/uploads/')) return `${API_BASE}${s}`;
-  if (s.startsWith('/uploads/')) return `${API_BASE}/g2i4${s}`; 
-  return `${API_BASE}/g2i4/uploads/cargo/${encodeURIComponent(s)}`; 
+  if (s.startsWith('/uploads/')) return `${API_BASE}/g2i4${s}`;
+  return `${API_BASE}/g2i4/uploads/cargo/${encodeURIComponent(s)}`;
 };
 
 const EditVehicleInform = () => {
@@ -37,11 +37,12 @@ const EditVehicleInform = () => {
   const [weightOptions, setWeightOptions] = useState(['0.5톤','1톤','2톤','3톤','4톤','5톤이상']); 
   const [loading, setLoading] = useState(false); 
   
+
   const [formData, setFormData] = useState({
     no: null,
     name: '',
     weight: '',
-    cargoNumber: '', 
+    cargoNumber: '',
     image: null,
     preview: null
   });
@@ -197,27 +198,33 @@ const EditVehicleInform = () => {
   };
 
   return (
-    <Box sx={{ p: 7, bgcolor: '#f3f4f6', minHeight: '100vh' }}>
+    <Box sx={{ p: { xs: 2, sm: 4, md: 7 }, bgcolor: '#f3f4f6', minHeight: '100vh' }}>
       <Typography variant="h5" fontWeight="bold" mb={4}>내 차량 관리</Typography>
 
-      <Grid container spacing={4}>
+      <Grid container spacing={{ xs: 2, md: 4 }}>
         {vehicles.map((vehicle, idx) => (
-          <Grid item key={idx}>
-            <Paper sx={{ 
-              width: 400, height: 400, p: 2, 
+          <Grid item key={idx} xs={12} sm={6} lg={4}>  {/* ← 반응형 그리드 */}
+            <Paper sx={{
+              width: '100%',   // ← 고정 400 제거
+              height: 'auto',  // ← 고정 400 제거
+              p: 2,
               display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
               border: vehicle.status !== 'APPROVED' ? '2px dashed #ff000033' : 'none'
             }}>
-              <Box sx={{ height: 200, bgcolor: '#e5e7eb', borderRadius: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Box sx={{
+                height: { xs: 160, sm: 200 },  // ← 반응형 높이
+                bgcolor: '#e5e7eb', borderRadius: 1,
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
                 <img
                   src={vehicle.preview || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="500" height="310"><rect width="100%" height="100%" fill="%23d1d5db"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%236b7280" font-size="24" font-family="sans-serif">No Image</text></svg>'}
                   alt="preview"
                   style={{ width: 'auto', height: 'auto', maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
                 />
               </Box>
-              
+
               <Box sx={{ textAlign: 'center', mt: 2 }}>
-                <Box display="flex" justifyContent="center" alignItems="center" gap={1} mb={1}>
+                <Box display="flex" justifyContent="center" alignItems="center" gap={1} mb={1} flexWrap="wrap">
                   <Typography fontWeight="bold" variant="h6">{vehicle.name}</Typography>
                   {vehicle.status === 'PENDING' && <Chip label="승인 대기중" color="warning" size="small" />}
                   {vehicle.status === 'APPROVED' && <Chip label="승인 완료" color="success" size="small" />}
@@ -237,15 +244,31 @@ const EditVehicleInform = () => {
           </Grid>
         ))}
 
-        <Grid item>
-          <Paper onClick={() => handleOpen()} sx={{ width: 400, height: 400, border: '2px dashed #ccc', borderRadius: 2, display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer' }}>
-            <Typography variant="h4">＋ 신규 차량 추가</Typography>
+
+        {/* 신규 차량 추가 버튼 */}
+        <Grid item xs={12} sm={6} lg={4}>
+          <Paper onClick={() => handleOpen()} sx={{
+            width: '100%',   // ← 고정 400 제거
+            height: { xs: 200, sm: 300, md: 400 },  // ← 반응형 높이
+            border: '2px dashed #ccc', borderRadius: 2,
+            display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer'
+          }}>
+            <Typography variant="h6">＋ 신규 차량 추가</Typography>
           </Paper>
         </Grid>
       </Grid>
 
+      {/* 모달은 그대로 유지 */}
       <Modal open={open} onClose={handleClose}>
-        <Box sx={{ p: 4, bgcolor: '#fff', borderRadius: 2, width: '90%', maxWidth: 1000, mx: 'auto', mt: '5%', position: 'relative' }}>
+        <Box sx={{
+          p: { xs: 2, md: 4 },
+          bgcolor: '#fff', borderRadius: 2,
+          width: '90%', maxWidth: 1000,
+          mx: 'auto', mt: { xs: '2%', md: '5%' },  // ← 반응형 모달 위치
+          position: 'relative',
+          maxHeight: '90vh',   // ← 모바일에서 스크롤 가능하도록
+          overflowY: 'auto'    // ← 추가
+        }}>
           <IconButton onClick={handleClose} sx={{ position: 'absolute', top: 12, right: 12 }}>
             <CloseIcon />
           </IconButton>
@@ -260,22 +283,10 @@ const EditVehicleInform = () => {
             </Box>
             <Box flex={1} display="flex" flexDirection="column" gap={2}>
               <TextField label="차량 이름 (예: 다마스)" value={formData.name} onChange={handleChange('name')} fullWidth />
-              
-              <TextField 
-                label="차량 번호 (예: 12가 3456)" 
-                value={formData.cargoNumber} 
-                onChange={handleChange('cargoNumber')} 
-                fullWidth 
-              />
-
+              <TextField label="차량 번호 (예: 12가 3456)" value={formData.cargoNumber} onChange={handleChange('cargoNumber')} fullWidth />
               <FormControl fullWidth>
                 <InputLabel id="weight-label">적재 무게</InputLabel>
-                <Select
-                  labelId="weight-label"
-                  label="적재 무게"
-                  value={formData.weight}
-                  onChange={handleChange('weight')}
-                >
+                <Select labelId="weight-label" label="적재 무게" value={formData.weight} onChange={handleChange('weight')}>
                   {weightOptions.map((w) => (
                     <MenuItem key={w} value={w}>{w}</MenuItem>
                   ))}

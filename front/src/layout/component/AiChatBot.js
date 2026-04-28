@@ -1,9 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
-import Draggable from 'react-draggable';
 
 const AiChatBot = () => {
-    const nodeRef = useRef(null);
     const scrollRef = useRef(null);
     const [messages, setMessages] = useState([
         { role: 'ai', text: 'G2I4 화물운송 AI 상담원입니다. 무엇을 도와드릴까요?' }
@@ -12,12 +10,11 @@ const AiChatBot = () => {
     const [loading, setLoading] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
 
+    // 메시지 추가 시 자동 스크롤
+
     useEffect(() => {
         if (scrollRef.current) {
-            scrollRef.current.scrollTo({
-                top: scrollRef.current.scrollHeight,
-                behavior: 'smooth'
-            });
+            scrollRef.current.scrollIntoView({ behavior: 'smooth' });
         }
     }, [messages]);
 
@@ -29,6 +26,7 @@ const AiChatBot = () => {
         setLoading(true);
 
         try {
+            // 팀장님의 기존 백엔드 주소 유지
             const res = await axios.post("http://localhost:8080/api/ai/ask", { question: input });
             setMessages(prev => [...prev, { role: 'ai', text: res.data.answer }]);
         } catch (err) {
@@ -39,87 +37,114 @@ const AiChatBot = () => {
     };
 
     return (
-        <>
-            {/* 1. 플로팅 버튼 (fixed 제거, App.js의 flex 컨테이너 영향을 받음) */}
-            {!isOpen && (
-                <div
-                    onClick={() => setIsOpen(true)}
-                    style={{
-                        /* ✅ 외부 fixed 제거, 크기만 유지 */
-                        width: '64px', height: '64px', borderRadius: '50%',
-                        backgroundColor: '#0056b3', color: 'white', display: 'flex',
-                        justifyContent: 'center', alignItems: 'center', fontSize: '30px',
-                        cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-                        border: '2px solid white' // 다른 버튼과 통일감
-                    }}
-                >
-                    🤖
+        <div style={{ position: 'relative' }}>
+            {/* 1. 플로팅 버튼 (CounselorChat 스타일과 통일) */}
+            <button onClick={() => setIsOpen(!isOpen)} style={btnStyle}>
+                {isOpen ? '✕' : (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <span style={{ fontSize: '24px' }}>🤖</span>
+                        <span style={{ fontSize: '9px' }}>AI상담</span>
+                    </div>
+                )}
+            </button>
+
+            {/* 2. 채팅창 (CounselorChat 레이아웃과 통일) */}
+            {isOpen && (
+                <div style={chatWinStyle}>
+                    {/* 헤더 안내 (CounselorChat의 noticeStyle 활용) */}
+                    <div style={noticeStyle}>
+                        ✨ G2I4 지능형 AI 상담 서비스
+                    </div>
+
+                    {/* 메시지 리스트 */}
+                    <div style={msgListStyle}>
+                        {messages.map((m, i) => (
+                            <div key={i} style={m.role === 'user' ? myMsg : otherMsg}>
+                                <strong>{m.role === 'user' ? '나' : 'AI'}:</strong> {m.text}
+                            </div>
+                        ))}
+                        {loading && (
+                            <div style={{ ...otherMsg, color: '#888', fontStyle: 'italic' }}>
+                                AI가 답변을 생각 중입니다...
+                            </div>
+                        )}
+                        <div ref={scrollRef} />
+                    </div>
+
+                    {/* 입력 영역 */}
+                    <div style={inputArea}>
+                        <input
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+                            placeholder="AI에게 질문하기..."
+                            style={{ flex: 1, border: 'none', outline: 'none', fontSize: '13px' }}
+                        />
+                        <button onClick={handleSend} style={sendBtn}>전송</button>
+                    </div>
                 </div>
             )}
+        </div>
 
-            {/* 2. 채팅창 (열렸을 때는 기존처럼 fixed로 화면 중앙 근처에 유지) */}
-            {isOpen && (
-                <Draggable nodeRef={nodeRef} handle=".chat-header">
-                    <div
-                        ref={nodeRef}
-                        style={{
-                            position: 'fixed', bottom: '100px', right: '40px',
-                            width: '350px', backgroundColor: 'white',
-                            boxShadow: '0 8px 24px rgba(0,0,0,0.2)', borderRadius: '15px',
-                            display: 'flex', flexDirection: 'column', overflow: 'hidden',
-                            border: '1px solid #ddd', zIndex: 10001
-                        }}
-                    >
-                        {/* 헤더 */}
-                        <div
-                            className="chat-header"
-                            style={{
-                                backgroundColor: '#0056b3', color: 'white', padding: '15px',
-                                fontWeight: 'bold', display: 'flex', justifyContent: 'space-between',
-                                alignItems: 'center', cursor: 'move'
-                            }}
-                        >
-                            <span>G2I4 AI 상담원</span>
-                            <button
-                                onClick={() => setIsOpen(false)}
-                                style={{ background: 'none', border: 'none', color: 'white', fontSize: '20px', cursor: 'pointer' }}
-                            >
-                                ✕
-                            </button>
-                        </div>
-
-                        {/* 메시지 영역 */}
-                        <div
-                            ref={scrollRef}
-                            style={{ height: '350px', overflowY: 'auto', padding: '15px', backgroundColor: '#f9f9f9', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                            {messages.map((m, i) => (
-                                <div key={i} style={{ alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '80%' }}>
-                                    <div style={{ padding: '10px', borderRadius: '10px', backgroundColor: m.role === 'user' ? '#0056b3' : '#e9ecef', color: m.role === 'user' ? 'white' : '#333', fontSize: '14px', lineHeight: '1.4', wordBreak: 'break-word' }}>
-                                        {m.text}
-                                    </div>
-                                </div>
-                            ))}
-                            {loading && <div style={{ fontSize: '12px', color: '#888', alignSelf: 'flex-start' }}>AI가 답변을 생각 중입니다...</div>}
-                        </div>
-
-                        {/* 입력 영역 */}
-                        <div style={{ display: 'flex', borderTop: '1px solid #ddd' }}>
-                            <input
-                                value={input}
-                                onChange={(e) => setInput(e.target.value)}
-                                onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                                placeholder="질문을 입력하세요..."
-                                style={{ flexGrow: 1, border: 'none', padding: '15px', outline: 'none' }}
-                            />
-                            <button onClick={handleSend} style={{ backgroundColor: '#0056b3', color: 'white', border: 'none', padding: '0 20px', cursor: 'pointer', fontWeight: 'bold' }}>
-                                전송
-                            </button>
-                        </div>
-                    </div>
-                </Draggable>
-            )}
-        </>
     );
+};
+
+
+const btnStyle = { 
+    width: '64px', 
+    height: '64px', 
+    borderRadius: '50%', 
+    backgroundColor: '#0056b3', // AI는 파란색 계열로 차별화 (CounselorChat은 노란색)
+    color: 'white',
+    border: '2px solid white', 
+    cursor: 'pointer', 
+    fontWeight: 'bold',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 0
+};
+
+const chatWinStyle = { 
+    position: 'absolute',
+    bottom: '80px',
+    right: '0',
+    width: '320px', 
+    height: '450px', 
+    backgroundColor: '#f5f5f5', 
+    border: '1px solid #ddd', 
+    borderRadius: '15px', 
+    display: 'flex', 
+    flexDirection: 'column',
+    boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+    overflow: 'hidden',
+    zIndex: 1000 // 다른 요소보다 위에 뜨도록
+};
+
+const noticeStyle = { 
+    backgroundColor: '#eef6ff', 
+    color: '#0056b3', 
+    fontSize: '11px', 
+    padding: '8px', 
+    textAlign: 'center', 
+    fontWeight: 'bold',
+    borderBottom: '1px solid #d0e3ff'
+};
+
+const msgListStyle = { flex: 1, overflowY: 'auto', padding: '10px' };
+const inputArea = { display: 'flex', padding: '10px', backgroundColor: 'white', borderTop: '1px solid #ddd' };
+
+// 메시지 말풍선 스타일
+const myMsg = { textAlign: 'right', marginBottom: '10px', color: '#333', fontSize: '13px' };
+const otherMsg = { textAlign: 'left', marginBottom: '10px', color: '#555', fontSize: '13px' };
+
+const sendBtn = { 
+    backgroundColor: 'transparent', 
+    border: 'none', 
+    color: '#0056b3', 
+    fontWeight: 'bold', 
+    cursor: 'pointer' 
 };
 
 export default AiChatBot;

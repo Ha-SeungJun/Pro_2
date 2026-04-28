@@ -114,7 +114,7 @@ const AdminPage = () => {
           이용 통계
         </Typography>
 
-        <Box display="flex" gap={2} mb={4}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 2, mb: 4 }}>
           {[
             { label: "사용자수", value: dashboardData.totalUsers },
             { label: "이번달 매출", value: dashboardData.monthlyRevenue },
@@ -125,19 +125,18 @@ const AdminPage = () => {
               key={idx}
               elevation={3}
               sx={{
-                flex: 1,
-                minHeight: 120,
+                p: 3,
+                minHeight: 130,
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "center",
                 alignItems: "center",
                 borderRadius: 2,
+                textAlign: 'center',
               }}
             >
-              <Typography variant="subtitle1">{item.label}</Typography>
-              <Typography variant="h5" fontWeight="bold">
-                {item.value.toLocaleString()}
-              </Typography>
+              <Typography variant="body1" color="text.secondary" gutterBottom>{item.label}</Typography>
+              <Typography variant="h5" fontWeight="bold">{item.value.toLocaleString()}</Typography>
             </Paper>
           ))}
         </Box>

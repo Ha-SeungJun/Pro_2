@@ -13,7 +13,8 @@ import {
   Pagination,
   CircularProgress,
   TableContainer,
-  Paper
+  Paper,
+  Button
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import axios from "axios";
@@ -26,7 +27,7 @@ const MemberAdmin = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  
+
   const [activeTab, setActiveTab] = useState(4);
   const [currentPage, setCurrentPage] = useState(1);
   const [users, setUsers] = useState([]);
@@ -57,7 +58,7 @@ const MemberAdmin = () => {
   const handlePageChange = (_e, value) => setCurrentPage(value);
   const handleSearchChange = (e) => setSearchKeyword(e.target.value);
 
-  
+
 
   useEffect(() => {
     const load = async () => {
@@ -97,13 +98,49 @@ const MemberAdmin = () => {
   }, [currentPage, searchKeyword, sort]);
 
   return (
-    <Box flexGrow={1} p={4}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-        <Box>
-          <Typography variant="h5" fontWeight="bold" mb={1}>
-            회원 관리
-          </Typography>
-          <Tabs value={activeTab} onChange={handleTabChange} textColor="primary" indicatorColor="primary">
+    <Box flexGrow={1} p={{ xs: 2, md: 4 }}>
+      {/* 상단 영역: 모바일에서 세로 스택 */}
+      <Box
+        display="flex"
+        flexDirection={{ xs: 'column', md: 'row' }}
+        justifyContent="space-between"
+        alignItems={{ xs: 'stretch', md: 'center' }}
+        gap={2}
+        mb={2}
+      >
+        <Box minWidth={0}> {/* overflow 방지 */}
+          <Box
+            display="flex"
+            justifyContent="space-between"
+            alignItems="center"
+            flexWrap="wrap"
+            mb={1}
+          >
+            <Typography variant="h5" fontWeight="bold">
+              관리자
+            </Typography>
+
+            <Button
+              variant="contained"
+              color="secondary"
+              component={NavLink}
+              to="/admin/AdminCargoApproval"
+              sx={{ mt: { xs: 1, md: 0 },
+    display: { xs: "flex", md: "none" } }}
+            >
+              차량승인관리
+            </Button>
+          </Box>
+          <Tabs
+            value={activeTab}
+            onChange={handleTabChange}
+            textColor="primary"
+            indicatorColor="primary"
+            variant="scrollable"
+            scrollButtons="auto"
+            allowScrollButtonsMobile
+            sx={{ maxWidth: '100%' }}
+          >
             <Tab label="전체 회원" component={NavLink} to="/admin/memberAll" />
             <Tab label="물주" component={NavLink} to="/admin/memberOwner" />
             <Tab label="차주" component={NavLink} to="/admin/memberCowner" />
@@ -111,25 +148,34 @@ const MemberAdmin = () => {
             <Tab label="관리자" component={NavLink} to="/admin/memberAdmin" />
           </Tabs>
         </Box>
+
+        {/* 검색창: 모바일 전체 너비 / 데스크탑 고정 너비 */}
         <TextField
           variant="outlined"
           placeholder="Search"
           size="small"
           value={searchKeyword}
           onChange={handleSearchChange}
+          sx={{
+            width: { xs: '100%', md: 220 },
+            flexShrink: 0,
+          }}
           InputProps={{
-            startAdornment: <SearchIcon fontSize="small" sx={{ mr: 1, color: "grey.500" }} />,
+            startAdornment: (
+              <SearchIcon fontSize="small" sx={{ mr: 1, color: 'grey.500' }} />
+            ),
           }}
         />
       </Box>
 
+      {/* 테이블 영역 */}
       {isLoading ? (
         <Box display="flex" justifyContent="center" alignItems="center" height="300px">
           <CircularProgress />
         </Box>
       ) : (
-        <TableContainer component={Paper}>
-          <Table sx={{ minWidth: 800 }}>
+        <TableContainer component={Paper} sx={{ overflowX: 'auto', width: '100%' }}>
+          <Table sx={{ minWidth: 600 }}> {/* 800 → 600으로 완화 */}
             <TableHead>
               <TableRow>
                 <TableCell>이름</TableCell>
@@ -159,8 +205,15 @@ const MemberAdmin = () => {
         </TableContainer>
       )}
 
+      {/* 페이지네이션 */}
       <Box display="flex" justifyContent="center" mt={3}>
-        <Pagination count={totalPages} page={currentPage} onChange={handlePageChange} color="primary" />
+        <Pagination
+          count={totalPages}
+          page={currentPage}
+          onChange={handlePageChange}
+          color="primary"
+          size="small"
+        />
       </Box>
     </Box>
   );

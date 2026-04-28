@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react"; 
+import React, { useEffect, useState, useMemo } from "react";
 import {
     Box,
     Paper,
@@ -66,7 +66,7 @@ const OrderPaymentSelect = ({ serverData, orderSheet, selectedMcno, discountAmou
                     ...orderSheet,
                     matchingNo: Number(serverData.matchingNo),
                     mcno: selectedMcno || null,
-                    totalPrice: finalPaymentAmount 
+                    totalPrice: finalPaymentAmount
                 };
                 const orderNo = await postOrderCreate(payload);
                 const paymentDTO = {
@@ -106,7 +106,7 @@ const OrderPaymentSelect = ({ serverData, orderSheet, selectedMcno, discountAmou
                 ...orderSheet,
                 matchingNo: Number(serverData.matchingNo),
                 mcno: selectedMcno || null,
-                totalPrice: finalPaymentAmount 
+                totalPrice: finalPaymentAmount
             };
 
             const orderNo = await postOrderCreate(payload);
@@ -142,59 +142,72 @@ const OrderPaymentSelect = ({ serverData, orderSheet, selectedMcno, discountAmou
     };
 
     return (
-        <Grid container spacing={3} sx={{ maxWidth: 850, mx: "auto", mt: 4 }} wrap="nowrap">
-            <Grid item xs={12} md={7}>
-                <Box sx={{ p: 3 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>결제 방법</Typography>
-                    <Divider sx={{ mb: 3 }} />
-                    <Box sx={{ display: "flex", gap: 3 }}>
-                        <Button name="CARD" variant={paymentType === 'CARD' ? "contained" : "outlined"} onClick={handleSelectMethod}>신용·체크카드</Button>
-                        <Button name="TOSS" variant={paymentType === 'TOSS' ? "contained" : "outlined"} onClick={handleSelectMethod}>
-                            <img src="../../image/logo/TossPay_Logo_Primary.png" style={{ width: 100 }} alt="toss" />
-                        </Button>
-                        <Button name="KAKAO" variant={paymentType === 'KAKAO' ? "contained" : "outlined"} onClick={handleSelectMethod}>
-                            <img src="../../image/logo/payment_icon_yellow_medium.png" style={{ width: 80 }} alt="kakao" />
-                        </Button>
-                    </Box>
+        <Box sx={{ maxWidth: 800, mx: "auto", mt: 4, px: { xs: 0, sm: 0 } }}>
+
+            {/* 결제 방법 */}
+            <Box sx={{ p: { xs: 2, md: 3 } }}>
+                <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>결제 방법</Typography>
+                <Divider sx={{ mb: 3 }} />
+                <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+                    <Button
+                        name="CARD"
+                        variant={paymentType === 'CARD' ? "contained" : "outlined"}
+                        onClick={handleSelectMethod}
+                        sx={{ flex: { xs: '1 1 auto', sm: '0 0 auto' } }}
+                    >
+                        신용·체크카드
+                    </Button>
+                    <Button
+                        name="TOSS"
+                        variant={paymentType === 'TOSS' ? "contained" : "outlined"}
+                        onClick={handleSelectMethod}
+                        sx={{ flex: { xs: '1 1 auto', sm: '0 0 auto' }, p: 1 }}
+                    >
+                        <img src="../../image/logo/TossPay_Logo_Primary.png" style={{ width: 90, display: 'block' }} alt="toss" />
+                    </Button>
+                    <Button
+                        name="KAKAO"
+                        variant={paymentType === 'KAKAO' ? "contained" : "outlined"}
+                        onClick={handleSelectMethod}
+                        sx={{ flex: { xs: '1 1 auto', sm: '0 0 auto' }, p: 1 }}
+                    >
+                        <img src="../../image/logo/payment_icon_yellow_medium.png" style={{ width: 80, display: 'block' }} alt="kakao" />
+                    </Button>
                 </Box>
-            </Grid>
+            </Box>
 
-            <Grid item xs={12} md={5}>
-                <Paper variant="outlined" sx={{ p: 3, borderRadius: 3, display: "flex", flexDirection: "column", gap: 2 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 700 }}>총 결제금액</Typography>
-                    <Box sx={{ display: "grid", gridTemplateColumns: "1fr auto auto", rowGap: 1 }}>
-                        <Typography color="text.secondary">운송 요금 합계</Typography>
-                        {/* 🚨 원금(13,621)은 여기서 고정 출력 */}
-                        <Typography sx={{ textAlign: "right" }}>
-                            {originalTotalCost.toLocaleString()}
+            {/* 총 결제금액 + 결제하기 */}
+            <Paper variant="outlined" sx={{ p: { xs: 2, md: 3 }, borderRadius: 3, mx: { xs: 0, md: 0 }, mt: 2 }}>
+                <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>총 결제금액</Typography>
+
+                <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                    <Typography color="text.secondary">운송 요금 합계</Typography>
+                    <Typography>{originalTotalCost.toLocaleString()}원</Typography>
+                </Box>
+
+                {discountAmount > 0 && (
+                    <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                        <Typography color="error.main" sx={{ fontWeight: 700 }}>쿠폰 할인 적용됨</Typography>
+                        <Typography color="error.main" sx={{ fontWeight: 700 }}>
+                            - {discountAmount.toLocaleString()}원
                         </Typography>
-                        <Typography>원</Typography>
-                        
-                        {discountAmount > 0 && (
-                            <>
-                                <Typography color="error.main" sx={{ fontWeight: 700 }}>쿠폰 할인 적용됨</Typography>
-                                <Typography color="error.main" sx={{ textAlign: "right", fontWeight: 700 }}>
-                                    - {discountAmount.toLocaleString()}
-                                </Typography>
-                                <Typography color="error.main" sx={{ fontWeight: 700 }}>원</Typography>
-                            </>
-                        )}
                     </Box>
+                )}
 
-                    <Divider />
+                <Divider sx={{ my: 2 }} />
 
-                    <Box sx={{ display: "flex", justifyContent: "flex-end", alignItems: "baseline", gap: 1 }}>
-                        <Typography variant="h5" sx={{ fontWeight: 800 }}>
-                            {/* ✅ 최종가(10,897)는 여기서 출력 */}
-                            {finalPaymentAmount.toLocaleString()}
-                        </Typography>
-                        <Typography variant="h6" sx={{ fontWeight: 800 }}>원</Typography>
-                    </Box>
+                <Box sx={{ display: "flex", justifyContent: "flex-end", alignItems: "baseline", gap: 0.5, mb: 3 }}>
+                    <Typography variant="h5" sx={{ fontWeight: 800 }}>
+                        {finalPaymentAmount.toLocaleString()}
+                    </Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 800 }}>원</Typography>
+                </Box>
 
-                    <Button variant="contained" size="large" onClick={handleCheck} fullWidth>결제하기</Button>
-                </Paper>
-            </Grid>
-        </Grid>
+                <Button variant="contained" size="large" onClick={handleCheck} fullWidth>
+                    결제하기
+                </Button>
+            </Paper>
+        </Box>
     );
 }
 

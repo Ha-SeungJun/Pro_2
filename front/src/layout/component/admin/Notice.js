@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {  getNoticeDetail, getNotices } from '../../../api/noticeApi';
+import { getNoticeDetail, getNotices, createNotice } from '../../../api/noticeApi';
 import {
   Table,
   TableBody,
@@ -35,6 +35,9 @@ const Notice = () => {
   const [selectedNotice, setSelectedNotice] = useState(null);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [writeOpen, setWriteOpen] = useState(false);
+  const [noticeTitle, setNoticeTitle] = useState("");
+  const [noticeContent, setNoticeContent] = useState("");
 
   const fetchNotices = () => {
     getNotices({ page: page, size: 10, keyword: searchKeyword }).then(data => {
@@ -52,7 +55,7 @@ const Notice = () => {
   const handleTabChange = (event, newValue) => {
     navigate(newValue);
   };
-  
+
   const handlePageChange = (event, value) => {
     setPage(value - 1);
   };
@@ -76,31 +79,89 @@ const Notice = () => {
     setOpen(false);
     setSelectedNotice(null);
   };
+  const handleWriteClose = () => {
+    setWriteOpen(false);
+    setNoticeTitle("");
+    setNoticeContent("");
+  };
 
+  const handleCreateNotice = async () => {
+    if (!noticeTitle.trim()) {
+      alert("제목을 입력하세요.");
+      return;
+    }
+
+    if (!noticeContent.trim()) {
+      alert("내용을 입력하세요.");
+      return;
+    }
+
+    try {
+      await createNotice({
+        title: noticeTitle,
+        content: noticeContent,
+      });
+
+      alert("공지사항이 등록되었습니다.");
+      handleWriteClose();
+      setPage(0);
+      fetchNotices();
+    } catch (error) {
+      console.error("Error creating notice:", error);
+      alert("공지사항 등록에 실패했습니다.");
+    }
+  };
   return (
     <Box flexGrow={1} p={4}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+
+        {/* 왼쪽 영역 */}
         <Box>
-            <Typography variant="h5" fontWeight="bold" mb={1}>
-                공지/문의
-            </Typography>
-            <Tabs value={location.pathname} onChange={handleTabChange} textColor="primary" indicatorColor="primary">
-                <Tab label="공지사항" value="/admin/notice" component={NavLink} to="/admin/notice" />
-                <Tab label="문의사항" value="/admin/inquirie" component={NavLink} to="/admin/inquirie" />
-            </Tabs>
+          <Typography variant="h5" fontWeight="bold" mb={1}>
+            공지/문의
+          </Typography>
+          <Tabs value={location.pathname} onChange={handleTabChange}>
+            <Tab label="공지사항" value="/admin/notice" component={NavLink} to="/admin/notice" />
+            <Tab label="문의사항" value="/admin/inquirie" component={NavLink} to="/admin/inquirie" />
+          </Tabs>
         </Box>
-        <TextField
+
+        {/* 오른쪽 영역 */}
+        <Box display="flex" gap={2} alignItems="center">
+
+          <TextField
             variant="outlined"
             placeholder="Search"
             size="small"
             value={searchKeyword}
             onChange={handleSearchChange}
             InputProps={{
-                startAdornment: <SearchIcon fontSize="small" sx={{ mr: 1, color: "grey.500" }} />,
+              startAdornment: <SearchIcon fontSize="small" sx={{ mr: 1 }} />,
             }}
-        />
+          />
+
+          <Button
+            variant="contained"
+            onClick={() => setWriteOpen(true)}
+          >
+            공지사항 작성
+          </Button>
+
+        </Box>
+
       </Box>
-      <TableContainer component={Paper}>
+              <TextField
+          variant="outlined"
+          placeholder="검색"
+          size="small"
+          value={searchKeyword}
+          onChange={handleSearchChange}
+          sx={{ width: { xs: '100%', md: 220 }, flexShrink: 0 }}
+          InputProps={{
+            startAdornment: <SearchIcon fontSize="small" sx={{ mr: 1, color: "grey.500" }} />,
+          }}
+        />
+      <TableContainer component={Paper} sx={{mt:2}}>
         <Table>
           <TableHead>
             <TableRow>
@@ -112,7 +173,7 @@ const Notice = () => {
           </TableHead>
           <TableBody>
             {notices.map((notice) => (
-              <TableRow 
+              <TableRow
                 key={notice.noticeId}
                 onClick={() => handleView(notice.noticeId)}
                 sx={{ cursor: 'pointer', '&:hover': { backgroundColor: '#f5f5f5' } }}
@@ -155,7 +216,35 @@ const Notice = () => {
           </DialogActions>
         </Dialog>
       )}
+      <Dialog open={writeOpen} onClose={handleWriteClose} fullWidth maxWidth="md">
+        <DialogTitle>공지사항 작성</DialogTitle>
 
+        <DialogContent dividers>
+          <TextField
+            fullWidth
+            label="제목"
+            value={noticeTitle}
+            onChange={(e) => setNoticeTitle(e.target.value)}
+            sx={{ mb: 2 }}
+          />
+
+          <TextField
+            fullWidth
+            multiline
+            rows={8}
+            label="내용"
+            value={noticeContent}
+            onChange={(e) => setNoticeContent(e.target.value)}
+          />
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={handleWriteClose}>취소</Button>
+          <Button variant="contained" onClick={handleCreateNotice}>
+            등록
+          </Button>
+        </DialogActions>
+      </Dialog>
       {loading && (
         <Dialog open={loading}>
           <DialogContent>

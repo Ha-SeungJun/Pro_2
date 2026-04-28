@@ -30,7 +30,8 @@ import {
   suspendUser,
   unsuspendUser,
 } from "../../../api/adminApi/adminReportsApi";
-
+import { useTheme } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
 const MemberReport = () => {
   const [activeTab, setActiveTab] = useState(3);
   const [page, setPage] = useState(1);
@@ -49,6 +50,8 @@ const MemberReport = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   useEffect(() => {
     if (location.pathname.includes("/admin/memberOwner")) setActiveTab(1);
     else if (location.pathname.includes("/admin/memberCowner")) setActiveTab(2);
@@ -211,13 +214,48 @@ const MemberReport = () => {
   };
 
   return (
-    <Box flexGrow={1} p={4}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-        <Box>
-          <Typography variant="h5" fontWeight="bold" mb={1}>
-            회원 관리
-          </Typography>
-          <Tabs value={activeTab} onChange={handleTabChange} textColor="primary" indicatorColor="primary">
+    <Box flexGrow={1} p={{ xs: 2, md: 4 }}>
+      <Box
+        display="flex"
+        flexDirection={{ xs: 'column', md: 'row' }}
+        justifyContent="space-between"
+        alignItems={{ xs: 'stretch', md: 'center' }}
+        gap={2}
+        mb={2}
+      >
+        <Box minWidth={0}>
+          <Box
+            display="flex"
+            justifyContent="space-between"
+            alignItems="center"
+            flexWrap="wrap"
+            mb={1}
+          >
+            <Typography variant="h5" fontWeight="bold">
+              신고내역
+            </Typography>
+
+            <Button
+              variant="contained"
+              color="secondary"
+              component={NavLink}
+              to="/admin/AdminCargoApproval"
+              sx={{ mt: { xs: 1, md: 0 },
+    display: { xs: "flex", md: "none" } }}
+            >
+              차량승인관리
+            </Button>
+          </Box>
+          <Tabs
+            value={activeTab}
+            onChange={handleTabChange}
+            textColor="primary"
+            indicatorColor="primary"
+            variant="scrollable"
+            scrollButtons="auto"
+            allowScrollButtonsMobile
+            sx={{ maxWidth: '100%' }}
+          >
             <Tab label="전체 회원" component={NavLink} to="/admin/memberAll" />
             <Tab label="물주" component={NavLink} to="/admin/memberOwner" />
             <Tab label="차주" component={NavLink} to="/admin/memberCowner" />
@@ -240,6 +278,10 @@ const MemberReport = () => {
               setPage(1);
               setKeyword(e.target.value);
             }}
+            sx={{
+              width: { xs: '100%', md: 220 },
+              flexShrink: 0,
+            }}
             InputProps={{
               startAdornment: <SearchIcon fontSize="small" sx={{ mr: 1, color: "grey.500" }} />,
             }}
@@ -254,8 +296,8 @@ const MemberReport = () => {
       ) : error ? (
         <Typography color="error">{error}</Typography>
       ) : (
-        <TableContainer component={Paper}>
-          <Table sx={{ minWidth: 800 }}>
+        <TableContainer component={Paper} sx={{ overflowX: 'auto', width: '100%' }}>
+          <Table sx={{ minWidth: 650 }}>
             <TableHead>
               <TableRow>
                 <TableCell>신고대상ID</TableCell>
@@ -297,11 +339,18 @@ const MemberReport = () => {
           page={page}
           onChange={(_, v) => setPage(v)}
           color="primary"
+          size="small"
         />
       </Box>
 
       {selectedReport && (
-        <Dialog open={dialogOpen} onClose={handleClose} fullWidth maxWidth="sm">
+        <Dialog
+          open={dialogOpen}
+          onClose={handleClose}
+          fullWidth
+          maxWidth="sm"
+          fullScreen={isMobile}
+        >
           <DialogTitle>신고 상세 정보</DialogTitle>
           <DialogContent dividers>
             <Typography gutterBottom><b>신고대상:</b> {selectedReport.targetId ?? "-"}</Typography>
@@ -315,34 +364,37 @@ const MemberReport = () => {
             </Paper>
           </DialogContent>
 
-          <DialogActions sx={{ px: 3, py: 2, display: "flex", flexWrap: "wrap", gap: 1 }}>
+          <DialogActions
+            sx={{
+              px: 3,
+              py: 2,
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 1,
+              justifyContent: { xs: 'center', md: 'flex-end' },
+            }}
+          >
             <Button onClick={handleClose}>닫기</Button>
-
-            {/* 수정: 자동 확인 방식이므로 관리자 확인 버튼 제거 */}
-
             <Button onClick={() => handleSuspend("WEEK")} color="warning" variant="outlined">
               7일 정지
             </Button>
-
             <Button onClick={() => handleSuspend("MONTH")} color="warning" variant="outlined">
               30일 정지
             </Button>
-
             <Button onClick={() => handleSuspend("YEAR")} color="warning" variant="outlined">
               1년 정지
             </Button>
-
             <Button onClick={() => handleSuspend("PERMANENT")} color="error" variant="contained">
               영구정지
             </Button>
-
             <Button onClick={handleUnsuspend} color="success" variant="text">
               정지 해제
             </Button>
           </DialogActions>
         </Dialog>
-      )}
-    </Box>
+      )
+      }
+    </Box >
   );
 };
 

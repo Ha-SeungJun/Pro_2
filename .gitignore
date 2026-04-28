@@ -50,3 +50,7 @@ backend/.gitattributes
 # front/yarn.lock
 # front/yarn.lock
 # front/yarn.lock
+
+
+# .gitignore
+application-secret.properties

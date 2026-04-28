@@ -12,4 +12,5 @@ import lombok.NoArgsConstructor;
 public class ReviewImageDTO {
     private Long reviewImageNo;
     private String imagePath;
+    private String thumbnailPath;
 }

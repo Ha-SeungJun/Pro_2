@@ -125,6 +125,7 @@ const ReceivedReviewInform = () => {
 
   const [openDetailModal, setOpenDetailModal] = useState(false);
   const [selectedDetailReview, setSelectedDetailReview] = useState(null);
+  const [selectedImage, setSelectedImage] = useState(null);
   const [sortType, setSortType] = useState("latest");
 
   const [profileInfo, setProfileInfo] = useState({
@@ -346,6 +347,7 @@ const ReceivedReviewInform = () => {
   const handleCloseDetailModal = () => {
     setOpenDetailModal(false);
     setSelectedDetailReview(null);
+    setSelectedImage(null);
   };
 
   useEffect(() => {
@@ -389,11 +391,12 @@ const ReceivedReviewInform = () => {
   const tableColgroup = useMemo(
     () => (
       <colgroup>
-        <col style={{ width: "18%" }} />
-        <col style={{ width: "14%" }} />
         <col style={{ width: "16%" }} />
-        <col style={{ width: "28%" }} />
+        <col style={{ width: "12%" }} />
         <col style={{ width: "14%" }} />
+        <col style={{ width: "10%" }} />
+        <col style={{ width: "26%" }} />
+        <col style={{ width: "12%" }} />
         <col style={{ width: "10%" }} />
       </colgroup>
     ),
@@ -404,7 +407,7 @@ const ReceivedReviewInform = () => {
     if (loading) {
       return (
         <TableRow>
-          <TableCell colSpan={5} align="center">
+          <TableCell colSpan={7} align="center">
             불러오는 중...
           </TableCell>
         </TableRow>
@@ -414,49 +417,73 @@ const ReceivedReviewInform = () => {
     if (!serverData.dtoList || serverData.dtoList.length === 0) {
       return (
         <TableRow>
-          <TableCell colSpan={5} align="center">
+          <TableCell colSpan={7} align="center">
             받은 리뷰가 없습니다.
           </TableCell>
         </TableRow>
       );
     }
 
-    return serverData.dtoList.map((item) => (
-      <TableRow key={item.reviewNo}>
-        <TableCell align="center">{item.cargoType || "-"}</TableCell>
-        <TableCell align="center">{item.writerId || "-"}</TableCell>
-        <TableCell align="center">
-          <Rating value={Number(item.rating) || 0} precision={0.5} readOnly />
-        </TableCell>
+    return serverData.dtoList.map((item) => {
+      const firstImage = item.images?.[0];
+      const thumbnailPath = firstImage?.thumbnailPath || firstImage?.imagePath;
 
-        <TableCell align="left">
-          <Box
-            sx={{
-              maxWidth: 420,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-            title={item.comment || ""}
-          >
-            {item.comment || "-"}
-          </Box>
-        </TableCell>
-        <TableCell align="center">
-          {formatDateTime(item.createdAt)}
-        </TableCell>
+      return (
+        <TableRow key={item.reviewNo}>
+          <TableCell align="center">{item.cargoType || "-"}</TableCell>
+          <TableCell align="center">{item.writerId || "-"}</TableCell>
+          <TableCell align="center">
+            <Rating value={Number(item.rating) || 0} precision={0.5} readOnly />
+          </TableCell>
+          <TableCell align="center">
+            {item.images?.length > 0 ? (
+              <img
+                src={`${API_BASE}/${thumbnailPath}`}
+                alt="thumbnail"
+                onClick={() => setSelectedImage(item.images[0].imagePath)}
+                style={{
+                  width: 50,
+                  height: 50,
+                  objectFit: "cover",
+                  borderRadius: 6,
+                  border: "1px solid #ddd",
+                  cursor: "pointer",
+                }}
+              />
+            ) : (
+              "-"
+            )}
+          </TableCell>
 
-        <TableCell align="center">
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={() => handleOpenDetailModal(item)}
-          >
-            상세
-          </Button>
-        </TableCell>
-      </TableRow>
-    ));
+          <TableCell align="left">
+            <Box
+              sx={{
+                maxWidth: 420,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+              title={item.comment || ""}
+            >
+              {item.comment || "-"}
+            </Box>
+          </TableCell>
+          <TableCell align="center">
+            {formatDateTime(item.createdAt)}
+          </TableCell>
+
+          <TableCell align="center">
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => handleOpenDetailModal(item)}
+            >
+              상세
+            </Button>
+          </TableCell>
+        </TableRow>
+      );
+    });
   };
   const reviewStats = useMemo(() => {
     const stats = {
@@ -494,7 +521,7 @@ const ReceivedReviewInform = () => {
           내가 받은 리뷰
         </Typography>
 
-        
+
         <Box sx={{ mb: 4 }}>
           <DriverProfileCard
             title="프로필"
@@ -543,6 +570,7 @@ const ReceivedReviewInform = () => {
                   <TableCell align="center">화물명</TableCell>
                   <TableCell align="center">작성자</TableCell>
                   <TableCell align="center">별점</TableCell>
+                  <TableCell align="center">사진</TableCell>
                   <TableCell align="center">리뷰 내용</TableCell>
                   <TableCell align="center">작성일</TableCell>
                   <TableCell align="center">상세</TableCell>
@@ -634,10 +662,62 @@ const ReceivedReviewInform = () => {
             InputProps={{ readOnly: true }}
             sx={{ mt: 2 }}
           />
+          {selectedDetailReview?.images?.length > 0 && (
+            <Box sx={{ mt: 3 }}>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                첨부 사진
+              </Typography>
+
+              <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                {selectedDetailReview.images.map((img) => (
+                  <img
+                    key={img.reviewImageNo}
+                    src={`http://localhost:8080/${img.imagePath}`}
+                    alt="review"
+                    onClick={() => setSelectedImage(img.imagePath)}
+                    style={{
+                      width: 120,
+                      height: 120,
+                      objectFit: "cover",
+                      borderRadius: 8,
+                      border: "1px solid #ddd",
+                      cursor: "pointer",
+                    }}
+                  />
+                ))}
+              </Box>
+            </Box>
+          )}
         </DialogContent>
 
         <DialogActions>
           <Button onClick={handleCloseDetailModal}>닫기</Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog
+        open={!!selectedImage}
+        onClose={() => setSelectedImage(null)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>이미지 보기</DialogTitle>
+
+        <DialogContent sx={{ textAlign: "center" }}>
+          {selectedImage && (
+            <img
+              src={`http://localhost:8080/${selectedImage}`}
+              alt="preview"
+              style={{
+                maxWidth: "100%",
+                maxHeight: "70vh",
+                objectFit: "contain",
+              }}
+            />
+          )}
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={() => setSelectedImage(null)}>닫기</Button>
         </DialogActions>
       </Dialog>
     </Box>

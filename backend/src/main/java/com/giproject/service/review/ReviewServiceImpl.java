@@ -4,7 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -33,6 +35,7 @@ import com.giproject.repository.review.ReviewRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import net.coobird.thumbnailator.Thumbnails;
 
 @Transactional
 @Service
@@ -94,7 +97,7 @@ public class ReviewServiceImpl implements ReviewService {
         Review savedReview = reviewRepository.save(review);
 
         validateImages(request.getImages());
-        saveImages(savedReview.getReviewNo(), request.getImages());
+        saveImages(savedReview, request.getImages());
 
         return savedReview.getReviewNo();
     }
@@ -137,18 +140,23 @@ public class ReviewServiceImpl implements ReviewService {
             }
         }
     }
-    //이미지 저장
-    private void saveImages(Long reviewNo, List<MultipartFile> images) {
+    private void storeImages(Review review, List<MultipartFile> images, int startSortOrder) {
         if (images == null || images.isEmpty()) {
             return;
         }
 
-        File reviewDir = new File(uploadPath, "review");
-        if (!reviewDir.exists()) {
-            reviewDir.mkdirs();
+        File originalDir = new File(uploadPath, "review/original");
+        File thumbDir = new File(uploadPath, "review/thumb");
+
+        if (!originalDir.exists()) {
+            originalDir.mkdirs();
         }
 
-        int sortOrder = 0;
+        if (!thumbDir.exists()) {
+            thumbDir.mkdirs();
+        }
+
+        int sortOrder = startSortOrder;
 
         for (MultipartFile image : images) {
             if (image == null || image.isEmpty()) {
@@ -157,24 +165,40 @@ public class ReviewServiceImpl implements ReviewService {
 
             String originalFilename = image.getOriginalFilename();
             String savedFileName = UUID.randomUUID() + "_" + originalFilename;
-            File destFile = new File(reviewDir, savedFileName);
+
+            File originalFile = new File(originalDir, savedFileName);
+            File thumbnailFile = new File(thumbDir, savedFileName);
 
             try {
-                image.transferTo(destFile);
+                // 원본 저장
+                image.transferTo(originalFile);
+
+                // 썸네일 생성
+                Thumbnails.of(originalFile)
+                        .size(300, 300)
+                        .keepAspectRatio(true)
+                        .toFile(thumbnailFile);
+
             } catch (IOException e) {
                 throw new RuntimeException("이미지 저장 중 오류가 발생했습니다.", e);
             }
 
-            String relativePath = "review/" + savedFileName;
+            String imagePath = "review/original/" + savedFileName;
+            String thumbnailPath = "review/thumb/" + savedFileName;
 
             ReviewImage reviewImage = ReviewImage.builder()
-                    .reviewNo(reviewNo)
-                    .imagePath(relativePath)
+                    .review(review)
+                    .imagePath(imagePath)
+                    .thumbnailPath(thumbnailPath)
                     .sortOrder(sortOrder++)
                     .build();
 
             reviewImageRepository.save(reviewImage);
         }
+    }
+    //이미지 저장
+    private void saveImages(Review review, List<MultipartFile> images) {
+    	storeImages(review, images, 0);
     }
     @Override
     public ReviewDTO getByDeliveryNo(Long deliveryNo) {
@@ -197,11 +221,12 @@ public class ReviewServiceImpl implements ReviewService {
     private ReviewDTO entityToDTO(Review review) {
 
         List<ReviewImageDTO> images = reviewImageRepository
-                .findByReviewNoOrderBySortOrderAsc(review.getReviewNo())
+        		.findByReviewOrderBySortOrderAsc(review)
                 .stream()
                 .map(image -> ReviewImageDTO.builder()
                         .reviewImageNo(image.getReviewImageNo())
                         .imagePath(image.getImagePath())
+                        .thumbnailPath(image.getThumbnailPath())
                         .build())
                 .toList();
 
@@ -223,7 +248,7 @@ public class ReviewServiceImpl implements ReviewService {
 	            .orElseThrow(() -> new IllegalStateException("삭제할 리뷰가 존재하지 않습니다."));
 
 	    if (isAdmin) {
-	        deleteAllReviewImageFiles(reviewNo);
+	        deleteAllReviewImageFiles(review);
 	        reviewRepository.delete(review);
 	        return;
 	    }
@@ -235,7 +260,7 @@ public class ReviewServiceImpl implements ReviewService {
 	        throw new IllegalStateException("본인이 작성한 리뷰만 삭제할 수 있습니다.");
 	    }
 
-	    deleteAllReviewImageFiles(reviewNo);
+	    deleteAllReviewImageFiles(review);
 	    reviewRepository.delete(review);
 	}
 
@@ -268,10 +293,21 @@ public class ReviewServiceImpl implements ReviewService {
 
         // 3. 새 이미지 추가
         validateImages(request.getNewImages());
-        appendImages(reviewNo, request.getNewImages());
+        appendImages(review, request.getNewImages());
 
         // 4. 정렬번호 재정리
-        reorderImages(reviewNo);
+        reorderImages(review);
+    }
+    private void deleteFileIfExists(String relativePath) {
+        if (relativePath == null || relativePath.isBlank()) {
+            return;
+        }
+
+        File file = new File(uploadPath, relativePath);
+
+        if (file.exists() && !file.delete()) {
+            log.warn("파일 삭제 실패: {}", file.getAbsolutePath());
+        }
     }
     private void deleteReviewImages(Long reviewNo, List<Long> deleteImageIds) {
         if (deleteImageIds == null || deleteImageIds.isEmpty()) {
@@ -281,27 +317,25 @@ public class ReviewServiceImpl implements ReviewService {
         List<ReviewImage> images = reviewImageRepository.findByReviewImageNoIn(deleteImageIds);
 
         List<Long> validImageIds = images.stream()
-                .filter(image -> reviewNo.equals(image.getReviewNo()))
+                .filter(image -> reviewNo.equals(image.getReview().getReviewNo()))
                 .map(ReviewImage::getReviewImageNo)
                 .toList();
 
         for (ReviewImage image : images) {
-            if (!reviewNo.equals(image.getReviewNo())) {
+            if (!reviewNo.equals(image.getReview().getReviewNo())) {
                 continue;
             }
 
-            File file = new File(uploadPath, image.getImagePath());
-            if (file.exists()) {
-                file.delete();
-            }
+            deleteFileIfExists(image.getImagePath());
+            deleteFileIfExists(image.getThumbnailPath());
         }
 
         if (!validImageIds.isEmpty()) {
             reviewImageRepository.deleteByReviewImageNoIn(validImageIds);
         }
     }
-    private void deleteAllReviewImageFiles(Long reviewNo) {
-        List<ReviewImage> images = reviewImageRepository.findByReviewNoOrderBySortOrderAsc(reviewNo);
+    private void deleteAllReviewImageFiles(Review review) {
+        List<ReviewImage> images = reviewImageRepository.findByReviewOrderBySortOrderAsc(review);
 
         for (ReviewImage image : images) {
             File file = new File(uploadPath, image.getImagePath());
@@ -310,10 +344,10 @@ public class ReviewServiceImpl implements ReviewService {
             }
         }
 
-        reviewImageRepository.deleteByReviewNo(reviewNo);
+        reviewImageRepository.deleteByReview(review);
     }
-    private void reorderImages(Long reviewNo) {
-        List<ReviewImage> images = reviewImageRepository.findByReviewNoOrderBySortOrderAsc(reviewNo);
+    private void reorderImages(Review review) {
+        List<ReviewImage> images = reviewImageRepository.findByReviewOrderBySortOrderAsc(review);
 
         for (int i = 0; i < images.size(); i++) {
             images.get(i).setSortOrder(i);
@@ -321,44 +355,16 @@ public class ReviewServiceImpl implements ReviewService {
 
         reviewImageRepository.saveAll(images);
     }
-    private void appendImages(Long reviewNo, List<MultipartFile> images) {
-        if (images == null || images.isEmpty()) {
-            return;
-        }
+    private void appendImages(Review review, List<MultipartFile> images) {
+    	 if (images == null || images.isEmpty()) {
+    	        return;
+    	    }
 
-        File reviewDir = new File(uploadPath, "review");
-        if (!reviewDir.exists()) {
-            reviewDir.mkdirs();
-        }
+    	    int startSortOrder = reviewImageRepository
+    	            .findByReviewOrderBySortOrderAsc(review)
+    	            .size();
 
-        List<ReviewImage> existingImages = reviewImageRepository.findByReviewNoOrderBySortOrderAsc(reviewNo);
-        int sortOrder = existingImages.size();
-
-        for (MultipartFile image : images) {
-            if (image == null || image.isEmpty()) {
-                continue;
-            }
-
-            String originalFilename = image.getOriginalFilename();
-            String savedFileName = UUID.randomUUID() + "_" + originalFilename;
-            File destFile = new File(reviewDir, savedFileName);
-
-            try {
-                image.transferTo(destFile);
-            } catch (IOException e) {
-                throw new RuntimeException("이미지 저장 중 오류가 발생했습니다.", e);
-            }
-
-            String relativePath = "review/" + savedFileName;
-
-            ReviewImage reviewImage = ReviewImage.builder()
-                    .reviewNo(reviewNo)
-                    .imagePath(relativePath)
-                    .sortOrder(sortOrder++)
-                    .build();
-
-            reviewImageRepository.save(reviewImage);
-        }
+    	    storeImages(review, images, startSortOrder);
     }
     private void validateRating(BigDecimal rating) {
         if (rating.compareTo(BigDecimal.ZERO) < 0 ||
@@ -404,25 +410,70 @@ public class ReviewServiceImpl implements ReviewService {
 	@Override
 	@Transactional(readOnly = true)
 	public List<MyReviewListDTO> getReceivedReviews(String cargoId) {
-	    return reviewRepository.findReceivedReviewsByCargoId(cargoId);
+	    List<MyReviewListDTO> list = reviewRepository.findReceivedReviewsByCargoId(cargoId);
+
+	    if (list.isEmpty()) {
+	        return list;
+	    }
+
+	    List<Long> reviewNos = list.stream()
+	            .map(MyReviewListDTO::getReviewNo)
+	            .toList();
+
+	    List<ReviewImage> allImages = reviewImageRepository.findAllByReviewNos(reviewNos);
+
+	    Map<Long, List<ReviewImageDTO>> imageMap = allImages.stream()
+	            .collect(Collectors.groupingBy(
+	                    image -> image.getReview().getReviewNo(),
+	                    Collectors.mapping(
+	                            image -> ReviewImageDTO.builder()
+	                                    .reviewImageNo(image.getReviewImageNo())
+	                                    .imagePath(image.getImagePath())
+	                                    .build(),
+	                            Collectors.toList()
+	                    )
+	            ));
+
+	    list.forEach(dto ->
+	            dto.setImages(imageMap.getOrDefault(dto.getReviewNo(), List.of()))
+	    );
+
+	    return list;
 	}
 	@Override
+	@Transactional(readOnly = true)
 	public List<MyReviewWithDriverIdDTO> getMyReviewsWithDriverId(String memId) {
-	    List<MyReviewWithDriverIdDTO> list = reviewRepository.findMyReviewsWithDriverIdByWriterMemId(memId);
+	    List<MyReviewWithDriverIdDTO> list =
+	            reviewRepository.findMyReviewsWithDriverIdByWriterMemId(memId);
 
-	    return list.stream().map(dto -> {
-	        List<ReviewImageDTO> images = reviewImageRepository
-	                .findByReviewNoOrderBySortOrderAsc(dto.getReviewNo())
-	                .stream()
-	                .map(image -> ReviewImageDTO.builder()
-	                        .reviewImageNo(image.getReviewImageNo())
-	                        .imagePath(image.getImagePath())
-	                        .build())
-	                .toList();
+	    if (list.isEmpty()) {
+	        return list;
+	    }
 
-	        dto.setImages(images);
-	        return dto;
-	    }).toList();
+	    List<Long> reviewNos = list.stream()
+	            .map(MyReviewWithDriverIdDTO::getReviewNo)
+	            .toList();
+
+	    List<ReviewImage> allImages =
+	            reviewImageRepository.findAllByReviewNos(reviewNos);
+
+	    Map<Long, List<ReviewImageDTO>> imageMap = allImages.stream()
+	            .collect(Collectors.groupingBy(
+	                    image -> image.getReview().getReviewNo(),
+	                    Collectors.mapping(
+	                            image -> ReviewImageDTO.builder()
+	                                    .reviewImageNo(image.getReviewImageNo())
+	                                    .imagePath(image.getImagePath())
+	                                    .build(),
+	                            Collectors.toList()
+	                    )
+	            ));
+
+	    list.forEach(dto ->
+	            dto.setImages(imageMap.getOrDefault(dto.getReviewNo(), List.of()))
+	    );
+
+	    return list;
 	}
 
 	@Override
@@ -462,6 +513,7 @@ public class ReviewServiceImpl implements ReviewService {
 
 	    return entityToDTO(review);
 	}
+	
 
 
 }

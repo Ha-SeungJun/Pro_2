@@ -1,6 +1,9 @@
 package com.giproject.config;
 
+import java.util.concurrent.TimeUnit;
+
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.CacheControl;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -18,13 +21,14 @@ public class WebConfig implements WebMvcConfigurer {
     }
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // /g2i4/uploads/** 요청을 classpath:/static/uploads/ 폴더에서 제공
         registry.addResourceHandler("/g2i4/uploads/**")
                 .addResourceLocations("classpath:/static/uploads/")
-                .addResourceLocations("file:../uploads/");
-     // 리뷰 이미지 제공
+                .addResourceLocations("file:../uploads/")
+                .setCacheControl(CacheControl.maxAge(30, TimeUnit.DAYS));
+
         registry.addResourceHandler("/review/**")
-                .addResourceLocations("file:///C:/upload/review/");
+                .addResourceLocations("file:///C:/upload/review/")
+                .setCacheControl(CacheControl.maxAge(30, TimeUnit.DAYS));
     }
     
 }

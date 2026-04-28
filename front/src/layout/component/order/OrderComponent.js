@@ -100,21 +100,7 @@ const OrderComponent = () => {
     .catch(console.error);
 }, []);
 
-  // ===== [테스트 자동화 함수] ===== 나중에 주석하기
-  const fillTestData = () => {
-    setOrderSheet(prev => ({
-      ...prev,
-      addressee: "홍길동(테스트)",
-      startRestAddress: "공학관 101호",
-      endRestAddress: "비전관 202호"
-    }));
-    SetstartPNum("010");
-    SetMddlePNum("1234");
-    SetEndPNum("5678");
-    setEmailLocal("testuser");
-    setEmailDomain("naver.com");
-    console.log(" 테스트 데이터가 입력되었습니다!");
-  };
+
 
   const splitPhone = (raw) => {
     const d = (raw ?? "").replace(/\D/g, "");
@@ -175,20 +161,6 @@ const OrderComponent = () => {
         <Typography variant="h5" sx={{ fontWeight: 800 }}>
           주문서 작성
         </Typography>
-        <Button
-          variant="contained"
-          color="secondary"
-          size="small"
-          onClick={fillTestData}
-          sx={{
-            fontWeight: 700,
-            borderRadius: 2,
-            boxShadow: 2,
-            "&:hover": { bgcolor: "#ab47bc" }
-          }}
-        >
-          데이터 자동 채우기 (TEST)
-        </Button>
       </Box>
 
       <Box display="flex" justifyContent="flex-start" sx={{ borderRadius: 3, maxWidth: 800, mx: "auto" }}>

@@ -93,7 +93,7 @@ public class OrderServiceImpl implements OrderService {
 
         if (mcno != null && mcno > 0) {
             MemberCoupon memberCoupon = memberCouponRepository.findById(mcno).orElseThrow();
-            memberCoupon.changeUsed(true); 
+            memberCoupon.useCoupon(); 
         }
 
         OrderSheet savedSheet = orderRepository.save(sheet);

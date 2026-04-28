@@ -27,19 +27,30 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public Long acceptedPayment(PaymentDTO.CreateRequest dto) {
-        OrderSheet orderSheet = orderRepository.findById(dto.getOrderSheetNo()).orElseThrow();
+        OrderSheet orderSheet = orderRepository.findById(dto.getOrderSheetNo())
+                .orElseThrow(() -> new RuntimeException("주문 정보를 찾을 수 없습니다."));
         
-        long totalPrice = orderSheet.getTotalPrice(); // 이제 0이 아닌 진짜 금액이 나옵니다.
+        long totalPrice = orderSheet.getTotalPrice(); // 원래 결제해야 할 원금
         long discountAmt = 0;
 
+        // 1. 쿠폰이 적용된 결제인 경우 (퍼센트 할인 계산)
         if (dto.getMcno() != null) {
-            MemberCoupon mc = memberCouponRepository.findById(dto.getMcno()).orElseThrow();
-            // 100.0 실수 연산으로 정확하게 계산
+            MemberCoupon mc = memberCouponRepository.findById(dto.getMcno())
+                    .orElseThrow(() -> new RuntimeException("유효하지 않은 쿠폰입니다."));
+            
+            // 🚨 퍼센트 전용 계산 로직 (예: 10%면 10 / 100.0)
             discountAmt = Math.round(totalPrice * (mc.getCoupon().getDiscountValue() / 100.0));
+            
+            // (선택) 만약 '최대 할인 금액(maxDiscount)' 정책이 있다면 여기서 방어!
+            if (mc.getCoupon().getMaxDiscount() > 0 && discountAmt > mc.getCoupon().getMaxDiscount()) {
+                discountAmt = mc.getCoupon().getMaxDiscount();
+            }
         }
 
-        long finalPrice = totalPrice - discountAmt;
+        // 2. 최종 결제 금액 산출 (음수 방지 안전장치)
+        long finalPrice = Math.max(0, totalPrice - discountAmt);
 
+        // 3. 결제 내역 DB 저장
         Payment payment = Payment.builder()
                 .orderSheet(orderSheet)
                 .totalPrice(totalPrice)
@@ -47,7 +58,7 @@ public class PaymentServiceImpl implements PaymentService {
                 .finalPrice(finalPrice)
                 .paymentStatus(PaymentStatus.PAID)
                 .paidAt(LocalDateTime.now())
-                // ... 나머지 필드 세팅
+                // ... (나머지 필요한 필드 세팅) ...
                 .build();
 
         return paymentRepository.save(payment).getPaymentNo();
@@ -55,14 +66,13 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public PaymentCompleteDTO complete(Long paymentNo) {
-        // 리포지토리의 @EntityGraph가 적용된 findByPaymentNo 사용 권장
         Payment payment = paymentRepository.findByPaymentNo(paymentNo)
                 .orElseThrow(() -> new RuntimeException("결제 정보 없음"));
 
+        // 🚨 빨간줄 해결! (우리가 만든 상태 변경 메서드 적용)
         if (payment.getUsedMemberCoupon() != null) {
             MemberCoupon mc = payment.getUsedMemberCoupon();
-            mc.setUsed(true);
-            mc.setUsedDate(LocalDateTime.now());
+            mc.useCoupon(); // 상태를 USED로 바꾸고 usedDate 기록
         }
 
         OrderSheet orderSheet = payment.getOrderSheet();
@@ -78,7 +88,6 @@ public class PaymentServiceImpl implements PaymentService {
             else paymentMethodLabel = "간편결제";
         }
 
-        // ✅ DTO 필드에 명확하게 매핑
         return PaymentCompleteDTO.builder()
                 .orderUuid(orderSheet.getOrderUuid())
                 .cargoName(cargoOwner.getCargoName())

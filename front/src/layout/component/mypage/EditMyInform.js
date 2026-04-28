@@ -71,15 +71,16 @@ const EditMyInform = () => {
   const [couponLoading, setCouponLoading] = useState(false);
 
   const fetchMyCoupons = useCallback(async () => {
-    // 🚨 차주 계정 API 호출 차단
-    if (!user.id || userType !== 'MEMBER') return;
-    try {
-      const res = await api.get(`/g2i4/coupons/my-list`);
-      setCoupons(res.data);
-    } catch (err) {
-      console.error("쿠폰 목록 로드 실패:", err);
+  try {
+    const res = await api.get(`/g2i4/coupons/my-list`);
+    setCoupons(res.data);
+  } catch (err) {
+    if (err.message === "Network Error" || err.code === "ERR_CONNECTION_REFUSED") {
+        // 사용자에게 알림을 띄우거나, 로그를 남기지 않고 다음 주기(5초 뒤)를 기다림
+        console.warn("서버가 응답하지 않습니다. 네트워크 상태를 확인하세요.");
     }
-  }, [user.id, userType]);
+  }
+}, [user.id, userType]);
 
   const handleIssueCoupons = async () => {
     if (!user.id || userType !== 'MEMBER') return;
@@ -89,7 +90,13 @@ const EditMyInform = () => {
       alert("테스트 쿠폰이 발급되었습니다!");
       fetchMyCoupons(); 
     } catch (err) {
-      alert("발급 실패: " + (err.response?.data?.result || err.message));
+      // 🚨 [수정] 400 에러 처리 로직 강화
+      if (err.response && err.response.status === 400) {
+        const errorMsg = err.response.data || "이미 유효한 쿠폰을 보유하고 있습니다. 만료 후 다시 받아주세요!";
+        alert(errorMsg);
+      } else {
+        alert("발급 실패: " + (err.response?.data?.result || err.message));
+      }
     } finally {
       setCouponLoading(false);
     }
@@ -180,8 +187,17 @@ const EditMyInform = () => {
     return () => { canceled = true; };
   }, []);
 
+  // 🚨 [수정] 5초마다 쿠폰 목록을 동기화하는 폴링 로직 통합
   useEffect(() => {
-    if (user.id && userType === 'MEMBER') fetchMyCoupons();
+    if (user.id && userType === 'MEMBER') {
+      fetchMyCoupons(); // 처음 진입 시 호출
+
+      const timer = setInterval(() => {
+        fetchMyCoupons();
+      }, 5000); 
+
+      return () => clearInterval(timer); // 페이지 나갈 때 타이머 해제
+    }
   }, [user.id, userType, fetchMyCoupons]);
 
   const handleSaveAddress = async () => {
@@ -276,7 +292,6 @@ const EditMyInform = () => {
         <Button variant="contained" sx={{ bgcolor: '#6b46c1' }} onClick={handleSaveAddress}>변경하기</Button>
       </Box>
 
-      {/* 🚨 핵심 수정: userType이 'MEMBER'일 때만 쿠폰 섹션 렌더링 */}
       {userType === 'MEMBER' && (
         <>
           <Divider sx={{ my: 4 }} />
@@ -287,21 +302,37 @@ const EditMyInform = () => {
                 <Typography variant="body1">사용 가능한 쿠폰: <b>{coupons.length}</b>장</Typography>
                 <Typography variant="caption" color="text.secondary">테스트 기간 동안 무제한 발급이 가능합니다.</Typography>
               </Box>
-              <Button variant="contained" onClick={handleIssueCoupons} disabled={couponLoading} sx={{ bgcolor: '#6b46c1' }}>
-                {couponLoading ? '발급 중...' : '쿠폰 받기'}
+              <Button 
+                variant="contained" 
+                onClick={handleIssueCoupons} 
+                disabled={couponLoading || coupons.length > 0} 
+                sx={{ bgcolor: '#6b46c1' }}
+              >
+                {couponLoading ? '발급 중...' : coupons.length > 0 ? '이미 보유 중' : '쿠폰 받기'}
               </Button>
             </Box>
             <Divider sx={{ mb: 2 }} />
-            <Box sx={{ maxHeight: 200, overflowY: 'auto' }}>
+            <Box sx={{ maxHeight: 250, overflowY: 'auto' }}>
               {coupons.length === 0 ? (
-                <Typography variant="body2" color="gray" textAlign="center">보유 중인 쿠폰이 없습니다.</Typography>
+                <Typography variant="body2" color="gray" textAlign="center" py={2}>보유 중인 쿠폰이 없습니다.</Typography>
               ) : (
                 coupons.map((mc) => (
-                  <Box key={mc.mcno} sx={{ display: 'flex', justifyContent: 'space-between', p: 1.5, mb: 1, bgcolor: '#f9fafb', borderRadius: 1 }}>
-                    <Typography variant="body2">{mc.coupon.couponName}</Typography>
-                    <Typography variant="body2" fontWeight="bold" color="#6b46c1">
-                      {mc.coupon.discountType === 'FLAT' ? `${mc.coupon.discountValue}원` : `${mc.coupon.discountValue}%`} 할인
-                    </Typography>
+                  <Box key={mc.mcno} sx={{ p: 1.5, mb: 1, bgcolor: '#f9fafb', borderRadius: 1, border: '1px solid #eee' }}>
+                    <Box display="flex" justifyContent="space-between" mb={0.5}>
+                      <Typography variant="body2" fontWeight="bold">{mc.coupon.couponName}</Typography>
+                      <Typography variant="body2" fontWeight="bold" color="#6b46c1">
+                        {mc.coupon.discountValue}% 할인
+                      </Typography>
+                    </Box>
+                    {/* 🚨 [수정] 발급일 및 만료일 상세 레이아웃 추가 */}
+                    <Box display="flex" justifyContent="space-between" mt={1}>
+                      <Typography variant="caption" color="text.secondary">
+                        발급: {mc.issuedAt ? new Date(mc.issuedAt).toLocaleDateString() : '-'}
+                      </Typography>
+                      <Typography variant="caption" color="error" fontWeight="medium">
+                        만료: {mc.expiryDate ? new Date(mc.expiryDate).toLocaleString() : '-'} 까지
+                      </Typography>
+                    </Box>
                   </Box>
                 ))
               )}

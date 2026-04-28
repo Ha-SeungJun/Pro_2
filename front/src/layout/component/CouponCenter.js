@@ -12,7 +12,7 @@ const CouponCenter = ({ userId, userType }) => {
         try {
             // 🚨 2. 토큰을 세션 스토리지에서 꺼냅니다.
             const token = sessionStorage.getItem("accessToken") || sessionStorage.getItem("ACCESS_TOKEN");
-            
+
             // 🚨 3. 주소에서 ${userId}를 지우고, 헤더에 신분증(토큰)을 실어서 보냅니다!
             const res = await axios.get(`/g2i4/coupons/my-list`, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -29,8 +29,8 @@ const CouponCenter = ({ userId, userType }) => {
         try {
             // 발급할 때도 토큰을 챙겨가는 것이 안전합니다.
             const token = sessionStorage.getItem("accessToken") || sessionStorage.getItem("ACCESS_TOKEN");
-            await axios.post('/g2i4/coupons/issue-test', 
-                { memId: userId }, 
+            await axios.post('/g2i4/coupons/issue-test',
+                { memId: userId },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             alert("테스트 쿠폰이 발급되었습니다!");
@@ -57,20 +57,19 @@ const CouponCenter = ({ userId, userType }) => {
     return (
         <Box sx={{ p: 4, maxWidth: 600, mx: 'auto' }}>
             <Typography variant="h5" fontWeight="bold" gutterBottom>쿠폰 센터</Typography>
-            
-            {/* 쿠폰 발급 버튼 */}
-            <Button 
-                variant="contained" 
-                fullWidth 
-                onClick={handleIssueCoupons} 
-                disabled={loading}
-                sx={{ mb: 4, py: 1.5, bgcolor: '#6b46c1', '&:hover': { bgcolor: '#553c9a' } }}
-            >
-                {loading ? '발급 중...' : '테스트 쿠폰 무한 받기'}
-            </Button>
 
+            {/* 쿠폰 발급 버튼 */}
+            <Button
+                variant="contained"
+                fullWidth
+                onClick={handleIssueCoupons}
+                sx={{ mb: 4, py: 1.5, bgcolor: '#6b46c1', '&:hover': { bgcolor: '#553c9a' } }}
+                disabled={loading || coupons.length > 0}
+            >
+                {loading ? '발급 중...' : coupons.length > 0 ? '이미 쿠폰을 보유 중입니다' : '쿠폰 받기'}
+            </Button>
             <Typography variant="h6" mb={2}>내가 보유한 쿠폰 ({coupons.length})</Typography>
-            
+
             <Paper elevation={2}>
                 <List>
                     {coupons.length === 0 ? (
@@ -79,13 +78,19 @@ const CouponCenter = ({ userId, userType }) => {
                         coupons.map((mc, index) => (
                             <React.Fragment key={mc.mcno}>
                                 <ListItem>
-                                    <ListItemText 
-                                        primary={mc.coupon.couponName} 
-                                        secondary={`만료일: ${new Date(mc.expiryDate || mc.expiry_date).toLocaleDateString()} 까지`} 
+                                    <ListItemText
+                                        primary={mc.coupon.couponName}
+                                        secondary={
+                                            <>
+                                                {/*  발급일 추가 */}
+                                                <div>발급일: {new Date(mc.issuedAt).toLocaleString()}</div>
+                                                <div>만료일: {new Date(mc.expiryDate).toLocaleDateString()} 까지</div>
+                                            </>
+                                        }
                                     />
                                     <Typography variant="body2" color="primary" fontWeight="bold">
-                                        {mc.coupon.discountType === 'FLAT' 
-                                            ? `${mc.coupon.discountValue.toLocaleString()}원 할인` 
+                                        {mc.coupon.discountType === 'FLAT'
+                                            ? `${mc.coupon.discountValue.toLocaleString()}원 할인`
                                             : `${mc.coupon.discountValue}% 할인`}
                                     </Typography>
                                 </ListItem>

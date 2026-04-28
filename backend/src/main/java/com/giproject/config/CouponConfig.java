@@ -1,7 +1,6 @@
 package com.giproject.config;
 
 import com.giproject.entity.Coupon;
-import com.giproject.entity.Coupon.DiscountType;
 import com.giproject.repository.CouponRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -19,14 +18,12 @@ public class CouponConfig implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        // 🚨 쿠폰 종류(마스터)가 없을 때만 생성합니다.
-        // 화주가 버튼을 눌렀을 때, 여기서 만든 데이터들을 복사해서 지급하게 됩니다.
+        // 쿠폰 종류(마스터)가 없을 때만 생성
         if (couponRepository.count() == 0) {
             log.info(">>> 시스템 마스터 쿠폰 데이터 생성을 시작합니다.");
 
             Coupon c1 = Coupon.builder()
                     .couponName("오픈기념 10% 할인쿠폰")
-                    .discountType(DiscountType.PERCENT)
                     .discountValue(10)
                     .maxDiscount(10000)
                     .minOrderPrice(0)
@@ -35,7 +32,6 @@ public class CouponConfig implements CommandLineRunner {
 
             Coupon c2 = Coupon.builder()
                     .couponName("단골우대 20% 할인쿠폰")
-                    .discountType(DiscountType.PERCENT)
                     .discountValue(20)
                     .maxDiscount(20000)
                     .minOrderPrice(0)
@@ -44,7 +40,6 @@ public class CouponConfig implements CommandLineRunner {
 
             Coupon c3 = Coupon.builder()
                     .couponName("VIP전용 30% 특별할인쿠폰")
-                    .discountType(DiscountType.PERCENT)
                     .discountValue(30)
                     .maxDiscount(30000)
                     .minOrderPrice(0)

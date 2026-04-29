@@ -38,7 +38,7 @@ console.log("DriverProfileCard =", DriverProfileCard);
 
 const API_BASE =
   process.env.REACT_APP_API_BASE ||
-  "http://localhost:8080";
+  "http://https://pro-2-ayf7.onrender.com";
 
 const DEFAULT_AVATAR = "/image/placeholders/avatar.svg";
 
@@ -672,7 +672,7 @@ const ReceivedReviewInform = () => {
                 {selectedDetailReview.images.map((img) => (
                   <img
                     key={img.reviewImageNo}
-                    src={`http://localhost:8080/${img.imagePath}`}
+                    src={`http://https://pro-2-ayf7.onrender.com/${img.imagePath}`}
                     alt="review"
                     onClick={() => setSelectedImage(img.imagePath)}
                     style={{
@@ -705,7 +705,7 @@ const ReceivedReviewInform = () => {
         <DialogContent sx={{ textAlign: "center" }}>
           {selectedImage && (
             <img
-              src={`http://localhost:8080/${selectedImage}`}
+              src={`http://https://pro-2-ayf7.onrender.com/${selectedImage}`}
               alt="preview"
               style={{
                 maxWidth: "100%",

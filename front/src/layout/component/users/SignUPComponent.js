@@ -31,7 +31,7 @@ function getErrorMessage(data) {
 const API_BASE =
     process.env.REACT_APP_API_BASE ||
     process.env.REACT_APP_API_BASE ||
-    'http://localhost:8080';
+    'http://https://pro-2-ayf7.onrender.com';
 
 // 해시에 signup_ticket이 실려 온 경우를 대비한 파서
 function getTicketFromHash(hash) {

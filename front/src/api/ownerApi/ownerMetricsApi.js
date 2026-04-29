@@ -3,7 +3,7 @@ import axios from 'axios';
 const API_BASE =
   process.env.REACT_APP_API_BASE ||
   process.env.REACT_APP_API_BASE ||
-  'http://localhost:8080';
+  'http://https://pro-2-ayf7.onrender.com';
 const api = axios.create({ baseURL: API_BASE });
 api.interceptors.request.use((config) => {
   const token =

@@ -8,7 +8,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import { useParams, useNavigate } from 'react-router-dom';
 
 // ===== 공통 API 베이스/인스턴스 =====
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:8080';
+const API_BASE = process.env.REACT_APP_API_BASE || 'http://https://pro-2-ayf7.onrender.com';
 
 const api = axios.create({ baseURL: API_BASE });
 api.interceptors.request.use((config) => {

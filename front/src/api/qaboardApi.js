@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // Backend API Server Host
-export const API_SERVER_HOST = "http://localhost:8080";
+export const API_SERVER_HOST = "http://https://pro-2-ayf7.onrender.com";
 
 const qaHost = `${API_SERVER_HOST}/api/qaboard`;
 

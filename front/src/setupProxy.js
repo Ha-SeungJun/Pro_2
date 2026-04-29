@@ -4,7 +4,7 @@ module.exports = function (app) {
     app.use(
         '/api',
         createProxyMiddleware({
-            target: 'http://localhost:8080', // 백엔드
+            target: 'http://https://pro-2-ayf7.onrender.com', // 백엔드
             changeOrigin: true,
             secure: false,
         })

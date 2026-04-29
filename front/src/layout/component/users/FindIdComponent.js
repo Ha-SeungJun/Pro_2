@@ -15,7 +15,7 @@ import { useNavigate } from 'react-router-dom';
 const API_BASE =
     process.env.REACT_APP_API_BASE ||
     process.env.REACT_APP_API_BASE ||
-    'http://localhost:8080';
+    'http://https://pro-2-ayf7.onrender.com';
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 

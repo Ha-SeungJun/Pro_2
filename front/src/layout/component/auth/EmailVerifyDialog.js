@@ -8,7 +8,7 @@ import {
 const API_BASE =
     process.env.REACT_APP_API_BASE ||
     process.env.REACT_APP_API_BASE ||
-    "http://localhost:8080";
+    "http://https://pro-2-ayf7.onrender.com";
 
 export default function EmailVerifyDialog({ open, email, onClose, onVerified }) {
     const [phase, setPhase] = React.useState("idle"); // idle | sending | code | verifying | verified | error

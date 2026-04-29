@@ -33,50 +33,50 @@ const KakaoMapViewer = forwardRef(({ startAddress, endAddress, onAddressSelect }
   }, [onAddressSelect, startAddress]);
 
   // 1) 맵 초기 생성 (지도는 딱 한 번만 만듭니다)
-  useEffect(() => {
+useEffect(() => {
     const container = document.getElementById("kakao-map");
     if (!container || mapRef.current) return;
 
-    // 지도 생성
-    const map = new window.kakao.maps.Map(container, {
-      center: new window.kakao.maps.LatLng(37.5665, 126.9780),
-      level: 7,
-    });
-    mapRef.current = map;
-
-    const geocoder = new window.kakao.maps.services.Geocoder();
-
-    // ✅ 지도 클릭 이벤트 리스너 등록
-    window.kakao.maps.event.addListener(map, "click", (mouseEvent) => {
-      const latlng = mouseEvent.latLng;
-
-      geocoder.coord2Address(latlng.getLng(), latlng.getLat(), (result, status) => {
-        if (status === "OK" || status === window.kakao.maps.services.Status.OK) {
-          const addressData = result[0].address || result[0].road_address;
-          const addressName = addressData ? addressData.address_name : "";
-
-          // ✅ [수정] 박제된 props 대신, '보관함(Ref)'에서 실시간 값을 꺼내와서 판별합니다.
-          if (onSelectRef.current && addressName) {
-
-            // 보관함에 담긴 최신 startAddress가 비어있으면 'start', 있으면 'end'
-            const type = !startAddrRef.current ? "start" : "end";
-
-            console.log(`4. 부모에게 전송: ${type}Address -> ${addressName}`);
-            onSelectRef.current(type, addressName);
-          } else {
-            console.error("4-Error. 함수 보관함이 비어있거나 주소 이름이 없습니다.");
-          }
-        }
+    const initMap = () => {
+      const map = new window.kakao.maps.Map(container, {
+        center: new window.kakao.maps.LatLng(37.5665, 126.9780),
+        level: 7,
       });
-    });
+      mapRef.current = map;
+
+      const geocoder = new window.kakao.maps.services.Geocoder();
+
+      window.kakao.maps.event.addListener(map, "click", (mouseEvent) => {
+        const latlng = mouseEvent.latLng;
+
+        geocoder.coord2Address(latlng.getLng(), latlng.getLat(), (result, status) => {
+          if (status === "OK" || status === window.kakao.maps.services.Status.OK) {
+            const addressData = result[0].address || result[0].road_address;
+            const addressName = addressData ? addressData.address_name : "";
+
+            if (onSelectRef.current && addressName) {
+              const type = !startAddrRef.current ? "start" : "end";
+              console.log(`4. 부모에게 전송: ${type}Address -> ${addressName}`);
+              onSelectRef.current(type, addressName);
+            } else {
+              console.error("4-Error. 함수 보관함이 비어있거나 주소 이름이 없습니다.");
+            }
+          }
+        });
+      });
+    };
+
+    if (window.kakao && window.kakao.maps) {
+      initMap();
+    } else {
+      window.kakao.maps.load(() => initMap());
+    }
 
     return () => {
-
-      // 컴포넌트가 사라질 때 마커와 선을 지웁니다.
       markersRef.current.forEach((m) => m.setMap(null));
       polylineRef.current?.setMap(null);
     };
-  }, []); // 의존성 배열을 비워 지도는 한 번만 생성! 내부에선 Ref를 통해 최신 정보를 봅니다.
+}, []);
 
   // 2) 주소 변화 시 마커 및 경로 갱신 로직 (기존 유지)
   useEffect(() => {

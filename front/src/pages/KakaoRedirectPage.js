@@ -3,7 +3,7 @@ import { useEffect } from "react";
 const API_BASE =
     process.env.REACT_APP_API_BASE ||
     process.env.REACT_APP_API_BASE ||
-    "http://localhost:8080";
+    "http://https://pro-2-ayf7.onrender.com";
 
 /**
  * 카카오 OAuth 콜백 (프론트)

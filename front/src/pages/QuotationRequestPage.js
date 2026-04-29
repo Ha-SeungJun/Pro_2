@@ -229,7 +229,7 @@ const QuotationRequestPage = () => {
 
         // Authorization 헤더에 찾은 토큰을 담아 전송합니다.
         const response = await axios.post(
-          'http://localhost:8080/g2i4/estimate/', 
+          'http://https://pro-2-ayf7.onrender.com/g2i4/estimate/', 
           submitData,
           {
             headers: {

@@ -27,7 +27,7 @@ const AiChatBot = () => {
 
         try {
             // 팀장님의 기존 백엔드 주소 유지
-            const res = await axios.post("http://localhost:8080/api/ai/ask", { question: input });
+            const res = await axios.post("http://https://pro-2-ayf7.onrender.com/api/ai/ask", { question: input });
             setMessages(prev => [...prev, { role: 'ai', text: res.data.answer }]);
         } catch (err) {
             setMessages(prev => [...prev, { role: 'ai', text: "서버 연결 오류가 발생했습니다." }]);

@@ -1,6 +1,6 @@
 import axios from "axios";
 
-export const API_SERVER_HOST = "http://localhost:8080";
+export const API_SERVER_HOST = "http://https://pro-2-ayf7.onrender.com";
 const prefix = `${API_SERVER_HOST}/g2i4/coupons`;
 
 export const getMyCouponList = async () => {

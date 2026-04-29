@@ -7,7 +7,7 @@ import { login as loginAction } from '../slice/loginSlice';
 const API_BASE =
     process.env.REACT_APP_API_BASE ||
     process.env.REACT_APP_API_BASE ||
-    'http://localhost:8080';
+    'http://https://pro-2-ayf7.onrender.com';
 
 export default function useAuth() {
     const navigate = useNavigate();

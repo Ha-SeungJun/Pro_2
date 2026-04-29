@@ -10,7 +10,7 @@ export default function useLogout() {
             process.env.REACT_APP_API_BASE ||
 
             process.env.REACT_APP_API_BASE ||
-            'http://localhost:8080';
+            'http://https://pro-2-ayf7.onrender.com';
 
         try {
             // 1) 로컬/세션 저장소 토큰 제거 (프로젝트 키에 맞게 추가/수정)

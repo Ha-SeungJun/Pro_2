@@ -8,7 +8,7 @@ import logo from '../assets/logo.png'; // 기현님 로고 경로 확인!
 const API_BASE =
   process.env.REACT_APP_API_BASE ||
   process.env.REACT_APP_API_BASE ||
-  'http://localhost:8080';
+  'http://https://pro-2-ayf7.onrender.com';
 
 const pages = [
   { label: '견적서 작성', path: '/estimatepage' },

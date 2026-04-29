@@ -309,7 +309,6 @@ const SignUpComponent = () => {
         idChecked && idAvailable === true &&
         isPwValid && isPwMatch &&
         !!(emailLocked ? (emailLocal && emailDomain) : fullEmail) &&
-        (emailLocked || emailVerified) &&
         name.trim().length > 0 &&
         password1.length >= 8;
 
@@ -532,23 +531,16 @@ const SignUpComponent = () => {
                     </Box>
                     {/* 아래 줄: 인증 버튼 full-width */}
                     <Button
-                        variant={emailVerified ? 'contained' : 'outlined'}
-                        color={emailVerified ? 'success' : 'primary'}
-                        fullWidth
-                        sx={{ height: 48 }}
-                        onClick={onClickVerifyEmail}
-                        disabled={emailLocked || !canOpenVerify}
-                    >
-                        {emailLocked ? '인증완료' : (emailVerified ? '인증완료' : '인증하기')}
-                    </Button>
+    variant="outlined"
+    color="primary"
+    fullWidth
+    sx={{ height: 48 }}
+    disabled={true}  // ← 항상 비활성화
+>
+    인증하기
+</Button>
                 </Box>
 
-                <EmailVerifyDialog
-                    open={openEmailModal}
-                    email={fullEmail}
-                    onClose={() => setOpenEmailModal(false)}
-                    onVerified={handleEmailVerified}
-                />
 
                 {/* 이름, 전화번호, 주소 */}
                 <TextField

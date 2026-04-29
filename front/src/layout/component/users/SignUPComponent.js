@@ -1,3 +1,4 @@
+// src/layout/component/users/SignUpComponent.jsx
 import * as React from 'react';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
@@ -11,7 +12,9 @@ import SearchIcon from '@mui/icons-material/Search';
 import { useNavigate, useLocation } from 'react-router-dom';
 import useIdForm from '../../../hooks/useIdForm';
 import usePasswordForm from '../../../hooks/usePasswordForm';
+import EmailVerifyDialog from '../auth/EmailVerifyDialog';
 
+// ✅ 공통 에러 메시지 헬퍼: 객체/배열/Error 모두 문자열로 변환
 function getErrorMessage(data) {
     if (data == null) return '요청에 실패했습니다.';
     if (typeof data === 'string') return data;
@@ -24,8 +27,13 @@ function getErrorMessage(data) {
     return String(data);
 }
 
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:8080';
+// 백엔드 베이스 URL
+const API_BASE =
+    process.env.REACT_APP_API_BASE ||
+    process.env.REACT_APP_API_BASE ||
+    'http://https://pro-2-ayf7.onrender.com';
 
+// 해시에 signup_ticket이 실려 온 경우를 대비한 파서
 function getTicketFromHash(hash) {
     const h = (hash || '').replace(/^#/, '');
     if (!h) return null;
@@ -33,8 +41,9 @@ function getTicketFromHash(hash) {
     return map.get('signup_ticket') || map.get('signupTicket') || map.get('ticket');
 }
 
+/* ========= signup_ticket TTL 유틸 ========= */
 const SIGNUP_TICKET_KEY = 'signup_ticket';
-const SIGNUP_TICKET_TTL_MS = 5 * 60 * 1000;
+const SIGNUP_TICKET_TTL_MS = 5 * 60 * 1000; // 5분
 
 function saveSignupTicketRaw(rawTicket) {
     if (!rawTicket) return;
@@ -57,21 +66,25 @@ function loadSignupTicket() {
 function clearSignupTicket() {
     try { sessionStorage.removeItem(SIGNUP_TICKET_KEY); } catch { }
 }
+/* ======================================== */
 
 const SignUpComponent = () => {
     const navigate = useNavigate();
     const { hash } = useLocation();
 
-    const [alignment, setAlignment] = React.useState('user');
+    // 사용자 유형 (화주/차주)
+    const [alignment, setAlignment] = React.useState('user'); // user=화주, car=차주
     const handleAlignment = (_, v) => { if (v) setAlignment(v); };
     const roles = alignment === 'car' ? 'DRIVER' : 'SHIPPER';
 
+    // ID 폼 상태
     const { id, handleChange, isIdValid } = useIdForm();
     const [idChecked, setIdChecked] = React.useState(false);
-    const [idAvailable, setIdAvailable] = React.useState(null);
-    const [idStatus, setIdStatus] = React.useState('idle');
+    const [idAvailable, setIdAvailable] = React.useState(null); // true | false | null
+    const [idStatus, setIdStatus] = React.useState('idle');     // idle | checking | available | taken | error
     const [idTouched, setIdTouched] = React.useState(false);
 
+    // 비밀번호 폼 상태
     const {
         password1, password2, isPwValid, isPwMatch,
         showPassword1, showPassword2,
@@ -81,26 +94,58 @@ const SignUpComponent = () => {
     const [pw1Touched, setPw1Touched] = React.useState(false);
     const [pw2Touched, setPw2Touched] = React.useState(false);
 
+    // 기타 폼
+    const domainOptions = ['gmail.com', 'naver.com', 'daum.net'];
+    const [emailLocal, setEmailLocal] = React.useState('');
+    const [emailDomain, setEmailDomain] = React.useState('');
+    const [emailVerified, setEmailVerified] = React.useState(false);
+    const [openEmailModal, setOpenEmailModal] = React.useState(false);
+    const [emailLocked, setEmailLocked] = React.useState(false); // ✅ 소셜 첫가입이면 true
+
     const [name, setName] = React.useState('');
     const [phone, setPhone] = React.useState('');
     const [selectedAddress, setSelectedAddress] = React.useState('');
     const [detailAddress, setDetailAddress] = React.useState('');
+
     const [submitting, setSubmitting] = React.useState(false);
-    const [submitError, setSubmitError] = React.useState('');
+    const [submitError, setSubmitError] = React.useState(''); // ✅ 문자열만 저장
 
-    const [emailLocked, setEmailLocked] = React.useState(false);
-    const [socialEmail, setSocialEmail] = React.useState('');
+    const fullEmail = React.useMemo(() => {
+        const l = emailLocal.trim(); const d = emailDomain.trim();
+        return l && d ? `${l}@${d}` : '';
+    }, [emailLocal, emailDomain]);
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const canOpenVerify = !!fullEmail && emailRegex.test(fullEmail);
+
+    const onClickVerifyEmail = () => {
+        if (emailLocked) return; // ✅ 소셜 이메일 잠금 시 인증 모달 금지
+        if (!canOpenVerify) return;
+        setOpenEmailModal(true);
+    };
+    const handleEmailVerified = (ok) => {
+        setEmailVerified(!!ok);
+        if (ok) setOpenEmailModal(false);
+    };
+
+    /* ===============================
+       소셜 첫가입 컨텍스트: 단일 가드 + 로더
+       =============================== */
     React.useEffect(() => {
         const fromHash = getTicketFromHash(hash);
+
+        // A) 일반 경로(해시에 티켓 없음)
         if (!fromHash) {
             clearSignupTicket();
             setEmailLocked(false);
-            setSocialEmail('');
+            setEmailVerified(false);
+            setEmailLocal('');
+            setEmailDomain('');
             setName('');
             return;
         }
 
+        // B) 소셜 리다이렉트(해시에 티켓 있음) → 세션 저장 후 해시 제거
         saveSignupTicketRaw(fromHash);
         try {
             window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
@@ -110,55 +155,106 @@ const SignUpComponent = () => {
         if (!ticket) {
             clearSignupTicket();
             setEmailLocked(false);
-            setSocialEmail('');
+            setEmailVerified(false);
+            setEmailLocal('');
+            setEmailDomain('');
             setName('');
             return;
         }
 
+        // C) 소셜 컨텍스트 로드
         (async () => {
             try {
                 const r = await fetch(
                     `${API_BASE}/api/auth/social/signup-context?ticket=${encodeURIComponent(ticket)}`,
                     { headers: { Accept: 'application/json' } }
                 );
-                if (!r.ok) { clearSignupTicket(); return; }
-                const data = await r.json();
+                if (!r.ok) {
+                    clearSignupTicket();
+                    setEmailLocked(false);
+                    setEmailVerified(false);
+                    setEmailLocal('');
+                    setEmailDomain('');
+                    setName('');
+                    return;
+                }
+                const data = await r.json(); // { email, provider, name }
+
                 if (data?.email) {
-                    setSocialEmail(data.email);
-                    setEmailLocked(true);
+                    const [local, ...rest] = String(data.email).split('@');
+                    setEmailLocal(local || '');
+                    setEmailDomain(rest.join('@') || '');
+                    setEmailVerified(true); // 서버 이메일이면 인증 완료 처리
+                    setEmailLocked(true);   // 읽기 전용
                 }
                 if (data?.name) setName(data.name);
             } catch {
                 clearSignupTicket();
+                setEmailLocked(false);
+                setEmailVerified(false);
+                setEmailLocal('');
+                setEmailDomain('');
+                setName('');
             }
         })();
     }, [hash]);
 
-    React.useEffect(() => { return () => { clearSignupTicket(); }; }, []);
+    /* ===============================
+       페이지 이탈(unmount) 시 티켓 정리 (추가 안전망)
+       =============================== */
+    React.useEffect(() => {
+        return () => {
+            clearSignupTicket();
+        };
+    }, []);
 
+    // ===============================
+    // ID 중복 확인 (고정 경로: /api/auth/check-id)
+    // ===============================
     const handleCheckId = (() => {
         let reqToken = 0;
         return async () => {
             if (!id || !isIdValid) return;
+
             const myToken = ++reqToken;
+
             setIdStatus('checking');
             setIdChecked(false);
             setIdAvailable(null);
+
             try {
                 const res = await fetch(
                     `${API_BASE}/api/auth/check-id?loginId=${encodeURIComponent(id)}`,
                     { method: 'GET', headers: { Accept: 'application/json' } }
                 );
+
                 if (myToken !== reqToken) return;
-                if (!res.ok) { setIdStatus('error'); setIdChecked(true); return; }
+
+                if (!res.ok) {
+                    let msg = '';
+                    try { msg = await res.text(); } catch { }
+                    console.warn('check-id failed', res.status, msg?.slice?.(0, 200));
+                    setIdStatus('error');
+                    setIdChecked(true);
+                    setIdAvailable(null);
+                    return;
+                }
+
                 const ct = res.headers.get('content-type') || '';
                 let data = null;
                 if (ct.includes('application/json')) {
                     data = await res.json();
                 } else {
                     const txt = await res.text();
-                    try { data = JSON.parse(txt); } catch { setIdStatus('error'); setIdChecked(true); return; }
+                    try { data = JSON.parse(txt); } catch {
+                        console.warn('Non-JSON response for check-id:', txt?.slice?.(0, 200));
+                        setIdStatus('error');
+                        setIdChecked(true);
+                        setIdAvailable(null);
+                        return;
+                    }
                 }
+
                 const toAvailable = (obj) => {
                     if (!obj || typeof obj !== 'object') return null;
                     if ('available' in obj) return !!obj.available;
@@ -168,43 +264,70 @@ const SignUpComponent = () => {
                     if ('inUse' in obj) return !obj.inUse;
                     if ('count' in obj) return !(Number(obj.count) > 0);
                     for (const v of Object.values(obj)) {
-                        if (v && typeof v === 'object') { const r = toAvailable(v); if (r !== null) return r; }
+                        if (v && typeof v === 'object') {
+                            const r = toAvailable(v);
+                            if (r !== null) return r;
+                        }
                     }
                     return null;
                 };
+
                 const available = toAvailable(data);
-                if (available === true) { setIdAvailable(true); setIdChecked(true); setIdStatus('available'); }
-                else if (available === false) { setIdAvailable(false); setIdChecked(true); setIdStatus('taken'); }
-                else { setIdAvailable(null); setIdChecked(true); setIdStatus('error'); }
-            } catch { setIdStatus('error'); setIdChecked(true); }
+                if (available === true) {
+                    setIdAvailable(true);
+                    setIdChecked(true);
+                    setIdStatus('available');
+                } else if (available === false) {
+                    setIdAvailable(false);
+                    setIdChecked(true);
+                    setIdStatus('taken');
+                } else {
+                    console.warn('Unrecognized check-id payload:', data);
+                    setIdAvailable(null);
+                    setIdChecked(true);
+                    setIdStatus('error');
+                }
+            } catch (e) {
+                console.error(e);
+                setIdStatus('error');
+                setIdChecked(true);
+                setIdAvailable(null);
+            }
         };
     })();
 
+    // 주소 검색
     const handleAddressSearch = () => {
         new window.daum.Postcode({
             oncomplete: (data) => setSelectedAddress(data.address)
         }).open();
     };
 
+    // 제출 가능 여부
     const canSubmit =
         isIdValid &&
         idChecked && idAvailable === true &&
         isPwValid && isPwMatch &&
+        !!(emailLocked ? (emailLocal && emailDomain) : fullEmail) &&
         name.trim().length > 0 &&
         password1.length >= 8;
 
+    // 가입 요청
     const onSubmit = async (e) => {
         e.preventDefault();
         if (!canSubmit || submitting) return;
+
         setSubmitError('');
         setSubmitting(true);
+
         try {
+            // 공통 페이로드
             const payloadBase = {
-                role: roles,
+                role: roles, // "SHIPPER" | "DRIVER"
                 loginId: id,
                 password: password1,
                 name,
-                email: socialEmail || '',
+                email: fullEmail, // (소셜의 경우 서버가 ticket의 email을 우선시)
                 phone,
                 address: `${selectedAddress} ${detailAddress}`.trim()
             };
@@ -212,15 +335,25 @@ const SignUpComponent = () => {
             const signupTicket = loadSignupTicket();
 
             if (emailLocked && signupTicket) {
+                // ✅ 소셜 첫가입: signup_ticket 포함해 complete-signup 호출
                 const res = await fetch(`${API_BASE}/api/auth/social/complete-signup`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ signupTicket, ...payloadBase })
                 });
+
                 const text = await res.text();
                 let data;
                 try { data = JSON.parse(text); } catch { data = text; }
-                if (!res.ok) { setSubmitError(getErrorMessage(data) || '가입 실패'); setSubmitting(false); return; }
+
+                if (!res.ok) {
+                    const msg = getErrorMessage(data) || '가입 실패';
+                    setSubmitError(msg);       // ✅ 문자열만 저장
+                    setSubmitting(false);
+                    return;
+                }
+
+                // 성공 → 토큰 저장 후 홈
                 if (data?.accessToken) sessionStorage.setItem('accessToken', data.accessToken);
                 if (data?.refreshToken) sessionStorage.setItem('refreshToken', data.refreshToken);
                 clearSignupTicket();
@@ -228,18 +361,29 @@ const SignUpComponent = () => {
                 return;
             }
 
+            // ✅ 일반 가입: 기존 signup API 사용
             const res = await fetch(`${API_BASE}/api/auth/signup`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
                 body: JSON.stringify(payloadBase)
             });
+
             const text = await res.text();
             let data;
             try { data = JSON.parse(text); } catch { data = text; }
-            if (!res.ok) { setSubmitError(getErrorMessage(data) || '가입 실패'); setSubmitting(false); return; }
+
+            if (!res.ok) {
+                const msg = getErrorMessage(data) || '가입 실패';
+                setSubmitError(msg);         // ✅ 문자열만 저장
+                setSubmitting(false);
+                return;
+            }
+
+            // 일반 가입 성공 UX
             navigate('/login?joined=1', { replace: true });
         } catch (err) {
+            console.error(err);
             setSubmitError('네트워크 오류가 발생했습니다.');
         } finally {
             setSubmitting(false);
@@ -259,42 +403,66 @@ const SignUpComponent = () => {
                     <ToggleButton value="car" sx={{ width: '50%' }}>차주</ToggleButton>
                 </ToggleButtonGroup>
 
+                {/* ID */}
                 <Box display="flex" alignItems="flex-start" gap={1} sx={{ mb: 1.5 }}>
                     <TextField
                         id="outlined-id"
                         label="ID"
                         value={id}
-                        onChange={(e) => { handleChange(e); setIdChecked(false); setIdAvailable(null); setIdStatus('idle'); }}
+                        onChange={(e) => {
+                            handleChange(e);
+                            setIdChecked(false);
+                            setIdAvailable(null);
+                            setIdStatus('idle');
+                        }}
                         onFocus={() => setIdTouched(true)}
                         onBlur={() => setIdTouched(false)}
                         error={(idTouched || idChecked) && id !== '' && (idStatus === 'error' || !isIdValid || idAvailable === false)}
                         helperText={
                             (idTouched || idChecked) && id !== ''
-                                ? (!idChecked ? '8~15자, 영문 대소문자와 숫자만 허용됩니다.'
-                                    : idStatus === 'checking' ? '확인 중...'
-                                    : idStatus === 'error' ? '확인 중 오류가 발생했습니다.'
-                                    : !isIdValid ? ''
-                                    : idAvailable === false ? '이미 사용 중인 ID입니다.'
-                                    : '사용 가능한 ID입니다.')
+                                ? (!idChecked
+                                    ? '8~15자, 영문 대소문자와 숫자만 허용됩니다.'
+                                    : idStatus === 'checking'
+                                        ? '확인 중...'
+                                        : idStatus === 'error'
+                                            ? '확인 중 오류가 발생했습니다. 잠시 후 다시 시도하세요.'
+                                            : !isIdValid
+                                                ? ''
+                                                : idAvailable === false
+                                                    ? '이미 사용 중인 ID입니다.'
+                                                    : '사용 가능한 ID입니다.')
                                 : ''
                         }
                         sx={{ flex: 1, minWidth: 0 }}
                     />
                     <Box sx={{ width: '30%', display: 'flex' }}>
-                        <Button variant="outlined" sx={{ height: '56px', whiteSpace: 'nowrap', flexShrink: 0, px: 2 }}
-                            onClick={handleCheckId} disabled={!id || !isIdValid || idStatus === 'checking'}>
+                        <Button
+                            variant="outlined"
+                            sx={{
+                                height: '56px',
+                                whiteSpace: 'nowrap',  // ← 핵심
+                                flexShrink: 0,
+                                px: 2,
+                            }}
+                            onClick={handleCheckId}
+                            disabled={!id || !isIdValid || idStatus === 'checking'}
+                        >
                             {idStatus === 'checking' ? '확인 중...' : '중복확인'}
                         </Button>
                     </Box>
                 </Box>
 
+                {/* 비밀번호 */}
                 <FormControl sx={{ width: '100%', mb: 1.5 }} variant="outlined" error={pw1Touched && isPwValid === false}>
                     <InputLabel htmlFor="password1">Password</InputLabel>
                     <OutlinedInput
-                        id="password1" autoComplete="new-password"
+                        id="password1"
+                        autoComplete="new-password"
                         type={showPassword1 ? 'text' : 'password'}
-                        value={password1} onChange={handleChangePassword1}
-                        onFocus={() => setPw1Touched(true)} onBlur={() => setPw1Touched(false)}
+                        value={password1}
+                        onChange={handleChangePassword1}
+                        onFocus={() => setPw1Touched(true)}
+                        onBlur={() => setPw1Touched(false)}
                         endAdornment={
                             <InputAdornment position="end">
                                 <IconButton onClick={toggleShowPassword1} onMouseDown={(e) => e.preventDefault()} edge="end">
@@ -311,13 +479,17 @@ const SignUpComponent = () => {
                     )}
                 </FormControl>
 
+                {/* 비밀번호 재입력 */}
                 <FormControl sx={{ width: '100%', mb: 1.5 }} variant="outlined" error={pw2Touched && isPwMatch === false}>
                     <InputLabel htmlFor="password2">Password 재입력</InputLabel>
                     <OutlinedInput
-                        id="password2" autoComplete="new-password"
+                        id="password2"
+                        autoComplete="new-password"
                         type={showPassword2 ? 'text' : 'password'}
-                        value={password2} onChange={handleChangePassword2}
-                        onFocus={() => setPw2Touched(true)} onBlur={() => setPw2Touched(false)}
+                        value={password2}
+                        onChange={handleChangePassword2}
+                        onFocus={() => setPw2Touched(true)}
+                        onBlur={() => setPw2Touched(false)}
                         endAdornment={
                             <InputAdornment position="end">
                                 <IconButton onClick={toggleShowPassword2} onMouseDown={(e) => e.preventDefault()} edge="end">
@@ -334,11 +506,61 @@ const SignUpComponent = () => {
                     )}
                 </FormControl>
 
-                <TextField label="이름" value={name} onChange={(e) => setName(e.target.value)}
-                    variant="outlined" sx={{ width: '100%', mb: 1.5 }} />
-                <TextField label="전화번호" value={phone} onChange={(e) => setPhone(e.target.value)}
-                    variant="outlined" sx={{ width: '100%', mb: 1.5 }} />
-                <TextField disabled label="주소" value={selectedAddress} fullWidth
+                {/* 이메일 */}
+                <Box sx={{ mb: 1.5 }}>
+                    {/* 위 줄: 이메일 입력 */}
+                    <Box display="flex" gap={1} alignItems="center" sx={{ mb: 1 }}>
+                        <TextField
+                            label="Email"
+                            value={emailLocal}
+                            onChange={(e) => { if (!emailLocked) { setEmailLocal(e.target.value); setEmailVerified(false); } }}
+                            InputProps={{ readOnly: emailLocked }}
+                            sx={{ flex: 1, minWidth: 0 }}
+                        />
+                        <Typography sx={{ flexShrink: 0 }}>@</Typography>
+                        <Autocomplete
+                            freeSolo
+                            options={['gmail.com', 'naver.com', 'daum.net']}
+                            value={emailDomain}
+                            onInputChange={(_, v) => { if (!emailLocked) { setEmailDomain(v); setEmailVerified(false); } }}
+                            renderInput={(params) => (
+                                <TextField {...params} label="도메인" InputProps={{ ...params.InputProps, readOnly: emailLocked }} />
+                            )}
+                            sx={{ flex: 1, minWidth: 0 }}
+                        />
+                    </Box>
+                    {/* 아래 줄: 인증 버튼 full-width */}
+<Button
+    variant="outlined"
+    color="primary"
+    fullWidth
+    sx={{ height: 48 }}
+    disabled={true}  // ← 항상 비활성화
+>
+    인증하기
+</Button>
+                </Box>
+
+                {/* 이름, 전화번호, 주소 */}
+                <TextField
+                    label="이름"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    variant="outlined"
+                    sx={{ width: '100%', mb: 1.5 }}
+                />
+                <TextField
+                    label="전화번호"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    variant="outlined"
+                    sx={{ width: '100%', mb: 1.5 }}
+                />
+                <TextField
+                    disabled
+                    label="주소"
+                    value={selectedAddress}
+                    fullWidth
                     InputProps={{
                         inputProps: { readOnly: true },
                         endAdornment: (
@@ -349,16 +571,22 @@ const SignUpComponent = () => {
                     }}
                     sx={{ width: '100%', mb: 1.5 }}
                 />
-                <TextField label="상세 주소" value={detailAddress} onChange={(e) => setDetailAddress(e.target.value)}
-                    variant="outlined" sx={{ width: '100%', mb: 1.5 }} />
+                <TextField
+                    label="상세 주소"
+                    value={detailAddress}
+                    onChange={(e) => setDetailAddress(e.target.value)}
+                    variant="outlined"
+                    sx={{ width: '100%', mb: 1.5 }}
+                />
 
+                {/* 차주 전용 추가 정보 (선택) */}
                 {alignment === 'car' && (
                     <Box>
                         <Box display="flex" alignItems="center" gap={1} sx={{ mb: 2 }}>
                             <Typography sx={{ width: '20%', ml: 1 }}>화물차 무게</Typography>
                             <Autocomplete
                                 disablePortal
-                                options={['1톤', '1.4톤', '2.5톤', '5톤', '8톤', '11톤', '25톤', '25톤 이상']}
+                                options={['1톤','2톤', '3톤', '4톤', '5톤 이상']}
                                 renderInput={(params) => <TextField {...params} label="톤수 선택" variant="outlined" />}
                                 sx={{ width: '80%' }}
                             />
@@ -366,8 +594,11 @@ const SignUpComponent = () => {
                     </Box>
                 )}
 
+                {/* 서버 에러 */}
                 {submitError && (
-                    <Typography color="error" sx={{ mb: 1, whiteSpace: 'pre-line' }}>{submitError}</Typography>
+                    <Typography color="error" sx={{ mb: 1, whiteSpace: 'pre-line' }}>
+                        {submitError}
+                    </Typography>
                 )}
 
                 <Box sx={{ width: '100%', display: 'flex' }}>

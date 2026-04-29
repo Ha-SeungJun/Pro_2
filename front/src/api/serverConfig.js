@@ -1,1 +1,1 @@
-export const API_SERVER_HOST = 'http://https://pro-2-ayf7.onrender.com';
+export const API_SERVER_HOST = process.env.REACT_APP_API_URL || 'http://localhost:8080';

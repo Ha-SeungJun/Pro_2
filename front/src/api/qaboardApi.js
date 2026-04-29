@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // Backend API Server Host
-import { API_SERVER_HOST } from "../serverConfig";
+import { API_SERVER_HOST } from "./serverConfig";
 
 const qaHost = `${API_SERVER_HOST}/api/qaboard`;
 

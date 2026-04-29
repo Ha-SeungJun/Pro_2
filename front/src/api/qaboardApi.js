@@ -1,9 +1,10 @@
 import axios from "axios";
 
 // Backend API Server Host
-export const API_SERVER_HOST = "http://https://pro-2-ayf7.onrender.com";
+import { API_SERVER_HOST } from "../serverConfig";
 
 const qaHost = `${API_SERVER_HOST}/api/qaboard`;
+
 
 // 게시글 목록 조회
 export const getPostList = async (params = {}, userInfo = {}, isAdmin = false) => {

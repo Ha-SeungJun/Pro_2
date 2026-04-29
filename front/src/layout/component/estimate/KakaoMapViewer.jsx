@@ -69,12 +69,9 @@ useEffect(() => {
 if (window.kakao && window.kakao.maps && window.kakao.maps.LatLng) {
   initMap();
 } else {
-  const timer = setInterval(() => {
-    if (window.kakao && window.kakao.maps && window.kakao.maps.LatLng) {
-      clearInterval(timer);
-      initMap();
-    }
-  }, 100);
+  window.kakao.maps.load(() => {
+    initMap();
+  });
 }
 
     return () => {

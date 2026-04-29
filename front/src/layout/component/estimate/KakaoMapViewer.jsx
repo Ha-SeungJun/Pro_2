@@ -66,11 +66,12 @@ useEffect(() => {
       });
     };
 
-    if (window.kakao && window.kakao.maps) {
-      initMap();
-    } else {
-      window.kakao.maps.load(() => initMap());
-    }
+if (window.kakao && window.kakao.maps) {
+  initMap();
+} else {
+  window.kakao = window.kakao || {};
+  window.kakaoAsyncInit = () => initMap();
+}
 
     return () => {
       markersRef.current.forEach((m) => m.setMap(null));

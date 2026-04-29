@@ -151,6 +151,39 @@ public class FeesAdminController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/basic/rows")
+@Transactional
+public ResponseEntity<Void> addBasicRow(@RequestBody RowRequest req) {
+    String weight = trim(req.getName());
+    if (weight.isEmpty()) return ResponseEntity.badRequest().build();
+    if (feesBasicRepository.findByWeight(weight).isEmpty()) {
+        FeesBasic row = FeesBasic.builder()
+                .weight(weight)
+                .cargoName(req.getCargoName() != null ? req.getCargoName() : "미지정")
+                .ratePerKm(BigDecimal.ZERO)
+                .initialCharge(BigDecimal.ZERO)
+                .updatedAt(LocalDateTime.now())
+                .build();
+        feesBasicRepository.save(row);
+    }
+    return ResponseEntity.ok().build();
+}
+
+@PostMapping("/extra/rows")
+@Transactional
+public ResponseEntity<Void> addExtraRow(@RequestBody RowRequest req) {
+    String title = trim(req.getName());
+    if (title.isEmpty()) return ResponseEntity.badRequest().build();
+    if (feesExtraRepository.findByExtraChargeTitle(title).isEmpty()) {
+        FeesExtra row = new FeesExtra();
+        row.setExtraChargeTitle(title);
+        row.setExtraCharge(BigDecimal.ZERO);
+        row.setUpdatedAt(LocalDateTime.now());
+        feesExtraRepository.save(row);
+    }
+    return ResponseEntity.ok().build();
+}
+    
     @DeleteMapping("/basic/rows")
     @Transactional
     public ResponseEntity<Void> deleteBasicRowParam(@RequestParam Map<String, String> params) {

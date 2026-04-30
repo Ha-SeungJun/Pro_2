@@ -59,6 +59,8 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+
+	implementation 'com.cloudinary:cloudinary-http44:1.36.0'
 }
 
 // 컴파일 시 파라미터 이름 정보 보존 (바인딩 400 방지)
@@ -69,3 +71,4 @@ tasks.withType(JavaCompile) {
 tasks.named('test') {
     useJUnitPlatform()
 }
+

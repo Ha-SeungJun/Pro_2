@@ -176,7 +176,7 @@ const AdminSidebar = () => {
                           const active = location.pathname === item.path;
                           const isReports = item.id === "reports";
                           const primaryNode = isReports ? (
-                            <Box display="flex" alignItems="center" gap={1}>
+                          <Box display="flex" alignItems="center" justifyContent="space-between" gap={1}>
                               <span>신고내역</span>
                               <Badge color="error" badgeContent={unread} max={99} overlap="circular" />
                             </Box>

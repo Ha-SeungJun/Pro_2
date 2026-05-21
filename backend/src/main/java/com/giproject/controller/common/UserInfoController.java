@@ -17,6 +17,7 @@ import com.giproject.entity.cargo.CargoOwner;
 import com.giproject.entity.member.Member;
 import com.giproject.repository.cargo.CargoOwnerRepository;
 import com.giproject.repository.member.MemberRepository;
+import com.giproject.service.member.CloudinaryService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -27,7 +28,8 @@ public class UserInfoController {
 
     private final MemberRepository memberRepository;
     private final CargoOwnerRepository cargoOwnerRepository;
-
+    private final CloudinaryService cloudinaryService;
+    
     private static Path resolveUploadRoot() {
         Path rootA = Paths.get("../uploads").toAbsolutePath().normalize();
         Path rootB = Paths.get("uploads").toAbsolutePath().normalize();
@@ -58,8 +60,7 @@ public class UserInfoController {
         Member m = memberRepository.findById(userId).orElse(null);
         if (m != null) {
             String fileName = m.getProfileImage();
-            String webPath  = (fileName == null || fileName.isBlank()) ? null
-                    : "/g2i4/uploads/user_profile/" + fileName;
+            String webPath = (fileName == null || fileName.isBlank()) ? null : fileName;
 
             Map<String,Object> data = new LinkedHashMap<>();
             data.put("mem_id", m.getMemId());
@@ -82,8 +83,7 @@ public class UserInfoController {
         CargoOwner c = cargoOwnerRepository.findById(userId).orElse(null);
         if (c != null) {
             String fileName = c.getProfileImage();
-            String webPath  = (fileName == null || fileName.isBlank()) ? null
-                    : "/g2i4/uploads/user_profile/" + fileName;
+            String webPath = (fileName == null || fileName.isBlank()) ? null : fileName;
 
             Map<String,Object> data = new LinkedHashMap<>();
             data.put("cargo_id", c.getCargoId());
@@ -114,33 +114,21 @@ public class UserInfoController {
         if (file.isEmpty()) return ResponseEntity.badRequest().body("파일이 없습니다.");
 
         try {
-            Files.createDirectories(USER_PROFILE_DIR);
+            String imageUrl = cloudinaryService.uploadImage(file, "user_profile");
 
-            String original = file.getOriginalFilename();
-            String ext = (original != null && original.lastIndexOf('.') != -1)
-                    ? original.substring(original.lastIndexOf('.')).toLowerCase()
-                    : "";
-            String savedFilename = UUID.randomUUID() + ext;
-
-            Path savePath = USER_PROFILE_DIR.resolve(savedFilename).normalize();
-            file.transferTo(savePath.toFile());
-
-            // DB 반영: DB에는 '파일명만' 저장
             if ("MEMBER".equalsIgnoreCase(userType)) {
                 Member m = memberRepository.findById(id).orElseThrow();
-                m.setProfileImage(savedFilename);
+                m.setProfileImage(imageUrl);
                 memberRepository.save(m);
             } else if ("CARGO_OWNER".equalsIgnoreCase(userType)) {
                 CargoOwner c = cargoOwnerRepository.findById(id).orElseThrow();
-                c.setProfileImage(savedFilename);
+                c.setProfileImage(imageUrl);
                 cargoOwnerRepository.save(c);
             } else {
                 return ResponseEntity.badRequest().body("userType이 잘못되었습니다.");
             }
 
-            // 프론트 미리보기용 웹경로 (정적 매핑과 일치)
-            String webPath = "/g2i4/uploads/user_profile/" + savedFilename;
-            return ResponseEntity.ok(Map.of("filename", savedFilename, "webPath", webPath));
+            return ResponseEntity.ok(Map.of("filename", imageUrl, "webPath", imageUrl));
 
         } catch (IOException e) {
             return ResponseEntity.internalServerError().body("업로드 실패: " + e.getMessage());
@@ -170,12 +158,12 @@ public class UserInfoController {
             }
         }
 
-        if (filename != null && !filename.isBlank()) {
-            try {
-                Files.deleteIfExists(USER_PROFILE_DIR.resolve(filename));
-            } catch (Exception ignore) {}
-        }
-
-        return ResponseEntity.ok(Map.of("removed", true));
+//        if (filename != null && !filename.isBlank()) {
+//            try {
+//                Files.deleteIfExists(USER_PROFILE_DIR.resolve(filename));
+//            } catch (Exception ignore) {}
+//        }
+//
+//        return ResponseEntity.ok(Map.of("removed", true));
     }
 }

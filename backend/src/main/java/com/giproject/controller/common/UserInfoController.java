@@ -164,6 +164,6 @@ public class UserInfoController {
 //            } catch (Exception ignore) {}
 //        }
 //
-//        return ResponseEntity.ok(Map.of("removed", true));
+      return ResponseEntity.ok(Map.of("removed", true));
     }
 }

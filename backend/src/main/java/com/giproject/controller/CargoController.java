@@ -5,6 +5,8 @@ import com.giproject.entity.cargo.Cargo;
 import com.giproject.entity.cargo.CargoOwner;
 import com.giproject.repository.cargo.CargoOwnerRepository;
 import com.giproject.repository.cargo.CargoRepository;
+import com.giproject.service.member.CloudinaryService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +18,7 @@ import java.nio.file.*;
 import java.util.*;
 
 @Slf4j
-@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
+@CrossOrigin(origins = {"http://localhost:3000", "https://first-road.vercel.app"}, allowCredentials = "true")
 @RestController
 @RequestMapping("/g2i4/cargo")
 @RequiredArgsConstructor
@@ -24,7 +26,7 @@ public class CargoController {
 
     private final CargoRepository cargoRepository;
     private final CargoOwnerRepository cargoOwnerRepository;
-
+    private final CloudinaryService cloudinaryService;
     // 절대경로 설정
     private static final Path UPLOAD_ROOT = Paths.get("../uploads").toAbsolutePath().normalize();
     private static final Path CARGO_DIR   = UPLOAD_ROOT.resolve("cargo");
@@ -63,14 +65,17 @@ public class CargoController {
                     .orElseThrow(() -> new RuntimeException("소유자 없음"));
 
             // 2. 이미지 파일 저장 처리
-            Files.createDirectories(CARGO_DIR);
-            String original = file.getOriginalFilename();
-            String ext = (original != null && original.lastIndexOf('.') != -1)
-                    ? original.substring(original.lastIndexOf('.')).toLowerCase() : "";
-            String savedFilename = UUID.randomUUID() + ext;
-            Path savePath = CARGO_DIR.resolve(savedFilename).normalize();
-            file.transferTo(savePath.toFile());
-            String webPath = "/g2i4/uploads/cargo/" + savedFilename;
+//            Files.createDirectories(CARGO_DIR);
+//            String original = file.getOriginalFilename();
+//            String ext = (original != null && original.lastIndexOf('.') != -1)
+//                    ? original.substring(original.lastIndexOf('.')).toLowerCase() : "";
+//            String savedFilename = UUID.randomUUID() + ext;
+//            Path savePath = CARGO_DIR.resolve(savedFilename).normalize();
+//            file.transferTo(savePath.toFile());
+//            String webPath = "/g2i4/uploads/cargo/" + savedFilename;
+         
+            // Cloudinary
+            String webPath = cloudinaryService.uploadImage(file, "cargo");
 
             // 3. 엔티티 생성 및 필드 셋팅
             Cargo cargo = new Cargo();
@@ -140,23 +145,8 @@ public class CargoController {
                     .orElseThrow(() -> new RuntimeException("차량 없음: " + cargoNo));
 
             if (file.isEmpty()) return ResponseEntity.badRequest().body("파일이 없습니다.");
-            
-            Files.createDirectories(CARGO_DIR);
 
-            // 기존 파일 삭제
-            if (cargo.getCargoImage() != null && !cargo.getCargoImage().isBlank()) {
-                String prevName = cargo.getCargoImage().substring(cargo.getCargoImage().lastIndexOf("/") + 1);
-                Files.deleteIfExists(CARGO_DIR.resolve(prevName));
-            }
-
-            String original = file.getOriginalFilename();
-            String ext = (original != null && original.lastIndexOf('.') != -1)
-                    ? original.substring(original.lastIndexOf('.')).toLowerCase() : "";
-            String savedFilename = UUID.randomUUID() + ext;
-            Path savePath = CARGO_DIR.resolve(savedFilename).normalize();
-            file.transferTo(savePath.toFile());
-
-            String webPath = "/g2i4/uploads/cargo/" + savedFilename;
+            String webPath = cloudinaryService.uploadImage(file, "cargo");
             cargo.setCargoImage(webPath);
             cargoRepository.save(cargo);
 
@@ -173,8 +163,7 @@ public class CargoController {
      */
     @GetMapping("/all/approved")
     public ResponseEntity<List<Cargo>> getAllApprovedCargo() {
-        // "APPROVED" 상태인 차량만 조회하거나, 일단 에러가 안 나게 전체 리스트라도 반환
-        List<Cargo> approvedList = cargoRepository.findAll(); // 혹은 findByStatus("APPROVED")
+        List<Cargo> approvedList = cargoRepository.findByStatus("APPROVED");
         return ResponseEntity.ok(approvedList);
     }
 }

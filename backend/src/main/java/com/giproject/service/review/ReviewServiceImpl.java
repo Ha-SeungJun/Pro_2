@@ -32,6 +32,7 @@ import com.giproject.entity.review.ReviewImage;
 import com.giproject.repository.delivery.DeliveryRepository;
 import com.giproject.repository.review.ReviewImageRepository;
 import com.giproject.repository.review.ReviewRepository;
+import com.giproject.service.member.CloudinaryService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -46,6 +47,8 @@ public class ReviewServiceImpl implements ReviewService {
     private final ReviewRepository reviewRepository;
     private final DeliveryRepository deliveryRepository;
     private final ReviewImageRepository reviewImageRepository;
+    private final CloudinaryService cloudinaryService;
+    
     @Value("${com.fullstack.upload.path}")
     private String uploadPath;
 
@@ -145,17 +148,6 @@ public class ReviewServiceImpl implements ReviewService {
             return;
         }
 
-        File originalDir = new File(uploadPath, "review/original");
-        File thumbDir = new File(uploadPath, "review/thumb");
-
-        if (!originalDir.exists()) {
-            originalDir.mkdirs();
-        }
-
-        if (!thumbDir.exists()) {
-            thumbDir.mkdirs();
-        }
-
         int sortOrder = startSortOrder;
 
         for (MultipartFile image : images) {
@@ -163,37 +155,25 @@ public class ReviewServiceImpl implements ReviewService {
                 continue;
             }
 
-            String originalFilename = image.getOriginalFilename();
-            String savedFileName = UUID.randomUUID() + "_" + originalFilename;
-
-            File originalFile = new File(originalDir, savedFileName);
-            File thumbnailFile = new File(thumbDir, savedFileName);
-
             try {
-                // 원본 저장
-                image.transferTo(originalFile);
+                // 원본 업로드
+                String imagePath = cloudinaryService.uploadImage(image, "review/original");
 
-                // 썸네일 생성
-                Thumbnails.of(originalFile)
-                        .size(300, 300)
-                        .keepAspectRatio(true)
-                        .toFile(thumbnailFile);
+                // 썸네일은 Cloudinary 변환 URL로 생성
+                String thumbnailPath = imagePath.replace("/upload/", "/upload/w_300,h_300,c_fit/");
+
+                ReviewImage reviewImage = ReviewImage.builder()
+                        .review(review)
+                        .imagePath(imagePath)
+                        .thumbnailPath(thumbnailPath)
+                        .sortOrder(sortOrder++)
+                        .build();
+
+                reviewImageRepository.save(reviewImage);
 
             } catch (IOException e) {
                 throw new RuntimeException("이미지 저장 중 오류가 발생했습니다.", e);
             }
-
-            String imagePath = "review/original/" + savedFileName;
-            String thumbnailPath = "review/thumb/" + savedFileName;
-
-            ReviewImage reviewImage = ReviewImage.builder()
-                    .review(review)
-                    .imagePath(imagePath)
-                    .thumbnailPath(thumbnailPath)
-                    .sortOrder(sortOrder++)
-                    .build();
-
-            reviewImageRepository.save(reviewImage);
         }
     }
     //이미지 저장
@@ -299,16 +279,8 @@ public class ReviewServiceImpl implements ReviewService {
         reorderImages(review);
     }
     private void deleteFileIfExists(String relativePath) {
-        if (relativePath == null || relativePath.isBlank()) {
-            return;
-        }
-
-        File file = new File(uploadPath, relativePath);
-
-        if (file.exists() && !file.delete()) {
-            log.warn("파일 삭제 실패: {}", file.getAbsolutePath());
-        }
     }
+    
     private void deleteReviewImages(Long reviewNo, List<Long> deleteImageIds) {
         if (deleteImageIds == null || deleteImageIds.isEmpty()) {
             return;

@@ -1,41 +1,36 @@
 package com.giproject.email;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.MailException;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import sibApi.TransactionalEmailsApi;
+import sibModel.SendSmtpEmail;
+import sibModel.SendSmtpEmailSender;
+import sibModel.SendSmtpEmailTo;
+import sendinblue.ApiClient;
+import sendinblue.Configuration;
 
 @Service
 public class EmailVerificationService {
 
-    private final JavaMailSender mailSender;
-    private final SecureRandom random = new SecureRandom();
+    @Value("${brevo.api.key}")
+    private String brevoApiKey;
 
-    // 메모리 저장소(운영은 Redis 권장)
+    private final SecureRandom random = new SecureRandom();
     private final Map<String, Entry> store = new ConcurrentHashMap<>();
     private record Entry(String hash, long expiresAt, long lastSentAt, int sentCount) {}
 
-    // ✅ 보낸사람: 기본은 spring.mail.username, 필요하면 app.mail.from 로 덮어쓰기
-    @Value("${app.mail.from:${spring.mail.username}}")
-    private String from;
-
-    public EmailVerificationService(JavaMailSender mailSender) {
-        this.mailSender = mailSender;
-    }
-
-    /** 인증코드 전송 */
     public void sendCode(String email) {
         long now = Instant.now().toEpochMilli();
         Entry prev = store.get(email);
 
-        // 간단 레이트리밋: 60초 이내 재요청 차단, 시간당 5회 제한
         if (prev != null) {
             if (now - prev.lastSentAt < 60_000) {
                 throw new IllegalArgumentException("너무 자주 요청했습니다. 잠시 뒤 다시 시도하세요.");
@@ -47,26 +42,33 @@ public class EmailVerificationService {
 
         String code = String.format("%06d", random.nextInt(1_000_000));
         String hash = BCrypt.hashpw(code, BCrypt.gensalt());
-        long expiresAt = Instant.now().plusSeconds(10 * 60).toEpochMilli(); // 10분
+        long expiresAt = Instant.now().plusSeconds(10 * 60).toEpochMilli();
 
-        // 메일 전송
         try {
-            SimpleMailMessage msg = new SimpleMailMessage();
-            msg.setFrom(from);             // ✅ 네이버는 보통 username과 동일해야 전송됨
-            msg.setTo(email);
-            msg.setSubject("[GiProject] 이메일 인증코드");
-            msg.setText("인증코드: " + code + "\n유효시간: 10분");
-            mailSender.send(msg);
-        } catch (MailException e) {
-            // 전역 예외 핸들러에서 메시지 내려가게 그대로 던짐
-            throw e;
+            ApiClient apiClient = Configuration.getDefaultApiClient();
+            apiClient.setApiKey(brevoApiKey);
+
+            TransactionalEmailsApi apiInstance = new TransactionalEmailsApi(apiClient);
+
+            SendSmtpEmail sendSmtpEmail = new SendSmtpEmail();
+            sendSmtpEmail.subject("[FirstRoad] 이메일 인증코드");
+            sendSmtpEmail.htmlContent("<p>인증코드: <b>" + code + "</b></p><p>유효시간: 10분</p>");
+            sendSmtpEmail.sender(new SendSmtpEmailSender()
+                .name("퍼스트로드")
+                .email("rladnrms0907@naver.com"));
+            sendSmtpEmail.to(Arrays.asList(
+                new SendSmtpEmailTo().email(email)
+            ));
+
+            apiInstance.sendTransacEmail(sendSmtpEmail);
+        } catch (Exception e) {
+            throw new RuntimeException("메일 발송 실패: " + e.getMessage(), e);
         }
 
         int newCount = prev == null ? 1 : Math.min(prev.sentCount + 1, 10);
         store.put(email, new Entry(hash, expiresAt, now, newCount));
     }
 
-    /** 인증코드 검증(일회성) */
     public boolean verify(String email, String code) {
         Entry entry = store.get(email);
         if (entry == null) return false;
@@ -75,7 +77,7 @@ public class EmailVerificationService {
             return false;
         }
         boolean ok = BCrypt.checkpw(code, entry.hash);
-        if (ok) store.remove(email); // 사용 후 제거
+        if (ok) store.remove(email);
         return ok;
     }
 }

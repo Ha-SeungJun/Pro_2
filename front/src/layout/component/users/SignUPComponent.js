@@ -308,6 +308,7 @@ const SignUpComponent = () => {
         isIdValid &&
         idChecked && idAvailable === true &&
         isPwValid && isPwMatch &&
+        emailVerified &&
         !!(emailLocked ? (emailLocal && emailDomain) : fullEmail) &&
         name.trim().length > 0 &&
         password1.length >= 8;
@@ -530,15 +531,17 @@ const SignUpComponent = () => {
                         />
                     </Box>
                     {/* 아래 줄: 인증 버튼 full-width */}
-<Button
-    variant="outlined"
-    color="primary"
-    fullWidth
-    sx={{ height: 48 }}
-    disabled={false}  
->
-    인증하기
-</Button>
+
+                    <Button
+                        variant="outlined"
+                        color="primary"
+                        fullWidth
+                        sx={{ height: 48 }}
+                        onClick={onClickVerifyEmail}
+                        disabled={!canOpenVerify || emailLocked}
+                    >
+                        {emailVerified ? '인증완료 ✓' : '인증하기'}
+                    </Button>
                 </Box>
 
                 {/* 이름, 전화번호, 주소 */}
@@ -586,7 +589,7 @@ const SignUpComponent = () => {
                             <Typography sx={{ width: '20%', ml: 1 }}>화물차 무게</Typography>
                             <Autocomplete
                                 disablePortal
-                                options={['1톤','2톤', '3톤', '4톤', '5톤 이상']}
+                                options={['1톤', '2톤', '3톤', '4톤', '5톤 이상']}
                                 renderInput={(params) => <TextField {...params} label="톤수 선택" variant="outlined" />}
                                 sx={{ width: '80%' }}
                             />
@@ -608,6 +611,15 @@ const SignUpComponent = () => {
                     </Button>
                 </Box>
             </Paper>
+
+
+
+            <EmailVerifyDialog
+                open={openEmailModal}
+                email={fullEmail}
+                onClose={() => setOpenEmailModal(false)}
+                onVerified={handleEmailVerified}
+            />
         </Container>
     );
 };

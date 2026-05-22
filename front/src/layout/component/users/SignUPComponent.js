@@ -535,7 +535,7 @@ const SignUpComponent = () => {
     color="primary"
     fullWidth
     sx={{ height: 48 }}
-    disabled={true}  // ← 항상 비활성화
+    disabled={false}  
 >
     인증하기
 </Button>

@@ -49,7 +49,7 @@ public class MailServiceImpl implements MailService {
             sendSmtpEmail.htmlContent(content);
             sendSmtpEmail.sender(new SendSmtpEmailSender()
                 .name("퍼스트로드")
-                .email("rladnrms0907@naver.com"));
+                .email("gktmdwns1037@gmail.com"));
             sendSmtpEmail.to(Arrays.asList(
                 new SendSmtpEmailTo().email(toEmail)
             ));

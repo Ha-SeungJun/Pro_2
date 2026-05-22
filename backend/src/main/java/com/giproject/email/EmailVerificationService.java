@@ -55,7 +55,7 @@ public class EmailVerificationService {
             sendSmtpEmail.htmlContent("<p>인증코드: <b>" + code + "</b></p><p>유효시간: 10분</p>");
             sendSmtpEmail.sender(new SendSmtpEmailSender()
                 .name("퍼스트로드")
-                .email("rladnrms0907@naver.com"));
+                .email("gktmdwns1037@gmail.com"));
             sendSmtpEmail.to(Arrays.asList(
                 new SendSmtpEmailTo().email(email)
             ));

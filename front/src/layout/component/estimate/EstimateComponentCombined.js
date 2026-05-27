@@ -56,6 +56,7 @@ const EstimateComponentCombined = () => {
     const authChecked = useRef(false);
     const isAdmin = isCurrentUserAdmin();
     const mapRef = useRef(null);
+    const [submitting, setSubmitting] = React.useState(false);
 
     useEffect(() => {
         if (authChecked.current) return;
@@ -122,11 +123,17 @@ const EstimateComponentCombined = () => {
     };
 
     const handleClickAdd = () => {
+        if (submitting) return;
         if (!estimate.distanceKm) { alert("예상거리를 입력해주세요"); setOpenEstimateSend(false); return; }
         if (!estimate.cargoType) { alert("화물종류를 입력해주세요"); setOpenEstimateSend(false); return; }
         if (!estimate.cargoWeight) { alert("화물무게를 입력해주세요"); setOpenEstimateSend(false); return; }
+
+        setSubmitting(true);
         const estimateToSend = { ...estimate, startTime: estimate.startTime.format("YYYY-MM-DDTHH:mm:ss") };
-        postAdd(estimateToSend).then(() => { alert("견적서 제출이 완료되었습니다."); moveToHome(); });
+        postAdd(estimateToSend)
+            .then(() => { alert("견적서 제출이 완료되었습니다."); moveToHome(); })
+            .catch(() => { alert("제출 실패. 다시 시도해주세요."); })
+            .finally(() => setSubmitting(false));
     };
 
     const handleChangeEstimate = (e) => setEstimate((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -348,7 +355,9 @@ const EstimateComponentCombined = () => {
                     <Typography fontSize={15}>견적 내용과 틀리면 배송이 거절될 수 있습니다.</Typography>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleClickAdd} color="error">확인</Button>
+                    <Button onClick={handleClickAdd} color="error" disabled={submitting}>
+                        {submitting ? '제출 중...' : '확인'}
+                    </Button>
                     <Button onClick={() => setOpenEstimateSend(false)} color="inherit">아니요</Button>
                 </DialogActions>
             </Dialog>

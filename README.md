@@ -1,7 +1,7 @@
 # 🚚 FIRST ROAD
 
 <div align="center">
-  <img src="https://your-image-url.com/logo.png" width="300" alt="프로젝트 로고"/>
+  <img src="front/src/assets/logo.png" width="450" alt="프로젝트 로고"/>
 
   <br/><br/>
 
@@ -17,7 +17,7 @@
 | 항목 | 내용 |
 |------|------|
 | 프로젝트명 | FIRST ROAD |
-| 개발 기간 | 2026.03 ~ 2026.05 |
+| 개발 기간 | 2026.04 ~ 2026.05 |
 | 개발 인원 | 5명 |
 | 기술 스택 | Spring Boot, React, MariaDB |
 | 한 줄 소개 | 화물 운송 중개 플랫폼 (화주 ↔ 차주 매칭 서비스) |
@@ -26,13 +26,13 @@
 
 ## 👥 팀 소개
 
-| 이름 | 역할 | GitHub |
-|------|------|--------|
-| 김기현 | Backend (API, DB 설계) | [GitHub](https://github.com/your-id) |
-| 김우근 | Frontend (UI/UX) | [GitHub](https://github.com/your-id) |
-| 서준원 | Backend (인증/인가) | [GitHub](https://github.com/your-id) |
-| 최현민 | Backend (인증/인가) | [GitHub](https://github.com/your-id) |
-| 하승준 | Backend (인증/인가) | [GitHub](https://github.com/your-id) |
+| 이름 | GitHub |
+|------|--------|
+| 김기현 | [GitHub](https://github.com/your-id) |
+| 김우근 | [GitHub](https://github.com/your-id) |
+| 서준원 | [GitHub](https://github.com/your-id) |
+| 최현민 | [GitHub](https://github.com/your-id) |
+| 하승준 | [GitHub](https://github.com/your-id) |
 
 ---
 
@@ -52,26 +52,67 @@ React 프론트엔드와 연동됩니다.
 
 ## 🌐 배포 주소
 
-- 🔗 Frontend: https://your-frontend-url.com  
-- 🔗 Backend: https://your-backend-url.com  
+- 🔗 Frontend: https://first-road.vercel.app 
+- 🔗 Backend: API 서버 연동 완료  
 
 ---
 
 ## 🖥 화면 구성
 
 ### 🔹 메인 페이지
-<img src="https://your-image-url.com/main.png" width="700"/>
+
+<table>
+  <tr>
+    <td><img src="front/src/assets/gitReadme/main1.png" width="350"/></td>
+    <td><img src="front/src/assets/gitReadme/main2.png" width="350"/></td>
+  </tr>
+  <tr>
+    <td><img src="front/src/assets/gitReadme/main3.png" width="350"/></td>
+    <td><img src="front/src/assets/gitReadme/main4.png" width="350"/></td>
+  </tr>
+</table>
+
+<img src="front/src/assets/gitReadme/main5.png" width="700"/>
 
 ### 🔹 로그인 / 회원가입
-<img src="https://your-image-url.com/login.png" width="700"/>
+
+<table>
+  <tr>
+    <td><img src="front/src/assets/gitReadme/로그인.png" width="350"/></td>
+    <td><img src="front/src/assets/gitReadme/회원가입.png" width="350"/></td>
+  </tr>
+</table>
+
+### 🔹 이용가이드
+<img src="front/src/assets/gitReadme/이용가이드.png" width="700"/>
+
+### 🔹 간편조회
+<img src="front/src/assets/gitReadme/간편조회.png" width="700"/>
 
 ### 🔹 화물 등록
-<img src="https://your-image-url.com/cargo.png" width="700"/>
+<img src="front/src/assets/gitReadme/견적서.png" width="700"/>
+
+### 🔹 운송 접수 목록
+<img src="front/src/assets/gitReadme/운송접수목록.png" width="700"/>
+
+### 🔹 공지사항
+<img src="front/src/assets/gitReadme/공지사항.png" width="700"/>
+
+### 🔹 문의사항
+<img src="front/src/assets/gitReadme/문의사항.png" width="700"/>
 
 ### 🔹 마이페이지
-<img src="https://your-image-url.com/mypage.png" width="700"/>
 
-> ⚠️ 이미지 URL은 GitHub 업로드 후 링크로 교체하세요
+<table>
+  <tr>
+    <td><img src="front/src/assets/gitReadme/화주마이페이지.png" width="350"/></td>
+    <td><img src="front/src/assets/gitReadme/차주마이페이지.png" width="350"/></td>
+  </tr>
+  <tr>
+    <td><img src="front/src/assets/gitReadme/관리자마이페이지.png" width="350"/></td>
+    <td></td>
+  </tr>
+</table>
 
 ---
 
@@ -90,6 +131,7 @@ React 프론트엔드와 연동됩니다.
 ### 🚛 2. 화물 등록
 - 화주가 화물 정보 등록 가능
 - 출발지 / 도착지 / 무게 / 상세 정보 입력
+- 지도 클릭을 통한 직관적인 출발지·도착지 주소 지정 기능
 - 지도 기반 출발지·도착지 확인 가능
 - 등록된 화물 위치를 한눈에 확인 가능
 - 거리 기반 운송 가격 계산 기능 제공
@@ -106,6 +148,10 @@ React 프론트엔드와 연동됩니다.
 
 ### 💸 4. 할인 시스템
 - 운송 거리별 할인 적용
+  - 100km 이상 : 5% 할인
+  - 200km 이상 : 10% 할인
+  - 300km 이상 : 15% 할인
+  - 400km 이상 : 20% 할인
 - 할인 쿠폰 등록 및 적용 기능 제공
 - 최종 운송 비용 자동 계산 지원
 
@@ -113,6 +159,7 @@ React 프론트엔드와 연동됩니다.
 
 ### 🤝 5. 운송 수락 시스템
 - 등록된 화물을 차주가 직접 확인 후 수락
+- 차주 본인 차량의 적재 톤 수와 화물 무게를 비교하여, 조건에 맞지 않는 화물은 수락 불가하도록 검증 로직 적용
 - 화주와 차주를 연결하는 매칭 구조 제공
 - 수락 완료 시 배송 프로세스 진행
 
@@ -159,14 +206,32 @@ React 프론트엔드와 연동됩니다.
 
 ---
 
-### 🛠 12. 관리자 페이지
+### 💬 12. 상담 서비스
+- 사용자가 서비스 이용 중 궁금한 내용을 상담사에게 문의 가능
+- 화물 등록, 운송 수락, 결제, 배송 관련 상담 지원
+- 사용자 문의 응대 및 서비스 이용 편의성 향상
+
+---
+
+### 🤖 13. AI 상담사
+- 자주 묻는 질문에 대한 AI 기반 자동 응답 제공
+- 화물 등록 방법, 배송 절차, 결제 안내 등 기본 문의 처리
+- 상담 대기 시간을 줄이고 빠른 고객 지원 제공
+
+---
+
+### 🛠 14. 관리자 페이지
 - 회원, 화물, 신고, 게시판 통합 관리 기능 제공
+- 차량 승인 관리 기능
+  - 차주가 등록한 차량 정보(톤 수, 차종, 서류 등) 검토
+  - 차주가 등록한 차량 정보 조회 및 서비스 이용 승인/반려 기능
 - 신고 처리 및 사용자 제재 기능
 - 공지사항 및 게시글 관리 기능
 - 서비스 운영을 위한 관리자 전용 기능 제공
+
 ---
 
-### 📊 13. 사용자별 대시보드
+### 📊 15. 사용자별 대시보드
 - 사용자 권한에 따라 화주, 차주, 관리자 전용 대시보드 제공
 - 서비스 이용 현황을 그래프와 요약 카드로 시각화
 
@@ -177,6 +242,7 @@ React 프론트엔드와 연동됩니다.
 - 내 문의내역 조회 가능
 
 #### 차주 대시보드
+- 내 차량 정보 등록 및 승인 상태 확인
 - 총 배달 건수 확인
 - 배송중 / 배송완료 건수 확인
 - 월별 수익 그래프 제공
@@ -184,6 +250,7 @@ React 프론트엔드와 연동됩니다.
 
 #### 관리자 대시보드
 - 전체 사용자 수 확인
+- 신규 차량 승인 대기 현황
 - 이번 달 매출 확인
 - 신규 회원 수 확인
 - 총 배송 건수 확인
